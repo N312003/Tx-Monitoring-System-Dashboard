@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRID MASTER CLOUD</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { background-color: #0f121a; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+        h1 { margin-bottom: 20px; letter-spacing: 2px; }
+        span.cyan { color: #00d2ff; }
+        
+        /* DASHBOARD GRID */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-width: 600px; margin: 0 auto; }
+        .card { background: #1a1f2e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .label { color: #8b9ebb; font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 5px; }
+        .value { font-size: 2.2rem; font-weight: bold; }
+        .unit { font-size: 1rem; color: #555; }
+        
+        /* STATUS BANNER */
+        .banner { background: #00c853; color: white; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; max-width: 600px; margin: 0 auto 20px auto; }
+        .banner.test { background: #ffd600; color: black; animation: pulse 2s infinite; }
+        
+        /* CONTROLS */
+        .controls { background: #2a1a3f; padding: 20px; border-radius: 12px; margin: 20px auto; max-width: 600px; border-left: 5px solid #9d00ff; display: none; }
+        .btn { background: #333; color: white; border: 1px solid #555; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1rem; margin-bottom: 15px; transition: 0.3s; }
+        .btn:hover { background: #444; }
+        .btn.active { background: #9d00ff; border-color: #9d00ff; font-weight: bold; }
+        
+        /* SLIDER */
+        input[type=range] { width: 100%; height: 8px; background: #444; border-radius: 5px; outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #00d2ff; border-radius: 50%; cursor: pointer; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>GRID <span class="cyan">MASTER</span></h1>
+
+    <div id="statusBanner" class="banner">SYSTEM ONLINE</div>
+
+    <button id="toggleBtn" class="btn" style="max-width:600px" onclick="toggleMode()">Enable Diagnostic Mode</button>
+
+    <div id="controlPanel" class="controls">
+        <div style="color:#9d00ff; font-weight:bold; margin-bottom:10px;">⚠️ TEST INJECTION ACTIVE</div>
+        <p>Simulate Voltage: <span id="simVal" class="cyan">0</span>V</p>
+        <input type="range" min="0" max="300" value="0" oninput="updateSim(this.value)">
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="label">VOLTAGE (RMS)</div>
+            <div class="value"><span id="v">--</span> <span class="unit">V</span></div>
+        </div>
+        <div class="card">
+            <div class="label">CURRENT (L1)</div>
+            <div class="value"><span id="c1">--</span> <span class="unit">A</span></div>
+        </div>
+        <div class="card">
+            <div class="label">TEMPERATURE</div>
+            <div class="value"><span id="t">--</span> <span class="unit">°C</span></div>
+        </div>
+        <div class="card">
+            <div class="label">HEALTH</div>
+            <div class="value" style="color:#00c853"><span id="h">--</span> <span class="unit">%</span></div>
+        </div>
+    </div>
+
+<script>
+    // --- CONFIGURATION (REPLACE THESE WITH YOUR KEYS!) ---
+    const firebaseConfig = {
+        apiKey: "https://tx-monitoring-system-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        authDomain: "tx-monitoring-system.firebaseapp.com",
+        databaseURL: "https://tx-monitoring-system-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "tx-monitoring-system",
+        storageBucket: "tx-monitoring-system.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456:web:abcdef"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- 1. LISTEN FOR SENSOR DATA (READ) ---
+    const sensorRef = db.ref('sensors');
+    sensorRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            document.getElementById('v').innerText = data.voltage.toFixed(0);
+            document.getElementById('c1').innerText = data.current.toFixed(1);
+            document.getElementById('t').innerText = data.temp.toFixed(1);
+            document.getElementById('h').innerText = data.health;
+        }
+    });
+
+    // --- 2. LISTEN FOR CONTROL STATE (READ) ---
+    const modeRef = db.ref('controls/testMode');
+    modeRef.on('value', (snapshot) => {
+        const isTest = snapshot.val();
+        const panel = document.getElementById('controlPanel');
+        const banner = document.getElementById('statusBanner');
+        const btn = document.getElementById('toggleBtn');
+
+        if (isTest) {
+            panel.style.display = 'block';
+            banner.innerText = "DIAGNOSTIC MODE ACTIVE";
+            banner.className = "banner test";
+            btn.innerText = "Disable Diagnostic Mode";
+            btn.className = "btn active";
+        } else {
+            panel.style.display = 'none';
+            banner.innerText = "SYSTEM ONLINE";
+            banner.className = "banner";
+            btn.innerText = "Enable Diagnostic Mode";
+            btn.className = "btn";
+        }
+    });
+
+    // --- 3. SEND COMMANDS (WRITE) ---
+    function toggleMode() {
+        // Read current state once, then flip it
+        modeRef.once('value').then((snapshot) => {
+            const current = snapshot.val();
+            modeRef.set(!current); // Flip true/false
+        });
+    }
+
+    function updateSim(val) {
+        document.getElementById('simVal').innerText = val;
+        db.ref('controls/simVoltage').set(parseFloat(val));
+    }
+</script>
+</body>
+</html>
