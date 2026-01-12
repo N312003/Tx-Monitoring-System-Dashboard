@@ -97,7 +97,7 @@
                 <div id="predictDetail" style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Analyzing derivative slopes for anomaly signatures.</div>
             </div>
 
-            <div class="card">
+            <div class="card" style="grid-column: span 2;">
                 <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">VOLTAGE <span id="v" style="color:white; font-weight:bold;">--</span></div>
                 <div class="chart-container"><canvas id="chartVolt"></canvas></div>
             </div>
@@ -120,7 +120,7 @@
                 <div class="chart-container"><canvas id="chartVib"></canvas></div>
             </div>
 
-            <div class="card" style="grid-column: span 3; padding: 0; overflow: hidden; border: 1px solid #2d3748;">
+            <div class="card" style="grid-column: 1 / -1; padding: 0; overflow: hidden; border: 1px solid #2d3748;">
                 <div style="background: rgba(124, 58, 237, 0.1); padding: 12px 20px; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between;">
                     <span style="font-size: 0.75rem; font-weight: bold; color: var(--accent-purple);">DIAGNOSTIC EVENT LOG</span>
                     <button onclick="clearLog()" style="background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;">CLEAR</button>
@@ -357,6 +357,7 @@
         const a = document.createElement('a'); a.href = url; a.download = 'TxMS_Audit_Report.csv'; a.click();
     }
 
+    // --- 7. UTILS ---
     function addEventToLog(type, level) {
         const log = document.getElementById('eventLog');
         if (log.innerHTML.includes("Monitoring for anomalies")) log.innerHTML = "";
