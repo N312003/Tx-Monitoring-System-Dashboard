@@ -13,10 +13,11 @@
 
     <style>
         :root {
-            --bg-body: #0b0e14; --bg-sidebar: #151923; --bg-card: #1c212c;
-            --accent-purple: #7c3aed; --accent-glow: rgba(124, 58, 237, 0.4);
-            --text-main: #ffffff; --text-muted: #94a3b8;
-            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7);
+            --accent-purple: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3);
+            --text-main: #f8fafc; --text-muted: #64748b;
+            --success: #10b981; --warning: #fbbf24; --danger: #ef4444;
+            --blue-alert: #3b82f6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -29,19 +30,28 @@
         .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px var(--accent-glow); }
 
         /* MAIN CONTENT */
-        .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1400px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; transition: 0.5s; border: 1px solid transparent; }
+        .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1400px; flex-grow: 1; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         
-        /* ALARM ANIMATION */
-        .alarm-active { background: rgba(239, 68, 68, 0.15) !important; border-color: var(--danger) !important; animation: pulseAlarm 1s infinite; }
-        @keyframes pulseAlarm { 0% { box-shadow: 0 0 0px var(--danger); } 50% { box-shadow: 0 0 20px var(--danger); } 100% { box-shadow: 0 0 0px var(--danger); } }
+        .alarm-active { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; animation: pulseAlarm 1.5s infinite; }
+        @keyframes pulseAlarm { 0% { box-shadow: 0 0 0px var(--danger); } 50% { box-shadow: 0 0 15px var(--danger); } 100% { box-shadow: 0 0 0px var(--danger); } }
+
+        /* AI CARD STATES */
+        .ai-card { grid-column: span 2; transition: all 0.5s ease; border: 1px solid var(--accent-purple); background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); }
+        .ai-thermal { background: linear-gradient(135deg, #1c212c 0%, #7f1d1d 100%) !important; border-color: var(--danger) !important; }
+        .ai-mechanical { background: linear-gradient(135deg, #1c212c 0%, #78350f 100%) !important; border-color: var(--warning) !important; }
+        .ai-voltage { background: linear-gradient(135deg, #1c212c 0%, #1e3a8a 100%) !important; border-color: var(--blue-alert) !important; }
+
+        .pulse-icon { animation: icon-glow 1.5s infinite; }
+        @keyframes icon-glow { 0% { filter: drop-shadow(0 0 2px currentColor); } 50% { filter: drop-shadow(0 0 8px currentColor); } 100% { filter: drop-shadow(0 0 2px currentColor); } }
 
         /* GRID CARDS */
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid transparent; }
-        .ai-card { grid-column: span 2; background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); border: 1px solid var(--accent-purple); }
+        .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+        .card-val { font-size: 1.8rem; font-weight: bold; margin-top: 10px; display: flex; align-items: baseline; }
+        .unit { font-size: 0.9rem; color: var(--text-muted); margin-left: 4px; }
 
-        /* ARMING SWITCH */
+        /* MISC */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
@@ -49,10 +59,7 @@
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        .card-val { font-size: 1.8rem; font-weight: bold; margin-top: 10px; }
-        .unit { font-size: 0.9rem; color: var(--text-muted); margin-left: 4px; }
-
-        .history-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
+        .history-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; }
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
@@ -78,18 +85,36 @@
         </div>
 
         <div class="grid-cards">
-            <div class="card ai-card">
-                <div style="color:var(--accent-purple); font-weight:bold; font-size:0.85rem; margin-bottom:10px;"><i class="fa-solid fa-microchip"></i> AI PREDICTIVE ENGINE</div>
-                <div id="predictMsg" style="font-size: 1.2rem; margin-bottom: 5px;">Synchronizing vectors...</div>
-                <div id="predictDetail" style="font-size: 0.8rem; color: var(--text-muted);">Analyzing derivative slopes for anomaly signatures.</div>
+            <div class="card ai-card" id="aiCard">
+                <div style="color:var(--text-main); font-weight:bold; font-size:0.85rem; margin-bottom:10px;"><i class="fa-solid fa-microchip" id="aiIcon"></i> AI PREDICTIVE ENGINE</div>
+                <div id="predictMsg" style="font-size: 1.2rem; margin-bottom: 5px; font-weight: bold;">Synchronizing vectors...</div>
+                <div id="predictDetail" style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Analyzing derivative slopes for anomaly signatures.</div>
             </div>
 
-            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">VOLTAGE</div><div class="card-val"><span id="v">--</span><span class="unit">V</span></div></div>
-            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">CURRENT L1</div><div class="card-val"><span id="c1">--</span><span class="unit">A</span></div></div>
-            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">CURRENT L2</div><div class="card-val"><span id="c2">--</span><span class="unit">A</span></div></div>
-            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">POWER FACTOR</div><div class="card-val"><span id="pf">--</span></div></div>
-            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">TEMPERATURE</div><div class="card-val"><span id="t">--</span><span class="unit">°C</span></div></div>
-            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">VIBRATION</div><div class="card-val"><span id="vib">--</span><span class="unit">g</span></div></div>
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">VOLTAGE <i class="fa-solid fa-bolt"></i></div>
+                <div class="card-val"><span id="v">--</span><span class="unit">V</span></div>
+            </div>
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">CURRENT L1 <i class="fa-solid fa-plug"></i></div>
+                <div class="card-val"><span id="c1">--</span><span class="unit">A</span></div>
+            </div>
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">CURRENT L2 <i class="fa-solid fa-plug"></i></div>
+                <div class="card-val"><span id="c2">--</span><span class="unit">A</span></div>
+            </div>
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">POWER FACTOR <i class="fa-solid fa-gauge-simple-high"></i></div>
+                <div class="card-val"><span id="pf">--</span></div>
+            </div>
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">TEMPERATURE <i class="fa-solid fa-temperature-three-quarters"></i></div>
+                <div class="card-val"><span id="t">--</span><span class="unit">°C</span></div>
+            </div>
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">VIBRATION <i class="fa-solid fa-wave-square"></i></div>
+                <div class="card-val"><span id="vib">--</span><span class="unit">g</span></div>
+            </div>
 
             <div class="card" style="grid-column: span 2; padding: 0; overflow: hidden; border: 1px solid #2d3748;">
                 <div style="background: rgba(124, 58, 237, 0.1); padding: 12px 20px; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between;">
@@ -102,7 +127,7 @@
             </div>
         </div>
 
-        <div style="height:320px; background:var(--bg-card); border-radius:20px; margin-top:20px; padding:20px;">
+        <div style="height:320px; background:var(--bg-card); border-radius:20px; margin-top:20px; padding:20px; border: 1px solid rgba(255,255,255,0.05);">
             <canvas id="liveChart"></canvas>
         </div>
     </main>
@@ -110,13 +135,12 @@
     <div class="history-overlay" id="historyView">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h2>Analytical History</h2>
-            <button class="btn-action" onclick="exportToCSV()"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
+            <button class="btn-action" onclick="showDashboard()">Back to Dashboard</button>
         </div>
         <div style="height:500px; background:var(--bg-card); border-radius:20px; padding:20px;"><canvas id="historyChart"></canvas></div>
     </div>
 
 <script>
-    // --- 1. CONFIGURATION ---
     const firebaseConfig = {
         apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI",
         authDomain: "tx-monitoring-system.firebaseapp.com",
@@ -126,22 +150,28 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    (function(){ emailjs.init("2wsEDwcqVrLmPDV7e"); })();
-
-    // --- 2. GLOBAL STATE ---
     let alarmArmed = false;
     let lastEmailSent = 0;
     let buffers = { t: [], v: [], vib: [] };
     let historyPoints = [];
 
+    // Chart Setup
     const lCtx = document.getElementById('liveChart').getContext('2d');
     const hCtx = document.getElementById('historyChart').getContext('2d');
-    const liveChart = new Chart(lCtx, { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'Voltage', data:Array(20).fill(0), borderColor:'#7c3aed', tension:0.4, fill:true, backgroundColor:'rgba(124,58,237,0.1)'}]}, options:{responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{grid:{color:'#2d3748'}}}, plugins:{legend:{display:false}}, animation:false} });
+    const liveChart = new Chart(lCtx, { 
+        type:'line', 
+        data:{ labels:Array(20).fill(''), datasets:[{ label:'Voltage', data:Array(20).fill(0), borderColor:'#7c3aed', tension:0.4, fill:true, backgroundColor:'rgba(124,58,237,0.1)', pointRadius:0 }] }, 
+        options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{display:false}, y:{grid:{color:'#2d3748'}} }, plugins:{legend:{display:false}}, animation:false } 
+    });
     let historyChart = new Chart(hCtx, { type:'line', data:{labels:[], datasets:[]}, options:{responsive:true, maintainAspectRatio:false} });
 
-    // --- 3. DATA FLOW ---
-    db.ref('control/alarmArmed').on('value', s => { alarmArmed = s.val(); document.getElementById('alarmArmToggle').checked = alarmArmed; });
+    // Firebase Listeners
+    db.ref('control/alarmArmed').on('value', s => { 
+        alarmArmed = s.val(); 
+        document.getElementById('alarmArmToggle').checked = alarmArmed; 
+    });
 
     db.ref('sensors').on('value', (snap) => {
         const d = snap.val(); if(!d) return;
@@ -153,7 +183,10 @@
         document.getElementById('pf').innerText = d.pf ? d.pf.toFixed(2) : "0.95";
         document.getElementById('vib').innerText = (d.vib || 0).toFixed(2);
 
-        updateBuffer('t', d.temp); updateBuffer('v', d.voltage); updateBuffer('vib', d.vib || 0);
+        updateBuffer('t', d.temp); 
+        updateBuffer('v', d.voltage); 
+        updateBuffer('vib', d.vib || 0);
+        
         if(buffers.t.length >= 10) performAIAnalysis();
 
         liveChart.data.datasets[0].data.push(d.voltage);
@@ -163,37 +196,44 @@
 
     function updateBuffer(k, v) { buffers[k].push(v); if(buffers[k].length > 15) buffers[k].shift(); }
 
-    // --- 4. AI & DIAGNOSTIC LOGIC ---
+    // --- REFINED AI ANALYSIS LOGIC ---
     function performAIAnalysis() {
         const tSlope = calculateSlope(buffers.t);
         const vSlope = calculateSlope(buffers.v);
         const vibSlope = calculateSlope(buffers.vib);
 
+        const aiCard = document.getElementById('aiCard');
+        const aiIcon = document.getElementById('aiIcon');
         const msg = document.getElementById('predictMsg');
         const det = document.getElementById('predictDetail');
-        let danger = false;
+        
         let anomalyType = "";
+        let alertClass = "";
 
-        if(tSlope > 0.08) anomalyType = "Thermal Overload";
-        if(Math.abs(vSlope) > 1.2) { anomalyType = "Voltage Instability"; danger = true; }
-        if(vibSlope > 0.04) { anomalyType = "Mechanical Stress"; danger = true; }
+        if(tSlope > 0.08) { anomalyType = "Thermal Overload Detected"; alertClass = "ai-thermal"; }
+        else if(Math.abs(vSlope) > 1.2) { anomalyType = "Voltage Instability"; alertClass = "ai-voltage"; }
+        else if(vibSlope > 0.04) { anomalyType = "Mechanical Stress"; alertClass = "ai-mechanical"; }
 
         if(anomalyType !== "") {
             msg.innerText = "ALARM: " + anomalyType;
-            msg.style.color = "var(--danger)";
+            msg.style.color = "#ffffff";
             
-            // Only fire email and log if it's a NEW distinct event
-            if (!det.innerText.includes(anomalyType)) {
-                addEventToLog(anomalyType, danger ? 'CRITICAL' : 'WARNING');
-                if(danger && alarmArmed) sendEmailAlert(anomalyType);
-            }
+            aiCard.classList.remove('ai-thermal', 'ai-mechanical', 'ai-voltage');
+            aiCard.classList.add(alertClass);
+            aiIcon.classList.add('pulse-icon');
 
-            det.innerText = alarmArmed ? `SYSTEM ARMED: Active monitoring for ${anomalyType}.` : "SYSTEM DISARMED: Visual warning only.";
-            if(danger && alarmArmed) triggerVisualAlarm(true); else triggerVisualAlarm(false);
+            if (!det.innerText.includes(anomalyType)) {
+                addEventToLog(anomalyType, 'CRITICAL');
+                if(alarmArmed) sendEmailAlert(anomalyType);
+            }
+            det.innerText = alarmArmed ? "SYSTEM ARMED: Emergency protocols active." : "SYSTEM DISARMED: Visual notification only.";
+            triggerVisualAlarm(true);
         } else {
             msg.innerText = "Operation: Nominal";
             msg.style.color = "var(--success)";
             det.innerText = "Derivative slopes within steady-state margins.";
+            aiCard.classList.remove('ai-thermal', 'ai-mechanical', 'ai-voltage');
+            aiIcon.classList.remove('pulse-icon');
             triggerVisualAlarm(false);
         }
     }
@@ -217,19 +257,11 @@
         const now = Date.now();
         if (now - lastEmailSent < 300000) return; 
         lastEmailSent = now;
-
-        const params = {
+        emailjs.send('service_aejvhq7', 'template_9i69k4t', {
             reason: reason,
             voltage: document.getElementById('v').innerText,
-            currentL1: document.getElementById('c1').innerText,
-            currentL2: document.getElementById('c2').innerText,
-            pf: document.getElementById('pf').innerText,
-            vib: document.getElementById('vib').innerText,
             temp: document.getElementById('t').innerText
-        };
-
-        emailjs.send('service_aejvhq7', 'template_9i69k4t', params)
-            .then(() => console.log("Diagnostic Email Dispatched"), (err) => console.log("Email Error", err));
+        });
     }
 
     function triggerVisualAlarm(active) {
@@ -237,26 +269,13 @@
         if(active) h.classList.add('alarm-active'); else h.classList.remove('alarm-active');
     }
 
-    // --- 5. INTERFACE & EXPORT ---
     function updateAlarmArmed(s) { db.ref('control/alarmArmed').set(s); }
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 60px; font-size: 0.8rem;">Monitoring for anomalies...</div>'; }
     function showDashboard() { document.getElementById('dashboardView').style.display='block'; document.getElementById('historyView').style.display='none'; }
-    function showHistory() { 
-        document.getElementById('dashboardView').style.display='none'; 
-        document.getElementById('historyView').style.display='block'; 
-        db.ref('history').limitToLast(100).once('value', s => {
-            const v = s.val(); historyPoints = v ? Object.values(v) : [];
-            historyChart.destroy();
-            historyChart = new Chart(hCtx, { type:'line', data:{labels:historyPoints.map((_,i)=>i), datasets:[{label:'Thermal Gradient', data:historyPoints.map(p=>p.temp), borderColor:'#ef4444', tension:0.3, pointRadius:0}]}, options:{responsive:true, maintainAspectRatio:false} });
-        });
+    function showHistory() {
+        document.getElementById('dashboardView').style.display='none';
+        document.getElementById('historyView').style.display='block';
     }
-    function exportToCSV() {
-        let csv = "TimestampIdx,Voltage,CurrentL1,CurrentL2,Temp,Vibration\n";
-        historyPoints.forEach((p,i) => csv += `${i},${p.voltage},${p.currentL1},${p.currentL2},${p.temp},${p.vib}\n`);
-        const b = new Blob([csv], {type:'text/csv'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'TxMS_Final_Report.csv'; a.click();
-    }
-    function toggleModeUI() { db.ref('control/testMode').once('value').then(s => db.ref('control/testMode').set(!s.val())); }
 </script>
 </body>
 </html>
