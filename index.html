@@ -251,10 +251,12 @@
 
         <div class="history-overlay" id="historyView">
             <div style="display:flex; justify-content:space-between; margin-bottom:25px;">
-                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Time-series forensic audit</span></div>
+                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Session Telemetry Log</span></div>
                 <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
             </div>
-            <div class="card" style="height:400px; padding:20px;"><canvas id="historyChart"></canvas></div>
+            <div class="card" style="height:500px; padding:20px;">
+                <canvas id="historyChart"></canvas>
+            </div>
         </div>
 
         <div class="daily-overlay" id="dailyView">
@@ -270,17 +272,17 @@
                     <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
                 </div>
             </div>
-            
             <div class="card" style="min-height: 500px;">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>TIMESTAMP</th>
-                            <th>VOLTAGE (V)</th>
-                            <th>CURRENT L1 (A)</th>
-                            <th>CURRENT L2 (A)</th>
-                            <th>TEMP (°C)</th>
-                            <th>STATUS</th>
+                            <th>VOLT</th>
+                            <th>CURR L1</th>
+                            <th>CURR L2</th>
+                            <th>PF</th>
+                            <th>TEMP</th>
+                            <th>VIB</th>
                         </tr>
                     </thead>
                     <tbody id="dailyTableBody">
@@ -311,14 +313,15 @@
     let currentDeviceID = null; 
     let isTestMode = false; 
     let lastHeartbeat = Date.now(); 
-    let sessionLog = []; // Stores data for CSV Export
+    let sessionLog = []; 
+    let historyChartInstance = null; // For the big chart
 
     // --- 2. START WATCHDOG ---
     function startWatchdog() {
         setInterval(() => {
             const now = Date.now();
             const el = document.getElementById('netStatus');
-            // 5 MINUTES (300,000 ms) Timeout
+            // 5 MINUTES Timeout
             if (now - lastHeartbeat > 300000) {
                 el.innerText = "OFFLINE";
                 el.className = "status-badge status-offline";
@@ -351,31 +354,23 @@
 
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
-        
-        // Reset status
         document.getElementById('netStatus').innerText = "CONNECTING...";
         document.getElementById('netStatus').className = "status-badge status-offline";
 
-        // Detach old listeners
         if (activeListener) {
             activeListener.off(); 
             db.ref('devices/' + deviceId + '/control/testMode').off();
             db.ref('devices/' + deviceId + '/control/alarmArmed').off();
         }
 
-        // Attach new listener
         activeListener = db.ref('devices/' + deviceId);
-        
         activeListener.on('value', snap => {
             const d = snap.val();
             if(!d) return;
-
-            // Heartbeat received
             lastHeartbeat = Date.now(); 
             updateDashboard(d);
         });
 
-        // Sync Aux Listeners
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const toggle = document.getElementById('alarmArmToggle');
             if(toggle) toggle.checked = s.val(); 
@@ -401,7 +396,6 @@
         });
     }
 
-    // --- 4. SIMULATION LOGIC ---
     function toggleSimulation() {
         if(!currentDeviceID) { alert("No device selected!"); return; }
         isTestMode = !isTestMode;
@@ -417,9 +411,8 @@
         db.ref('devices/' + currentDeviceID + '/control/testValues/' + key).set(parseFloat(val));
     }
 
-    // --- 5. DASHBOARD UPDATE ---
+    // --- 4. DASHBOARD UPDATE ---
     function updateDashboard(d) {
-        // Status Badge
         const statusEl = document.getElementById('netStatus');
         if (d.status === "TEST_MODE") {
             statusEl.innerText = "TEST MODE";
@@ -436,7 +429,6 @@
         const temp = d.temp || d.oil_temp || 0; 
         const vib = d.vib || d.vibration || 0;
 
-        // Visuals
         const vEl = document.getElementById('v'); vEl.innerText = volt.toFixed(1)+"V"; vEl.style.color = (volt > 260) ? "#ef4444" : "white";
         document.getElementById('pf').innerText = pf.toFixed(2);
         document.getElementById('c1').innerText = c1.toFixed(1)+"A"; 
@@ -444,38 +436,33 @@
         const tEl = document.getElementById('t'); tEl.innerText = temp.toFixed(1)+"°C"; tEl.style.color = (temp > 80) ? "#ef4444" : "white";
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
 
-        // Charts
         updateSingleChart(vChart, volt); updateSingleChart(pfChart, pf); updateSingleChart(tChart, temp); updateSingleChart(vibChart, vib);
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); 
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
         
         runAIAnalysis(volt, temp, vib);
-        
-        // Log Data for Report
         addToReport(d);
     }
 
-    // --- 6. REPORTING & EXPORT ---
+    // --- 5. REPORTING & CSV ---
     function addToReport(d) {
         const now = new Date().toLocaleTimeString();
         const status = d.status || "ONLINE";
         
-        // Add to array
-        sessionLog.push({ time: now, v: d.voltage, c1: d.currentL1, c2: d.currentL2, t: d.temp, s: status });
-        if(sessionLog.length > 100) sessionLog.shift(); // Keep last 100
+        sessionLog.push({ time: now, v: d.voltage, c1: d.currentL1, c2: d.currentL2, pf: d.pf, t: d.temp, vib: d.vib, s: status });
+        if(sessionLog.length > 200) sessionLog.shift();
 
-        // Update HTML Table
         const tbody = document.getElementById('dailyTableBody');
-        let row = `<tr><td>${now}</td><td>${Number(d.voltage).toFixed(1)}</td><td>${Number(d.currentL1).toFixed(1)}</td><td>${Number(d.currentL2).toFixed(1)}</td><td>${Number(d.temp).toFixed(1)}</td><td><span style="color:${status==='TEST_MODE'?'orange':'#10b981'}">${status}</span></td></tr>`;
+        let row = `<tr><td>${now}</td><td>${Number(d.voltage).toFixed(1)}</td><td>${Number(d.currentL1).toFixed(1)}</td><td>${Number(d.currentL2).toFixed(1)}</td><td>${Number(d.pf).toFixed(2)}</td><td>${Number(d.temp).toFixed(1)}</td><td>${Number(d.vib).toFixed(2)}</td></tr>`;
         tbody.insertAdjacentHTML('afterbegin', row);
         if(tbody.rows.length > 50) tbody.deleteRow(50);
     }
 
     function downloadCSV() {
-        let csvContent = "data:text/csv;charset=utf-8,Timestamp,Voltage,Current L1,Current L2,Temp,Status\n";
+        let csvContent = "data:text/csv;charset=utf-8,Timestamp,Voltage,Current L1,Current L2,PF,Temp,Vibration,Status\n";
         sessionLog.forEach(row => {
-            csvContent += `${row.time},${row.v},${row.c1},${row.c2},${row.t},${row.s}\n`;
+            csvContent += `${row.time},${row.v},${row.c1},${row.c2},${row.pf},${row.t},${row.vib},${row.s}\n`;
         });
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -486,7 +473,7 @@
         document.body.removeChild(link);
     }
 
-    // --- 7. AUTH & UI ---
+    // --- 6. AUTH & VIEW MANAGEMENT ---
     function selectRole(role) {
         userRole = role === 'admin' ? 'admin' : 'observer';
         if (role === 'observer') {
@@ -536,12 +523,21 @@
         if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
     }
 
-    // --- 8. CHART UTILS ---
+    function showView(viewId) {
+        ['dashboardView', 'historyView', 'dailyView'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById(viewId).style.display = 'block';
+        
+        // Refresh History Chart if opened
+        if(viewId === 'historyView') refreshHistoryChart();
+    }
+
+    // --- 7. CHARTS & HISTORY ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef');
     const tChart = createMiniChart('chartTemp', '#ef4444'); const vibChart = createMiniChart('chartVib', '#fbbf24');
     const cChart = new Chart(document.getElementById('chartCurr').getContext('2d'), { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'L1',data:Array(20).fill(0),borderColor:'#10b981',borderWidth:2,pointRadius:0,tension:0.4},{label:'L2',data:Array(20).fill(0),borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:0.4}]}, options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{display:true,grid:{display:false},ticks:{color:'#555',font:{size:9}}}},plugins:{legend:{display:true,labels:{color:'#ccc'}}},animation:false} });
-
     function updateSingleChart(c, v) { c.data.datasets[0].data.push(v); c.data.datasets[0].data.shift(); c.update(); }
 
     function runAIAnalysis(v, t, vib) {
@@ -552,11 +548,51 @@
         else if(v > 260) { aiMsg.innerText = "Overvoltage"; aiMsg.style.color = "var(--danger)"; aiDet.innerText = "Spike Detected."; }
         else { aiMsg.innerText = "System Nominal"; aiMsg.style.color = "var(--success)"; aiDet.innerText = "Efficiency optimal."; }
     }
-
-    function showView(viewId) { ['dashboardView', 'historyView', 'dailyView'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById(viewId).style.display = 'block'; }
+    
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'; }
 
-    // Start Watchdog
+    // --- FULL ANALYTICAL HISTORIAN CHART ---
+    function initHistoryChart() {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        historyChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], 
+                datasets: [
+                    { label: 'Voltage (V)', data: [], borderColor: '#7c3aed', yAxisID: 'y', tension: 0.4 },
+                    { label: 'Current L1 (A)', data: [], borderColor: '#10b981', yAxisID: 'y1', tension: 0.4 },
+                    { label: 'Current L2 (A)', data: [], borderColor: '#06b6d4', yAxisID: 'y1', tension: 0.4 },
+                    { label: 'Temp (°C)', data: [], borderColor: '#ef4444', yAxisID: 'y1', tension: 0.4 },
+                    { label: 'PF', data: [], borderColor: '#d946ef', yAxisID: 'y2', borderDash: [5, 5], tension: 0.4 },
+                    { label: 'Vibration', data: [], borderColor: '#fbbf24', yAxisID: 'y2', borderDash: [5, 5], tension: 0.4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+                    y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Voltage', color: '#7c3aed' }, ticks: { color: '#ccc' }, grid: { color: '#444' } },
+                    y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Amps/Temp', color: '#10b981' }, grid: { drawOnChartArea: false }, ticks: { color: '#ccc' } },
+                    y2: { type: 'linear', display: false, position: 'right' } // Hidden axis for small values like PF/Vib
+                },
+                plugins: { legend: { labels: { color: 'white' } } }
+            }
+        });
+    }
+
+    function refreshHistoryChart() {
+        if (!historyChartInstance) initHistoryChart();
+        const labels = sessionLog.map(d => d.time);
+        historyChartInstance.data.labels = labels;
+        historyChartInstance.data.datasets[0].data = sessionLog.map(d => d.v);
+        historyChartInstance.data.datasets[1].data = sessionLog.map(d => d.c1);
+        historyChartInstance.data.datasets[2].data = sessionLog.map(d => d.c2);
+        historyChartInstance.data.datasets[3].data = sessionLog.map(d => d.t);
+        historyChartInstance.data.datasets[4].data = sessionLog.map(d => d.pf);
+        historyChartInstance.data.datasets[5].data = sessionLog.map(d => d.vib);
+        historyChartInstance.update();
+    }
+
     startWatchdog(); 
 
 </script>
