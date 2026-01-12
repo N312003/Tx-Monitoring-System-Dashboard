@@ -13,44 +13,63 @@
 
     <style>
         :root {
-            --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7);
-            --accent-purple: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3);
-            --text-main: #f8fafc; --text-muted: #64748b;
-            --success: #10b981; --warning: #fbbf24; --danger: #ef4444;
+            /* Professional Dark Theme Palette */
+            --bg-body: #05070a; 
+            --bg-sidebar: #0f121a; 
+            --bg-card: rgba(28, 33, 44, 0.7);
+            --accent-purple: #8b5cf6; 
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8;
+            --success: #10b981; 
+            --warning: #fbbf24; 
+            --danger: #ef4444;
             --blue-alert: #3b82f6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
-        /* SIDEBAR */
+        /* --- SIDEBAR --- */
         .sidebar { width: 80px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; align-items: center; padding-top: 20px; position: fixed; height: 100%; z-index: 100; border-right: 1px solid #2d3748; }
         .logo { font-size: 1.2rem; font-weight: 800; margin-bottom: 40px; color: var(--accent-purple); }
         .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
         .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
         .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px var(--accent-glow); }
 
-        /* MAIN CONTENT */
-        .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1400px; flex-grow: 1; }
+        /* --- MAIN CONTENT --- */
+        .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         
         .alarm-active { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; animation: pulseAlarm 1.5s infinite; }
         @keyframes pulseAlarm { 0% { box-shadow: 0 0 0px var(--danger); } 50% { box-shadow: 0 0 15px var(--danger); } 100% { box-shadow: 0 0 0px var(--danger); } }
 
-        /* GRID CARDS */
-        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
-        .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
-        .chart-container { height: 130px; margin-top: 15px; }
+        /* --- GRID SYSTEM --- */
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        
+        .card { 
+            background-color: var(--bg-card); 
+            border-radius: 20px; 
+            padding: 20px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            backdrop-filter: blur(10px); 
+            display: flex; 
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .chart-container { height: 120px; margin-top: 15px; width: 100%; }
 
-        /* AI CARD STATES */
+        /* --- AI CARD STYLING --- */
         .ai-card { grid-column: span 2; transition: all 0.5s ease; border: 1px solid var(--accent-purple); background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); }
         .ai-thermal { background: linear-gradient(135deg, #1c212c 0%, #7f1d1d 100%) !important; border-color: var(--danger) !important; }
         .ai-mechanical { background: linear-gradient(135deg, #1c212c 0%, #78350f 100%) !important; border-color: var(--warning) !important; }
         .ai-voltage { background: linear-gradient(135deg, #1c212c 0%, #1e3a8a 100%) !important; border-color: var(--blue-alert) !important; }
+        
         .pulse-icon { animation: icon-glow 1.5s infinite; }
         @keyframes icon-glow { 0% { filter: drop-shadow(0 0 2px currentColor); } 50% { filter: drop-shadow(0 0 8px currentColor); } 100% { filter: drop-shadow(0 0 2px currentColor); } }
 
-        /* UI ELEMENTS */
+        /* --- UI ELEMENTS --- */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
@@ -58,11 +77,12 @@
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
 
+        /* --- HISTORY VIEW --- */
         .history-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-action:hover { opacity: 0.8; transform: translateY(-2px); }
-        .btn-ghost { background: none; border: 1px solid #444; color: white; padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; }
-        .btn-ghost:hover { border-color: var(--accent-purple); }
+        .btn-ghost { background: none; border: 1px solid #444; color: white; padding: 5px 15px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; margin-right: 5px; transition: 0.2s; }
+        .btn-ghost:hover { border-color: var(--accent-purple); background: rgba(139, 92, 246, 0.1); }
     </style>
 </head>
 <body>
@@ -137,9 +157,18 @@
         </div>
 
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-bottom:25px;">
-            <div class="card" style="text-align:center;"><div style="color:var(--text-muted); font-size:0.7rem;">PEAK VALUE</div><div id="histMax" style="font-size:1.6rem; font-weight:bold; color:var(--danger);">--</div></div>
-            <div class="card" style="text-align:center;"><div style="color:var(--text-muted); font-size:0.7rem;">AVERAGE</div><div id="histAvg" style="font-size:1.6rem; font-weight:bold; color:var(--accent-purple);">--</div></div>
-            <div class="card" style="text-align:center;"><div style="color:var(--text-muted); font-size:0.7rem;">MINIMUM</div><div id="histMin" style="font-size:1.6rem; font-weight:bold; color:var(--success);">--</div></div>
+            <div class="card" style="text-align:center;">
+                <div style="color:var(--text-muted); font-size:0.7rem;">PEAK VALUE</div>
+                <div id="histMax" style="font-size:1.6rem; font-weight:bold; color:var(--danger);">--</div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div style="color:var(--text-muted); font-size:0.7rem;">AVERAGE</div>
+                <div id="histAvg" style="font-size:1.6rem; font-weight:bold; color:var(--accent-purple);">--</div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div style="color:var(--text-muted); font-size:0.7rem;">MINIMUM</div>
+                <div id="histMin" style="font-size:1.6rem; font-weight:bold; color:var(--success);">--</div>
+            </div>
         </div>
 
         <div class="card" style="height:480px;">
@@ -153,7 +182,7 @@
     </div>
 
 <script>
-    // --- 1. FIREBASE CONFIG ---
+    // --- 1. FIREBASE & API CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI",
         authDomain: "tx-monitoring-system.firebaseapp.com",
@@ -165,72 +194,105 @@
     const db = firebase.database();
     emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    // --- 2. GLOBAL STATE ---
+    // --- 2. GLOBAL VARIABLES ---
     let alarmArmed = false;
     let buffers = { t: [], v: [], vib: [] };
     let currentHistoryData = [];
     let historyChartInstance = null;
 
-    // --- 3. CHART INITIALIZATION ---
+    // --- 3. REAL-TIME CHART SETUP ---
     function createMiniChart(canvasId, color) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         return new Chart(ctx, {
             type: 'line',
             data: {
                 labels: Array(20).fill(''),
-                datasets: [{ data: Array(20).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: color + '11' }]
+                datasets: [{ 
+                    data: Array(20).fill(0), 
+                    borderColor: color, 
+                    borderWidth: 2, 
+                    pointRadius: 0, 
+                    tension: 0.4, 
+                    fill: true, 
+                    backgroundColor: color + '11' 
+                }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } },
+                scales: { 
+                    x: { display: false }, 
+                    y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } 
+                },
                 plugins: { legend: { display: false } },
                 animation: false
             }
         });
     }
 
+    // Initialize the 4 individual charts
     const vChart = createMiniChart('chartVolt', '#7c3aed');
     const cChart = createMiniChart('chartCurr', '#10b981');
     const tChart = createMiniChart('chartTemp', '#ef4444');
     const vibChart = createMiniChart('chartVib', '#fbbf24');
 
-    // --- 4. DATA SYNC ---
-    db.ref('control/alarmArmed').on('value', s => { alarmArmed = s.val(); document.getElementById('alarmArmToggle').checked = alarmArmed; });
+    // --- 4. REAL-TIME DATA HANDLING ---
+    db.ref('control/alarmArmed').on('value', s => { 
+        alarmArmed = s.val(); 
+        document.getElementById('alarmArmToggle').checked = alarmArmed; 
+    });
 
     db.ref('sensors').on('value', (snap) => {
         const d = snap.val(); if(!d) return;
+        
+        // Update Text Values
         document.getElementById('v').innerText = d.voltage.toFixed(1) + "V";
         document.getElementById('c1').innerText = d.currentL1.toFixed(1) + "A";
         document.getElementById('t').innerText = d.temp.toFixed(1) + "°C";
         document.getElementById('vib').innerText = (d.vib || 0).toFixed(2) + "g";
 
+        // Update Charts Individually
         updateChart(vChart, d.voltage);
         updateChart(cChart, d.currentL1);
         updateChart(tChart, d.temp);
         updateChart(vibChart, d.vib || 0);
 
-        updateBuffer('t', d.temp); updateBuffer('v', d.voltage); updateBuffer('vib', d.vib || 0);
+        // Feed AI Buffer
+        updateBuffer('t', d.temp); 
+        updateBuffer('v', d.voltage); 
+        updateBuffer('vib', d.vib || 0);
+        
         if(buffers.t.length >= 10) performAIAnalysis();
     });
 
-    function updateChart(chart, val) { chart.data.datasets[0].data.push(val); chart.data.datasets[0].data.shift(); chart.update(); }
-    function updateBuffer(k, v) { buffers[k].push(v); if(buffers[k].length > 15) buffers[k].shift(); }
+    function updateChart(chart, val) { 
+        chart.data.datasets[0].data.push(val); 
+        chart.data.datasets[0].data.shift(); 
+        chart.update(); 
+    }
+    
+    function updateBuffer(k, v) { 
+        buffers[k].push(v); 
+        if(buffers[k].length > 15) buffers[k].shift(); 
+    }
 
-    // --- 5. AI LOGIC ---
+    // --- 5. AI PREDICTIVE LOGIC ---
     function performAIAnalysis() {
         const tSlope = calculateSlope(buffers.t);
         const vSlope = calculateSlope(buffers.v);
         const vibSlope = calculateSlope(buffers.vib);
+        
         const aiCard = document.getElementById('aiCard');
         const aiIcon = document.getElementById('aiIcon');
         const msg = document.getElementById('predictMsg');
         
         let anomaly = ""; let style = "";
 
+        // Thresholds
         if(tSlope > 0.08) { anomaly = "Thermal Overload"; style = "ai-thermal"; }
         else if(Math.abs(vSlope) > 1.2) { anomaly = "Voltage Instability"; style = "ai-voltage"; }
         else if(vibSlope > 0.04) { anomaly = "Mechanical Stress"; style = "ai-mechanical"; }
 
+        // Update UI
         if(anomaly !== "") {
             msg.innerText = "ALARM: " + anomaly;
             aiCard.className = "card ai-card " + style;
@@ -251,7 +313,7 @@
         return (n*sXY - sX*sY) / (n*sXX - sX*sX);
     }
 
-    // --- 6. HISTORY & UTILS ---
+    // --- 6. HISTORY & EXPORT LOGIC ---
     function showDashboard() { 
         document.getElementById('dashboardView').style.display='block'; 
         document.getElementById('historyView').style.display='none'; 
@@ -265,16 +327,18 @@
         document.getElementById('navHist').classList.add('active');
         document.getElementById('navDash').classList.remove('active');
         
+        // Load data on open
         db.ref('history').limitToLast(100).once('value', s => {
             const val = s.val(); currentHistoryData = val ? Object.values(val) : [];
-            updateHistoryChart('voltage', '#7c3aed');
+            updateHistoryChart('voltage', '#7c3aed'); // Default view
         });
     }
 
     function updateHistoryChart(key, color) {
         const dataPoints = currentHistoryData.map(p => p[key] || 0);
-        const max = Math.max(...dataPoints); const min = Math.min(...dataPoints);
-        const avg = dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length;
+        const max = Math.max(...dataPoints); 
+        const min = Math.min(...dataPoints);
+        const avg = dataPoints.reduce((a, b) => a + b, 0) / (dataPoints.length || 1);
 
         document.getElementById('histMax').innerText = max.toFixed(2);
         document.getElementById('histMin').innerText = min.toFixed(2);
@@ -284,20 +348,41 @@
         const ctx = document.getElementById('historyChart').getContext('2d');
         historyChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: dataPoints.map((_,i)=>i), datasets: [{ data: dataPoints, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#2d3748' }, ticks: { color: '#94a3b8' } }, x: { display: false } }, plugins: { legend: { display: false } } }
+            data: { 
+                labels: dataPoints.map((_,i)=>i), 
+                datasets: [{ 
+                    data: dataPoints, 
+                    borderColor: color, 
+                    backgroundColor: color + '22', 
+                    fill: true, 
+                    tension: 0.3, 
+                    pointRadius: 2 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    y: { grid: { color: '#2d3748' }, ticks: { color: '#94a3b8' } }, 
+                    x: { display: false } 
+                }, 
+                plugins: { legend: { display: false } } 
+            }
         });
     }
 
     function exportToCSV() {
-        if (currentHistoryData.length === 0) return alert("No data recorded");
+        if (currentHistoryData.length === 0) return alert("No history data to export.");
         let csv = "TimestampIdx,Voltage,CurrentL1,Temp,Vibration\n";
-        currentHistoryData.forEach((p, i) => { csv += `${i},${p.voltage || 0},${p.currentL1 || 0},${p.temp || 0},${p.vib || 0}\n`; });
+        currentHistoryData.forEach((p, i) => { 
+            csv += `${i},${p.voltage || 0},${p.currentL1 || 0},${p.temp || 0},${p.vib || 0}\n`; 
+        });
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'TxMS_Final_Report.csv'; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = 'TxMS_Audit_Report.csv'; a.click();
     }
 
+    // --- 7. UTILS ---
     function addEventToLog(type, level) {
         const log = document.getElementById('eventLog');
         if (log.innerHTML.includes("Monitoring for anomalies")) log.innerHTML = "";
