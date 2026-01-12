@@ -3,135 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRID MASTER CLOUD</title>
+    <title>TxMS PRO | Intelligence Suite</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
     <style>
-        body { background-color: #0f121a; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
-        h1 { margin-bottom: 20px; letter-spacing: 2px; }
-        span.cyan { color: #00d2ff; }
+        :root {
+            --bg-body: #0b0e14; --bg-sidebar: #151923; --bg-card: #1c212c;
+            --accent-purple: #7c3aed; --accent-glow: rgba(124, 58, 237, 0.4);
+            --text-main: #ffffff; --text-muted: #94a3b8;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 80px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; align-items: center; padding-top: 20px; position: fixed; height: 100%; z-index: 100; border-right: 1px solid #2d3748; }
+        .logo { font-size: 1.2rem; font-weight: 800; margin-bottom: 40px; color: var(--accent-purple); }
+        .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+        .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px var(--accent-glow); }
+
+        /* MAIN CONTENT */
+        .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1400px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; transition: 0.5s; border: 1px solid transparent; }
         
-        /* DASHBOARD GRID */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-width: 600px; margin: 0 auto; }
-        .card { background: #1a1f2e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .label { color: #8b9ebb; font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 5px; }
-        .value { font-size: 2.2rem; font-weight: bold; }
-        .unit { font-size: 1rem; color: #555; }
-        
-        /* STATUS BANNER */
-        .banner { background: #00c853; color: white; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; max-width: 600px; margin: 0 auto 20px auto; }
-        .banner.test { background: #ffd600; color: black; animation: pulse 2s infinite; }
-        
-        /* CONTROLS */
-        .controls { background: #2a1a3f; padding: 20px; border-radius: 12px; margin: 20px auto; max-width: 600px; border-left: 5px solid #9d00ff; display: none; }
-        .btn { background: #333; color: white; border: 1px solid #555; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1rem; margin-bottom: 15px; transition: 0.3s; }
-        .btn:hover { background: #444; }
-        .btn.active { background: #9d00ff; border-color: #9d00ff; font-weight: bold; }
-        
-        /* SLIDER */
-        input[type=range] { width: 100%; height: 8px; background: #444; border-radius: 5px; outline: none; -webkit-appearance: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #00d2ff; border-radius: 50%; cursor: pointer; }
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        /* ALARM ANIMATION */
+        .alarm-active { background: rgba(239, 68, 68, 0.15) !important; border-color: var(--danger) !important; animation: pulseAlarm 1s infinite; }
+        @keyframes pulseAlarm { 0% { box-shadow: 0 0 0px var(--danger); } 50% { box-shadow: 0 0 20px var(--danger); } 100% { box-shadow: 0 0 0px var(--danger); } }
+
+        /* GRID CARDS */
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid transparent; }
+        .ai-card { grid-column: span 2; background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); border: 1px solid var(--accent-purple); }
+
+        /* ARMING SWITCH */
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-purple); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .card-val { font-size: 1.8rem; font-weight: bold; margin-top: 10px; }
+        .unit { font-size: 0.9rem; color: var(--text-muted); margin-left: 4px; }
+
+        .history-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
+        .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>GRID <span class="cyan">MASTER</span></h1>
+    <nav class="sidebar">
+        <div class="logo">TxMS</div>
+        <div class="nav-item active" onclick="showDashboard()"><i class="fa-solid fa-house"></i></div>
+        <div class="nav-item" onclick="showHistory()"><i class="fa-solid fa-chart-area"></i></div>
+        <div class="nav-item" onclick="toggleModeUI()"><i class="fa-solid fa-sliders"></i></div>
+    </nav>
 
-    <div id="statusBanner" class="banner">SYSTEM ONLINE</div>
+    <main class="main-content" id="dashboardView">
+        <div class="header" id="mainHeader">
+            <div><h1>TxMS PRO</h1><span style="color:var(--text-muted)">Diagnostic Intelligence Node</span></div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="text-align: right;">
+                    <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ARM ALARM</div>
+                    <label class="switch"><input type="checkbox" id="alarmArmToggle" onchange="updateAlarmArmed(this.checked)"><span class="slider"></span></label>
+                </div>
+                <div id="netStatus" style="background:rgba(16,185,129,0.2); color:var(--success); padding:10px 20px; border-radius:20px; font-weight:bold; font-size:0.8rem;">ONLINE</div>
+            </div>
+        </div>
 
-    <button id="toggleBtn" class="btn" style="max-width:600px" onclick="toggleMode()">Enable Diagnostic Mode</button>
+        <div class="grid-cards">
+            <div class="card ai-card">
+                <div style="color:var(--accent-purple); font-weight:bold; font-size:0.85rem; margin-bottom:10px;"><i class="fa-solid fa-microchip"></i> AI PREDICTIVE ENGINE</div>
+                <div id="predictMsg" style="font-size: 1.2rem; margin-bottom: 5px;">Synchronizing vectors...</div>
+                <div id="predictDetail" style="font-size: 0.8rem; color: var(--text-muted);">Analyzing derivative slopes for anomaly signatures.</div>
+            </div>
 
-    <div id="controlPanel" class="controls">
-        <div style="color:#9d00ff; font-weight:bold; margin-bottom:10px;">⚠️ TEST INJECTION ACTIVE</div>
-        <p>Simulate Voltage: <span id="simVal" class="cyan">0</span>V</p>
-        <input type="range" min="0" max="300" value="0" oninput="updateSim(this.value)">
-    </div>
+            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">VOLTAGE</div><div class="card-val"><span id="v">--</span><span class="unit">V</span></div></div>
+            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">CURRENT L1</div><div class="card-val"><span id="c1">--</span><span class="unit">A</span></div></div>
+            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">CURRENT L2</div><div class="card-val"><span id="c2">--</span><span class="unit">A</span></div></div>
+            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">POWER FACTOR</div><div class="card-val"><span id="pf">--</span></div></div>
+            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">TEMPERATURE</div><div class="card-val"><span id="t">--</span><span class="unit">°C</span></div></div>
+            <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">VIBRATION</div><div class="card-val"><span id="vib">--</span><span class="unit">g</span></div></div>
 
-    <div class="grid">
-        <div class="card">
-            <div class="label">VOLTAGE (RMS)</div>
-            <div class="value"><span id="v">--</span> <span class="unit">V</span></div>
+            <div class="card" style="grid-column: span 2; padding: 0; overflow: hidden; border: 1px solid #2d3748;">
+                <div style="background: rgba(124, 58, 237, 0.1); padding: 12px 20px; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between;">
+                    <span style="font-size: 0.75rem; font-weight: bold; color: var(--accent-purple);">DIAGNOSTIC EVENT LOG</span>
+                    <button onclick="clearLog()" style="background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;">CLEAR</button>
+                </div>
+                <div id="eventLog" style="height: 180px; overflow-y: auto; padding: 10px;">
+                    <div style="color: #444; text-align: center; padding-top: 60px; font-size: 0.8rem;">Monitoring for anomalies...</div>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <div class="label">CURRENT (L1)</div>
-            <div class="value"><span id="c1">--</span> <span class="unit">A</span></div>
+
+        <div style="height:320px; background:var(--bg-card); border-radius:20px; margin-top:20px; padding:20px;">
+            <canvas id="liveChart"></canvas>
         </div>
-        <div class="card">
-            <div class="label">TEMPERATURE</div>
-            <div class="value"><span id="t">--</span> <span class="unit">°C</span></div>
+    </main>
+
+    <div class="history-overlay" id="historyView">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2>Analytical History</h2>
+            <button class="btn-action" onclick="exportToCSV()"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
         </div>
-        <div class="card">
-            <div class="label">HEALTH</div>
-            <div class="value" style="color:#00c853"><span id="h">--</span> <span class="unit">%</span></div>
-        </div>
+        <div style="height:500px; background:var(--bg-card); border-radius:20px; padding:20px;"><canvas id="historyChart"></canvas></div>
     </div>
 
 <script>
-    // --- CONFIGURATION (REPLACE THESE WITH YOUR KEYS!) ---
+    // --- 1. CONFIGURATION ---
     const firebaseConfig = {
-        apiKey: "https://tx-monitoring-system-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI",
         authDomain: "tx-monitoring-system.firebaseapp.com",
-        databaseURL: "https://tx-monitoring-system-default-rtdb.asia-southeast1.firebasedatabase.app",
+        databaseURL: "https://tx-monitoring-system.firebaseio.com",
         projectId: "tx-monitoring-system",
-        storageBucket: "tx-monitoring-system.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456:web:abcdef"
+        appId: "1:743234758196:web:d9af692ea827088e940c61"
     };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- 1. LISTEN FOR SENSOR DATA (READ) ---
-    const sensorRef = db.ref('sensors');
-    sensorRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            document.getElementById('v').innerText = data.voltage.toFixed(0);
-            document.getElementById('c1').innerText = data.current.toFixed(1);
-            document.getElementById('t').innerText = data.temp.toFixed(1);
-            document.getElementById('h').innerText = data.health;
-        }
+    (function(){ emailjs.init("2wsEDwcqVrLmPDV7e"); })();
+
+    // --- 2. GLOBAL STATE ---
+    let alarmArmed = false;
+    let lastEmailSent = 0;
+    let buffers = { t: [], v: [], vib: [] };
+    let historyPoints = [];
+
+    const lCtx = document.getElementById('liveChart').getContext('2d');
+    const hCtx = document.getElementById('historyChart').getContext('2d');
+    const liveChart = new Chart(lCtx, { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'Voltage', data:Array(20).fill(0), borderColor:'#7c3aed', tension:0.4, fill:true, backgroundColor:'rgba(124,58,237,0.1)'}]}, options:{responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{grid:{color:'#2d3748'}}}, plugins:{legend:{display:false}}, animation:false} });
+    let historyChart = new Chart(hCtx, { type:'line', data:{labels:[], datasets:[]}, options:{responsive:true, maintainAspectRatio:false} });
+
+    // --- 3. DATA FLOW ---
+    db.ref('control/alarmArmed').on('value', s => { alarmArmed = s.val(); document.getElementById('alarmArmToggle').checked = alarmArmed; });
+
+    db.ref('sensors').on('value', (snap) => {
+        const d = snap.val(); if(!d) return;
+        
+        document.getElementById('t').innerText = d.temp.toFixed(1);
+        document.getElementById('v').innerText = d.voltage.toFixed(0);
+        document.getElementById('c1').innerText = d.currentL1.toFixed(1);
+        document.getElementById('c2').innerText = d.currentL2 ? d.currentL2.toFixed(1) : "0.0";
+        document.getElementById('pf').innerText = d.pf ? d.pf.toFixed(2) : "0.95";
+        document.getElementById('vib').innerText = (d.vib || 0).toFixed(2);
+
+        updateBuffer('t', d.temp); updateBuffer('v', d.voltage); updateBuffer('vib', d.vib || 0);
+        if(buffers.t.length >= 10) performAIAnalysis();
+
+        liveChart.data.datasets[0].data.push(d.voltage);
+        liveChart.data.datasets[0].data.shift();
+        liveChart.update();
     });
 
-    // --- 2. LISTEN FOR CONTROL STATE (READ) ---
-    const modeRef = db.ref('controls/testMode');
-    modeRef.on('value', (snapshot) => {
-        const isTest = snapshot.val();
-        const panel = document.getElementById('controlPanel');
-        const banner = document.getElementById('statusBanner');
-        const btn = document.getElementById('toggleBtn');
+    function updateBuffer(k, v) { buffers[k].push(v); if(buffers[k].length > 15) buffers[k].shift(); }
 
-        if (isTest) {
-            panel.style.display = 'block';
-            banner.innerText = "DIAGNOSTIC MODE ACTIVE";
-            banner.className = "banner test";
-            btn.innerText = "Disable Diagnostic Mode";
-            btn.className = "btn active";
+    // --- 4. AI & DIAGNOSTIC LOGIC ---
+    function performAIAnalysis() {
+        const tSlope = calculateSlope(buffers.t);
+        const vSlope = calculateSlope(buffers.v);
+        const vibSlope = calculateSlope(buffers.vib);
+
+        const msg = document.getElementById('predictMsg');
+        const det = document.getElementById('predictDetail');
+        let danger = false;
+        let anomalyType = "";
+
+        if(tSlope > 0.08) anomalyType = "Thermal Overload";
+        if(Math.abs(vSlope) > 1.2) { anomalyType = "Voltage Instability"; danger = true; }
+        if(vibSlope > 0.04) { anomalyType = "Mechanical Stress"; danger = true; }
+
+        if(anomalyType !== "") {
+            msg.innerText = "ALARM: " + anomalyType;
+            msg.style.color = "var(--danger)";
+            
+            // Only fire email and log if it's a NEW distinct event
+            if (!det.innerText.includes(anomalyType)) {
+                addEventToLog(anomalyType, danger ? 'CRITICAL' : 'WARNING');
+                if(danger && alarmArmed) sendEmailAlert(anomalyType);
+            }
+
+            det.innerText = alarmArmed ? `SYSTEM ARMED: Active monitoring for ${anomalyType}.` : "SYSTEM DISARMED: Visual warning only.";
+            if(danger && alarmArmed) triggerVisualAlarm(true); else triggerVisualAlarm(false);
         } else {
-            panel.style.display = 'none';
-            banner.innerText = "SYSTEM ONLINE";
-            banner.className = "banner";
-            btn.innerText = "Enable Diagnostic Mode";
-            btn.className = "btn";
+            msg.innerText = "Operation: Nominal";
+            msg.style.color = "var(--success)";
+            det.innerText = "Derivative slopes within steady-state margins.";
+            triggerVisualAlarm(false);
         }
-    });
+    }
 
-    // --- 3. SEND COMMANDS (WRITE) ---
-    function toggleMode() {
-        // Read current state once, then flip it
-        modeRef.once('value').then((snapshot) => {
-            const current = snapshot.val();
-            modeRef.set(!current); // Flip true/false
+    function calculateSlope(data) {
+        const n = data.length;
+        let sX=0, sY=0, sXY=0, sXX=0;
+        for(let i=0; i<n; i++){ sX+=i; sY+=data[i]; sXY+=i*data[i]; sXX+=i*i; }
+        return (n*sXY - sX*sY) / (n*sXX - sX*sX);
+    }
+
+    function addEventToLog(type, level) {
+        const log = document.getElementById('eventLog');
+        if (log.innerHTML.includes("Monitoring for anomalies")) log.innerHTML = "";
+        const time = new Date().toLocaleTimeString();
+        const color = level === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)';
+        log.insertAdjacentHTML('afterbegin', `<div style="padding:8px; border-bottom:1px solid #333; font-size:0.75rem; border-left:3px solid ${color}; margin-bottom:5px; display:flex; justify-content:space-between;"><span>${type}</span><span style="color:#555">${time}</span></div>`);
+    }
+
+    function sendEmailAlert(reason) {
+        const now = Date.now();
+        if (now - lastEmailSent < 300000) return; 
+        lastEmailSent = now;
+
+        const params = {
+            reason: reason,
+            voltage: document.getElementById('v').innerText,
+            currentL1: document.getElementById('c1').innerText,
+            currentL2: document.getElementById('c2').innerText,
+            pf: document.getElementById('pf').innerText,
+            vib: document.getElementById('vib').innerText,
+            temp: document.getElementById('t').innerText
+        };
+
+        emailjs.send('service_aejvhq7', 'template_9i69k4t', params)
+            .then(() => console.log("Diagnostic Email Dispatched"), (err) => console.log("Email Error", err));
+    }
+
+    function triggerVisualAlarm(active) {
+        const h = document.getElementById('mainHeader');
+        if(active) h.classList.add('alarm-active'); else h.classList.remove('alarm-active');
+    }
+
+    // --- 5. INTERFACE & EXPORT ---
+    function updateAlarmArmed(s) { db.ref('control/alarmArmed').set(s); }
+    function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 60px; font-size: 0.8rem;">Monitoring for anomalies...</div>'; }
+    function showDashboard() { document.getElementById('dashboardView').style.display='block'; document.getElementById('historyView').style.display='none'; }
+    function showHistory() { 
+        document.getElementById('dashboardView').style.display='none'; 
+        document.getElementById('historyView').style.display='block'; 
+        db.ref('history').limitToLast(100).once('value', s => {
+            const v = s.val(); historyPoints = v ? Object.values(v) : [];
+            historyChart.destroy();
+            historyChart = new Chart(hCtx, { type:'line', data:{labels:historyPoints.map((_,i)=>i), datasets:[{label:'Thermal Gradient', data:historyPoints.map(p=>p.temp), borderColor:'#ef4444', tension:0.3, pointRadius:0}]}, options:{responsive:true, maintainAspectRatio:false} });
         });
     }
-
-    function updateSim(val) {
-        document.getElementById('simVal').innerText = val;
-        db.ref('controls/simVoltage').set(parseFloat(val));
+    function exportToCSV() {
+        let csv = "TimestampIdx,Voltage,CurrentL1,CurrentL2,Temp,Vibration\n";
+        historyPoints.forEach((p,i) => csv += `${i},${p.voltage},${p.currentL1},${p.currentL2},${p.temp},${p.vib}\n`);
+        const b = new Blob([csv], {type:'text/csv'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'TxMS_Final_Report.csv'; a.click();
     }
+    function toggleModeUI() { db.ref('control/testMode').once('value').then(s => db.ref('control/testMode').set(!s.val())); }
 </script>
 </body>
 </html>
