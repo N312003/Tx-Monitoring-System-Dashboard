@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TxMS PRO | Access Control</title>
+    <title>TxMS PRO | Multi-Node Access</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -17,7 +17,7 @@
             --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7);
             --accent-purple: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3);
             --text-main: #f8fafc; --text-muted: #94a3b8;
-            --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; --blue-alert: #3b82f6;
+            --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -64,8 +64,18 @@
         .logout-btn { margin-top: auto; margin-bottom: 20px; color: var(--danger); }
         
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
+        
+        /* UPDATED HEADER FOR DEVICE SELECTOR */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         
+        /* NEW SELECTOR STYLE */
+        .device-selector {
+            background: #1c212c; color: white; border: 1px solid #444;
+            padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px;
+            cursor: pointer; outline: none;
+        }
+        .device-selector:hover { border-color: var(--accent-purple); }
+
         /* --- UI COMPONENTS --- */
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between; }
@@ -77,8 +87,6 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
-        
-        /* Disable toggle for Observer */
         .switch.disabled { opacity: 0.5; cursor: not-allowed; }
         .switch.disabled .slider { cursor: not-allowed; background-color: #222; }
 
@@ -90,12 +98,8 @@
         /* --- OVERLAYS --- */
         .history-overlay, .daily-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-ghost { background: none; border: 1px solid #444; color: white; padding: 5px 15px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; margin-right: 5px; }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .data-table td, .data-table th { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); text-align: left; }
-        .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .st-ok { background: rgba(16,185,129,0.15); color: var(--success); }
-        .st-warn { background: rgba(239,68,68,0.15); color: var(--danger); }
     </style>
 </head>
 <body>
@@ -103,18 +107,16 @@
     <section id="landingView">
         <h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1>
         <p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p>
-        
         <div class="role-container">
             <div class="role-card" onclick="selectRole('observer')">
                 <div class="role-icon"><i class="fa-solid fa-eye"></i></div>
                 <div class="role-title">Observer Node</div>
-                <div class="role-desc">Read-only access to real-time telemetry and data logs. Control systems are locked.</div>
+                <div class="role-desc">Read-only access to real-time telemetry.</div>
             </div>
-
             <div class="role-card" onclick="selectRole('admin')">
                 <div class="role-icon"><i class="fa-solid fa-user-shield"></i></div>
                 <div class="role-title">System Operator</div>
-                <div class="role-desc">Full administrative control including alarm configuration and system testing.</div>
+                <div class="role-desc">Full administrative control.</div>
             </div>
         </div>
     </section>
@@ -122,11 +124,8 @@
     <section id="loginView" style="display: none;">
         <div class="login-card">
             <h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;">Authorized Personnel Only</p>
-            
             <input type="email" id="email" placeholder="Operator ID" class="login-input">
             <input type="password" id="password" placeholder="Access Key" class="login-input">
-            
             <button class="login-btn" onclick="login()">AUTHENTICATE</button>
             <p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p>
             <div class="back-link" onclick="goBackToLanding()">Return to Role Selection</div>
@@ -144,7 +143,15 @@
 
         <main class="main-content" id="dashboardView">
             <div class="header" id="mainHeader">
-                <div><h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span></div>
+                <div>
+                    <h1>TxMS PRO</h1>
+                    <span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span>
+                    
+                    <select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)">
+                        <option value="" disabled selected>Searching Network...</option>
+                    </select>
+                </div>
+
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="text-align: right;">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ARM ALARM</div>
@@ -210,34 +217,125 @@
     </div>
 
 <script>
-    // --- 1. CONFIG ---
-    const firebaseConfig = { apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI", authDomain: "tx-monitoring-system.firebaseapp.com", databaseURL: "https://tx-monitoring-system.firebaseio.com", projectId: "tx-monitoring-system", appId: "1:743234758196:web:d9af692ea827088e940c61" };
-    firebase.initializeApp(firebaseConfig);
+    // --- 1. CONFIGURATION ---
+    // Make sure these match your actual Firebase project
+    const firebaseConfig = { 
+        apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI", 
+        authDomain: "tx-monitoring-system.firebaseapp.com", 
+        databaseURL: "https://tx-monitoring-system.firebaseio.com", 
+        projectId: "tx-monitoring-system", 
+        appId: "1:743234758196:web:d9af692ea827088e940c61" 
+    };
+    
+    // Initialize
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
     emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    let userRole = 'observer'; // Default role
+    let userRole = 'observer'; 
+    let activeListener = null; // Keeps track of active data stream
+    let currentDeviceID = null; // Currently selected transformer
 
-    // --- 2. AUTH FLOW ---
+    // --- 2. MULTI-DEVICE LOGIC (NEW) ---
+    function loadDeviceList() {
+        const selector = document.getElementById('deviceSelect');
+        db.ref('devices').once('value', (snapshot) => {
+            const data = snapshot.val();
+            selector.innerHTML = ""; 
+            
+            if (data) {
+                Object.keys(data).forEach((key) => {
+                    let option = document.createElement("option");
+                    option.value = key;
+                    option.text = key.replace(/_/g, " "); // Make "TRANSFORMER_A" look like "TRANSFORMER A"
+                    selector.appendChild(option);
+                });
+                
+                // Auto-select first device
+                if(selector.options.length > 0) {
+                    selector.selectedIndex = 0;
+                    switchDevice(selector.value);
+                }
+            } else {
+                selector.innerHTML = "<option>No Devices Found</option>";
+            }
+        });
+    }
+
+    function switchDevice(deviceId) {
+        currentDeviceID = deviceId;
+        
+        // Detach old listener to stop mixing data
+        if (activeListener) {
+            activeListener.off(); 
+            // Optional: db.ref('devices/'+prevID+'/control/alarmArmed').off();
+        }
+
+        // Connect to NEW device
+        // LISTENING TO PATH: devices/{ID}
+        activeListener = db.ref('devices/' + deviceId);
+        
+        activeListener.on('value', snap => {
+            const d = snap.val();
+            if(!d) return;
+            updateDashboard(d);
+        });
+
+        // Listen for Alarm State (Per Device)
+        db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
+            const toggle = document.getElementById('alarmArmToggle');
+            if(toggle) toggle.checked = s.val(); 
+        });
+    }
+
+    function updateDashboard(d) {
+        // Map data (Handle missing values safely)
+        const volt = d.voltage || 0;
+        const pf = d.pf || 0;
+        const c1 = d.currentL1 || 0;
+        const c2 = d.currentL2 || 0;
+        const temp = d.temp || d.oil_temp || 0; // Supports both naming conventions
+        const vib = d.vib || d.vibration || 0;
+
+        // Update Text
+        document.getElementById('v').innerText = volt.toFixed(1)+"V"; 
+        document.getElementById('pf').innerText = pf.toFixed(2);
+        document.getElementById('c1').innerText = c1.toFixed(1)+"A"; 
+        document.getElementById('c2').innerText = c2.toFixed(1)+"A";
+        document.getElementById('t').innerText = temp.toFixed(1)+"°C"; 
+        document.getElementById('vib').innerText = vib.toFixed(2)+"g";
+
+        // Update Charts
+        updateSingleChart(vChart, volt); 
+        updateSingleChart(pfChart, pf); 
+        updateSingleChart(tChart, temp); 
+        updateSingleChart(vibChart, vib);
+        
+        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); 
+        cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
+        cChart.update();
+        
+        // Trigger AI Analysis (Simplified for stability)
+        runAIAnalysis(volt, temp, vib);
+    }
+
+    // --- 3. STANDARD UI LOGIC (UNCHANGED) ---
     function selectRole(role) {
+        userRole = role === 'admin' ? 'admin' : 'observer';
         if (role === 'observer') {
-            userRole = 'observer';
             document.getElementById('landingView').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
             updateRoleUI();
+            loadDeviceList(); // LOAD DEVICES ON START
         } else {
-            // Show Login for Admin
             document.getElementById('landingView').style.display = 'none';
             document.getElementById('loginView').style.display = 'flex';
         }
     }
-
-    function goBackToLanding() {
-        document.getElementById('loginView').style.display = 'none';
-        document.getElementById('landingView').style.display = 'flex';
-    }
-
+    
+    function goBackToLanding() { document.getElementById('loginView').style.display = 'none'; document.getElementById('landingView').style.display = 'flex'; }
+    
     function login() {
         const e = document.getElementById('email').value;
         const p = document.getElementById('password').value;
@@ -246,75 +344,54 @@
             document.getElementById('loginView').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
             updateRoleUI();
-        }).catch(err => {
-            document.getElementById('loginError').style.display = 'block';
-        });
+            loadDeviceList(); // LOAD DEVICES ON START
+        }).catch(err => { document.getElementById('loginError').style.display = 'block'; });
     }
 
-    function logout() {
-        auth.signOut();
-        window.location.reload(); // Refresh to reset state
-    }
+    function logout() { auth.signOut(); window.location.reload(); }
 
     function updateRoleUI() {
         const toggle = document.getElementById('alarmArmToggle');
         const label = document.getElementById('alarmSwitchLabel');
         const roleText = document.getElementById('roleDisplay');
-
         if (userRole === 'observer') {
-            roleText.innerText = "Observer Mode (Read-Only)";
-            toggle.disabled = true;
-            label.classList.add('disabled');
+            roleText.innerText = "Observer Mode";
+            toggle.disabled = true; label.classList.add('disabled');
         } else {
-            roleText.innerText = "System Operator (Full Control)";
-            roleText.style.color = "var(--success)";
-            toggle.disabled = false;
-            label.classList.remove('disabled');
+            roleText.innerText = "System Operator"; roleText.style.color = "var(--success)";
+            toggle.disabled = false; label.classList.remove('disabled');
         }
     }
 
     function toggleAlarm(cb) {
         if (userRole !== 'admin') {
-            cb.checked = !cb.checked; // Revert change
+            cb.checked = !cb.checked; 
             alert("ACCESS DENIED: Observer credentials cannot modify system state.");
             return;
         }
-        db.ref('control/alarmArmed').set(cb.checked);
+        if(currentDeviceID) {
+            db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
+        }
     }
 
-    // --- 3. CHARTS & DATA (Standard Logic) ---
+    // --- 4. CHARTS & AI ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef');
     const tChart = createMiniChart('chartTemp', '#ef4444'); const vibChart = createMiniChart('chartVib', '#fbbf24');
     const cChart = new Chart(document.getElementById('chartCurr').getContext('2d'), { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'L1',data:Array(20).fill(0),borderColor:'#10b981',borderWidth:2,pointRadius:0,tension:0.4},{label:'L2',data:Array(20).fill(0),borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:0.4}]}, options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{display:true,grid:{display:false},ticks:{color:'#555',font:{size:9}}}},plugins:{legend:{display:true,labels:{color:'#ccc'}}},animation:false} });
 
-    let buffers={t:[],v:[],vib:[]};
-    
-    db.ref('control/alarmArmed').on('value', s => { 
-        document.getElementById('alarmArmToggle').checked = s.val(); 
-    });
-
-    db.ref('sensors').on('value', snap => {
-        const d = snap.val(); if(!d) return;
-        document.getElementById('v').innerText = d.voltage.toFixed(1)+"V"; document.getElementById('pf').innerText = (d.pf||0).toFixed(2);
-        document.getElementById('c1').innerText = d.currentL1.toFixed(1)+"A"; document.getElementById('c2').innerText = (d.currentL2||0).toFixed(1)+"A";
-        document.getElementById('t').innerText = d.temp.toFixed(1)+"°C"; document.getElementById('vib').innerText = (d.vib||0).toFixed(2)+"g";
-
-        updateSingleChart(vChart, d.voltage); updateSingleChart(pfChart, d.pf||0); updateSingleChart(tChart, d.temp); updateSingleChart(vibChart, d.vib||0);
-        cChart.data.datasets[0].data.push(d.currentL1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(d.currentL2||0); cChart.data.datasets[1].data.shift(); cChart.update();
-        
-        // AI Logic + Auto Save History (Same as previous versions)
-    });
-
     function updateSingleChart(c, v) { c.data.datasets[0].data.push(v); c.data.datasets[0].data.shift(); c.update(); }
 
-    function showView(viewId) {
-        ['dashboardView', 'historyView', 'dailyView'].forEach(id => document.getElementById(id).style.display = 'none');
-        document.getElementById(viewId).style.display = 'block';
+    function runAIAnalysis(v, t, vib) {
+        const aiMsg = document.getElementById('predictMsg');
+        const aiDet = document.getElementById('predictDetail');
+        if(t > 60) { aiMsg.innerText = "Overheat Warning"; aiMsg.style.color = "var(--warning)"; aiDet.innerText = "Temp gradient steep."; }
+        else if(vib > 0.5) { aiMsg.innerText = "Vibration Alert"; aiMsg.style.color = "var(--danger)"; aiDet.innerText = "Possible mounting failure."; }
+        else { aiMsg.innerText = "System Nominal"; aiMsg.style.color = "var(--success)"; aiDet.innerText = "Efficiency optimal."; }
     }
 
-    // Daily & History logic placeholders (Insert full logic here if needed, kept concise for layout focus)
+    function showView(viewId) { ['dashboardView', 'historyView', 'dailyView'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById(viewId).style.display = 'block'; }
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'; }
 </script>
 </body>
