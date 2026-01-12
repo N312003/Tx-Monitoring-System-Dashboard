@@ -16,7 +16,7 @@
             --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7);
             --accent-purple: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3);
             --text-main: #f8fafc; --text-muted: #94a3b8;
-            --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; --blue-alert: #3b82f6;
+            --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; --blue-alert: #3b82f6; --pink: #d946ef;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -68,6 +68,12 @@
         .btn-action:hover { opacity: 0.8; transform: translateY(-2px); }
         .btn-ghost { background: none; border: 1px solid #444; color: white; padding: 5px 15px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; margin-right: 5px; transition: 0.2s; }
         .btn-ghost:hover { border-color: var(--accent-purple); background: rgba(139, 92, 246, 0.1); }
+
+        /* SEARCH INPUTS */
+        .search-input {
+            background: rgba(255,255,255,0.1); border: 1px solid #444; color: white; padding: 10px; border-radius: 10px; font-family: 'Segoe UI', sans-serif; margin-right: 10px; outline: none;
+        }
+        .search-input::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -97,9 +103,14 @@
                 <div id="predictDetail" style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Analyzing derivative slopes for anomaly signatures.</div>
             </div>
 
-            <div class="card" style="grid-column: span 2;">
+            <div class="card">
                 <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">VOLTAGE <span id="v" style="color:white; font-weight:bold;">--</span></div>
                 <div class="chart-container"><canvas id="chartVolt"></canvas></div>
+            </div>
+
+            <div class="card">
+                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">POWER FACTOR <span id="pf" style="color:white; font-weight:bold;">--</span></div>
+                <div class="chart-container"><canvas id="chartPF"></canvas></div>
             </div>
 
             <div class="card" style="grid-column: span 2;">
@@ -136,12 +147,22 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
             <div>
                 <h2 style="letter-spacing: 1px;">ANALYTICAL HISTORIAN</h2>
-                <span style="color:var(--text-muted); font-size: 0.8rem;">Post-event data retrieval and forensic audit</span>
+                <span style="color:var(--text-muted); font-size: 0.8rem;">Forensic audit and time-series retrieval</span>
             </div>
             <div style="display:flex; gap:12px;">
                 <button class="btn-action" style="background:#333" onclick="showDashboard()">CLOSE</button>
                 <button class="btn-action" onclick="exportToCSV()"><i class="fa-solid fa-file-csv"></i> EXPORT CSV</button>
             </div>
+        </div>
+
+        <div class="card" style="padding: 15px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display:flex; align-items:center;">
+                <span style="color:var(--text-muted); font-size:0.9rem; margin-right: 15px;">Target Timestamp:</span>
+                <input type="datetime-local" id="historySearch" class="search-input">
+                <button class="btn-action" onclick="searchHistory()">SEARCH</button>
+                <button class="btn-ghost" onclick="resetHistory()" style="margin-left: 10px;">RESET</button>
+            </div>
+            <div style="color:var(--text-muted); font-size: 0.8rem;" id="searchStatus">Showing latest data stream</div>
         </div>
 
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-bottom:25px;">
@@ -162,6 +183,7 @@
         <div class="card" style="height:480px;">
             <div style="display:flex; gap:10px; margin-bottom:20px;">
                 <button class="btn-ghost" onclick="updateHistoryChart('voltage', '#7c3aed')">VOLTAGE</button>
+                <button class="btn-ghost" onclick="updateHistoryChart('pf', '#d946ef')">P. FACTOR</button>
                 <button class="btn-ghost" onclick="updateHistoryChart('currentL1', '#10b981')">CURR L1</button>
                 <button class="btn-ghost" onclick="updateHistoryChart('currentL2', '#06b6d4')">CURR L2</button>
                 <button class="btn-ghost" onclick="updateHistoryChart('temp', '#ef4444')">TEMP</button>
@@ -187,151 +209,147 @@
     // --- 2. VARIABLES ---
     let alarmArmed = false;
     let buffers = { t: [], v: [], vib: [] };
-    let currentHistoryData = [];
+    let fullHistoryData = []; 
+    let displayHistoryData = []; 
     let historyChartInstance = null;
+    let lastHistorySave = 0;
 
     // --- 3. CHART SETUP (REAL-TIME) ---
     function createMiniChart(canvasId, color) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         return new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: Array(20).fill(''),
-                datasets: [{ data: Array(20).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: color + '11' }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } },
-                plugins: { legend: { display: false } },
-                animation: false
-            }
+            data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: color + '11' }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } }, plugins: { legend: { display: false } }, animation: false }
         });
     }
 
-    // Individual Charts
     const vChart = createMiniChart('chartVolt', '#7c3aed');
+    const pfChart = createMiniChart('chartPF', '#d946ef'); // New PF Chart
     const tChart = createMiniChart('chartTemp', '#ef4444');
     const vibChart = createMiniChart('chartVib', '#fbbf24');
-
-    // SPECIAL COMBINED CHART FOR CURRENT
     const ctxCurr = document.getElementById('chartCurr').getContext('2d');
-    const cChart = new Chart(ctxCurr, {
-        type: 'line',
-        data: {
-            labels: Array(20).fill(''),
-            datasets: [
-                { label: 'L1', data: Array(20).fill(0), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, tension: 0.4 },
-                { label: 'L2', data: Array(20).fill(0), borderColor: '#06b6d4', borderWidth: 2, pointRadius: 0, tension: 0.4 }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } },
-            plugins: { legend: { display: true, labels: { color: '#ccc' } } },
-            animation: false
-        }
-    });
+    const cChart = new Chart(ctxCurr, { type: 'line', data: { labels: Array(20).fill(''), datasets: [ { label: 'L1', data: Array(20).fill(0), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, tension: 0.4 }, { label: 'L2', data: Array(20).fill(0), borderColor: '#06b6d4', borderWidth: 2, pointRadius: 0, tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } }, plugins: { legend: { display: true, labels: { color: '#ccc' } } }, animation: false } });
 
     // --- 4. DATA HANDLING ---
-    db.ref('control/alarmArmed').on('value', s => { 
-        alarmArmed = s.val(); 
-        document.getElementById('alarmArmToggle').checked = alarmArmed; 
-    });
+    db.ref('control/alarmArmed').on('value', s => { alarmArmed = s.val(); document.getElementById('alarmArmToggle').checked = alarmArmed; });
 
     db.ref('sensors').on('value', (snap) => {
         const d = snap.val(); if(!d) return;
         
         // Update Text
         document.getElementById('v').innerText = d.voltage.toFixed(1) + "V";
+        document.getElementById('pf').innerText = (d.pf || 0).toFixed(2); // PF Value
         document.getElementById('c1').innerText = d.currentL1.toFixed(1) + "A";
-        document.getElementById('c2').innerText = (d.currentL2 || 0).toFixed(1) + "A"; // NEW L2 Value
+        document.getElementById('c2').innerText = (d.currentL2 || 0).toFixed(1) + "A";
         document.getElementById('t').innerText = d.temp.toFixed(1) + "°C";
         document.getElementById('vib').innerText = (d.vib || 0).toFixed(2) + "g";
 
-        // Update Charts Individually
+        // Update Charts
         updateSingleChart(vChart, d.voltage);
+        updateSingleChart(pfChart, d.pf || 0); // Update PF Graph
         updateSingleChart(tChart, d.temp);
         updateSingleChart(vibChart, d.vib || 0);
-
-        // Update Combined Current Chart
-        cChart.data.datasets[0].data.push(d.currentL1);
-        cChart.data.datasets[0].data.shift();
-        cChart.data.datasets[1].data.push(d.currentL2 || 0);
-        cChart.data.datasets[1].data.shift();
+        cChart.data.datasets[0].data.push(d.currentL1); cChart.data.datasets[0].data.shift();
+        cChart.data.datasets[1].data.push(d.currentL2 || 0); cChart.data.datasets[1].data.shift();
         cChart.update();
 
-        // AI Logic
+        // Feed AI
         updateBuffer('t', d.temp); updateBuffer('v', d.voltage); updateBuffer('vib', d.vib || 0);
         if(buffers.t.length >= 10) performAIAnalysis();
+
+        // --- AUTO-SAVE TO HISTORY (Every 10 Seconds) ---
+        const now = Date.now();
+        if (now - lastHistorySave > 10000) {
+            lastHistorySave = now;
+            const historyEntry = {
+                timestamp: now,
+                dateString: new Date(now).toLocaleString(),
+                voltage: d.voltage,
+                pf: d.pf || 0, // Save PF
+                currentL1: d.currentL1,
+                currentL2: d.currentL2 || 0,
+                temp: d.temp,
+                vib: d.vib || 0
+            };
+            db.ref('history').push(historyEntry);
+        }
     });
 
-    function updateSingleChart(chart, val) { 
-        chart.data.datasets[0].data.push(val); 
-        chart.data.datasets[0].data.shift(); 
-        chart.update(); 
-    }
-    
+    function updateSingleChart(chart, val) { chart.data.datasets[0].data.push(val); chart.data.datasets[0].data.shift(); chart.update(); }
     function updateBuffer(k, v) { buffers[k].push(v); if(buffers[k].length > 15) buffers[k].shift(); }
 
     // --- 5. AI ENGINE ---
     function performAIAnalysis() {
-        const tSlope = calculateSlope(buffers.t);
-        const vSlope = calculateSlope(buffers.v);
-        const vibSlope = calculateSlope(buffers.vib);
-        const aiCard = document.getElementById('aiCard');
-        const aiIcon = document.getElementById('aiIcon');
-        const msg = document.getElementById('predictMsg');
-        
+        const tSlope = calculateSlope(buffers.t); const vSlope = calculateSlope(buffers.v); const vibSlope = calculateSlope(buffers.vib);
+        const aiCard = document.getElementById('aiCard'); const aiIcon = document.getElementById('aiIcon'); const msg = document.getElementById('predictMsg');
         let anomaly = ""; let style = "";
-
         if(tSlope > 0.08) { anomaly = "Thermal Overload"; style = "ai-thermal"; }
         else if(Math.abs(vSlope) > 1.2) { anomaly = "Voltage Instability"; style = "ai-voltage"; }
         else if(vibSlope > 0.04) { anomaly = "Mechanical Stress"; style = "ai-mechanical"; }
 
         if(anomaly !== "") {
-            msg.innerText = "ALARM: " + anomaly;
-            aiCard.className = "card ai-card " + style;
-            aiIcon.classList.add('pulse-icon');
-            addEventToLog(anomaly, 'CRITICAL');
-            triggerVisualAlarm(true);
+            msg.innerText = "ALARM: " + anomaly; aiCard.className = "card ai-card " + style; aiIcon.classList.add('pulse-icon');
+            addEventToLog(anomaly, 'CRITICAL'); triggerVisualAlarm(true);
         } else {
-            msg.innerText = "Operation: Nominal";
-            aiCard.className = "card ai-card";
-            aiIcon.classList.remove('pulse-icon');
-            triggerVisualAlarm(false);
+            msg.innerText = "Operation: Nominal"; aiCard.className = "card ai-card"; aiIcon.classList.remove('pulse-icon'); triggerVisualAlarm(false);
         }
     }
+    function calculateSlope(data) { const n = data.length; let sX=0, sY=0, sXY=0, sXX=0; for(let i=0; i<n; i++){ sX+=i; sY+=data[i]; sXY+=i*data[i]; sXX+=i*i; } return (n*sXY - sX*sY) / (n*sXX - sX*sX); }
 
-    function calculateSlope(data) {
-        const n = data.length; let sX=0, sY=0, sXY=0, sXX=0;
-        for(let i=0; i<n; i++){ sX+=i; sY+=data[i]; sXY+=i*data[i]; sXX+=i*i; }
-        return (n*sXY - sX*sY) / (n*sXX - sX*sX);
-    }
-
-    // --- 6. HISTORY & UTILS ---
-    function showDashboard() { 
-        document.getElementById('dashboardView').style.display='block'; 
-        document.getElementById('historyView').style.display='none'; 
-        document.getElementById('navDash').classList.add('active');
-        document.getElementById('navHist').classList.remove('active');
-    }
+    // --- 6. HISTORY, SEARCH & EXPORT ---
+    function showDashboard() { document.getElementById('dashboardView').style.display='block'; document.getElementById('historyView').style.display='none'; document.getElementById('navDash').classList.add('active'); document.getElementById('navHist').classList.remove('active'); }
 
     function showHistory() {
-        document.getElementById('dashboardView').style.display='none';
-        document.getElementById('historyView').style.display='block';
-        document.getElementById('navHist').classList.add('active');
-        document.getElementById('navDash').classList.remove('active');
+        document.getElementById('dashboardView').style.display='none'; document.getElementById('historyView').style.display='block'; document.getElementById('navHist').classList.add('active'); document.getElementById('navDash').classList.remove('active');
         
-        db.ref('history').limitToLast(100).once('value', s => {
-            const val = s.val(); currentHistoryData = val ? Object.values(val) : [];
-            updateHistoryChart('voltage', '#7c3aed'); 
+        db.ref('history').limitToLast(500).once('value', s => {
+            const val = s.val(); 
+            fullHistoryData = val ? Object.values(val) : [];
+            displayHistoryData = fullHistoryData; 
+            updateHistoryChart('voltage', '#7c3aed');
         });
     }
 
+    function searchHistory() {
+        const searchVal = document.getElementById('historySearch').value;
+        if (!searchVal) return alert("Please select a date and time.");
+        
+        const searchTime = new Date(searchVal).getTime();
+        const windowSize = 3600000; 
+
+        const filtered = fullHistoryData.filter(d => {
+            const t = d.timestamp || 0; 
+            return (t >= searchTime - windowSize) && (t <= searchTime + windowSize);
+        });
+
+        if (filtered.length === 0) {
+            document.getElementById('searchStatus').innerText = "No data found for this time window.";
+            document.getElementById('searchStatus').style.color = "var(--warning)";
+        } else {
+            document.getElementById('searchStatus').innerText = `Found ${filtered.length} records around selected time.`;
+            document.getElementById('searchStatus').style.color = "var(--success)";
+            displayHistoryData = filtered;
+            updateHistoryChart('voltage', '#7c3aed'); 
+        }
+    }
+
+    function resetHistory() {
+        document.getElementById('historySearch').value = "";
+        document.getElementById('searchStatus').innerText = "Showing latest data stream";
+        document.getElementById('searchStatus').style.color = "var(--text-muted)";
+        displayHistoryData = fullHistoryData;
+        updateHistoryChart('voltage', '#7c3aed');
+    }
+
     function updateHistoryChart(key, color) {
-        const dataPoints = currentHistoryData.map(p => p[key] || 0);
-        const max = Math.max(...dataPoints); const min = Math.min(...dataPoints);
-        const avg = dataPoints.reduce((a, b) => a + b, 0) / (dataPoints.length || 1);
+        const dataToRender = displayHistoryData;
+        const dataPoints = dataToRender.map(p => p[key] || 0);
+        const labels = dataToRender.map((p, i) => p.dateString ? p.dateString.split(',')[1] : i);
+
+        const max = dataPoints.length ? Math.max(...dataPoints) : 0;
+        const min = dataPoints.length ? Math.min(...dataPoints) : 0;
+        const avg = dataPoints.length ? dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length : 0;
 
         document.getElementById('histMax').innerText = max.toFixed(2);
         document.getElementById('histMin').innerText = min.toFixed(2);
@@ -341,16 +359,17 @@
         const ctx = document.getElementById('historyChart').getContext('2d');
         historyChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: dataPoints.map((_,i)=>i), datasets: [{ data: dataPoints, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#2d3748' }, ticks: { color: '#94a3b8' } }, x: { display: false } }, plugins: { legend: { display: false } } }
+            data: { labels: labels, datasets: [{ data: dataPoints, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#2d3748' }, ticks: { color: '#94a3b8' } }, x: { ticks: { display: false } } }, plugins: { legend: { display: false } } }
         });
     }
 
     function exportToCSV() {
-        if (currentHistoryData.length === 0) return alert("No history data.");
-        let csv = "TimestampIdx,Voltage,CurrentL1,CurrentL2,Temp,Vibration\n";
-        currentHistoryData.forEach((p, i) => { 
-            csv += `${i},${p.voltage || 0},${p.currentL1 || 0},${p.currentL2 || 0},${p.temp || 0},${p.vib || 0}\n`; 
+        if (displayHistoryData.length === 0) return alert("No history data.");
+        let csv = "Timestamp,Voltage,PowerFactor,CurrentL1,CurrentL2,Temp,Vibration\n";
+        displayHistoryData.forEach(p => { 
+            const t = p.dateString || "N/A";
+            csv += `${t},${p.voltage || 0},${p.pf || 0},${p.currentL1 || 0},${p.currentL2 || 0},${p.temp || 0},${p.vib || 0}\n`; 
         });
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
