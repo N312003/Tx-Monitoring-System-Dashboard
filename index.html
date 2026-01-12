@@ -74,7 +74,14 @@
         }
         .device-selector:hover { border-color: var(--accent-purple); }
 
-        /* --- MAINTENANCE CONSOLE STYLES (NEW) --- */
+        /* --- STATUS BADGES (NEW) --- */
+        .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; transition: all 0.3s ease; }
+        .status-online { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
+        .status-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; }
+        .status-test { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; animation: pulse-red 1s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        /* --- MAINTENANCE CONSOLE STYLES --- */
         .maintenance-panel { background: #151921; border: 1px solid #d946ef; padding: 20px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 0 15px rgba(217, 70, 239, 0.1); }
         .sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; opacity: 0.5; pointer-events: none; transition: 0.3s; margin-top: 15px; }
         .sim-slider { width: 100%; cursor: pointer; accent-color: #d946ef; }
@@ -163,7 +170,7 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div id="netStatus" style="background:rgba(16,185,129,0.2); color:var(--success); padding:10px 20px; border-radius:20px; font-weight:bold; font-size:0.8rem;">ONLINE</div>
+                    <div id="netStatus" class="status-badge status-offline">CONNECTING...</div>
                 </div>
             </div>
 
@@ -279,17 +286,34 @@
     emailjs.init("2wsEDwcqVrLmPDV7e");
 
     let userRole = 'observer'; 
-    let activeListener = null; // Keeps track of active data stream
-    let currentDeviceID = null; // Currently selected transformer
-    let isTestMode = false; // Tracks if simulation is active
+    let activeListener = null; 
+    let currentDeviceID = null; 
+    let isTestMode = false; 
+    
+    // --- VARIABLES FOR WATCHDOG ---
+    let lastHeartbeat = Date.now(); 
 
-    // --- 2. MULTI-DEVICE LOGIC ---
+    // --- 2. START THE WATCHDOG TIMER ---
+    // Runs every 1 second to check if connection is lost
+    function startWatchdog() {
+        setInterval(() => {
+            const now = Date.now();
+            const el = document.getElementById('netStatus');
+            
+            // 5 MINUTES = 5 * 60 * 1000 = 300,000 milliseconds
+            if (now - lastHeartbeat > 300000) {
+                el.innerText = "OFFLINE";
+                el.className = "status-badge status-offline";
+            }
+        }, 1000);
+    }
+
+    // --- 3. MULTI-DEVICE LOGIC ---
     function loadDeviceList() {
         const selector = document.getElementById('deviceSelect');
         db.ref('devices').once('value', (snapshot) => {
             const data = snapshot.val();
             selector.innerHTML = ""; 
-            
             if (data) {
                 Object.keys(data).forEach((key) => {
                     let option = document.createElement("option");
@@ -297,8 +321,6 @@
                     option.text = key.replace(/_/g, " "); 
                     selector.appendChild(option);
                 });
-                
-                // Auto-select first device
                 if(selector.options.length > 0) {
                     selector.selectedIndex = 0;
                     switchDevice(selector.value);
@@ -312,19 +334,25 @@
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
         
-        // Detach old listeners
+        // Reset status to Connecting
+        document.getElementById('netStatus').innerText = "CONNECTING...";
+        document.getElementById('netStatus').className = "status-badge status-offline";
+
         if (activeListener) {
             activeListener.off(); 
             db.ref('devices/' + deviceId + '/control/testMode').off();
             db.ref('devices/' + deviceId + '/control/alarmArmed').off();
         }
 
-        // Connect to NEW device stream
         activeListener = db.ref('devices/' + deviceId);
         
         activeListener.on('value', snap => {
             const d = snap.val();
             if(!d) return;
+
+            // ** HEARTBEAT: We received data, so reset the timer **
+            lastHeartbeat = Date.now(); 
+
             updateDashboard(d);
         });
 
@@ -355,32 +383,34 @@
         });
     }
 
-    // --- 3. MAINTENANCE / SIMULATION LOGIC ---
+    // --- 4. SIMULATION LOGIC ---
     function toggleSimulation() {
         if(!currentDeviceID) { alert("No device selected!"); return; }
-        
         isTestMode = !isTestMode;
-        
-        // Send flag to Firebase (ESP32 listens for this)
         db.ref('devices/' + currentDeviceID + '/control/testMode').set(isTestMode);
-
         if(isTestMode) {
-            // Set some default safe values when starting
-            updateSim('voltage', 230);
-            updateSim('temp', 45);
-            updateSim('vib', 0);
+            updateSim('voltage', 230); updateSim('temp', 45); updateSim('vib', 0);
         }
     }
 
     function updateSim(key, val) {
         if(!currentDeviceID) return;
         document.getElementById('simVal_' + key).innerText = val;
-        // Write slider value to Firebase
         db.ref('devices/' + currentDeviceID + '/control/testValues/' + key).set(parseFloat(val));
     }
 
     function updateDashboard(d) {
-        // Map data
+        // Status Badge Logic
+        const statusEl = document.getElementById('netStatus');
+        if (d.status === "TEST_MODE") {
+            statusEl.innerText = "TEST MODE";
+            statusEl.className = "status-badge status-test";
+        } else {
+            statusEl.innerText = "ONLINE";
+            statusEl.className = "status-badge status-online";
+        }
+
+        // Data Mapping
         const volt = d.voltage || 0;
         const pf = d.pf || 0;
         const c1 = d.currentL1 || 0;
@@ -388,10 +418,10 @@
         const temp = d.temp || d.oil_temp || 0; 
         const vib = d.vib || d.vibration || 0;
 
-        // Update Text & Visual Alarms
+        // Visuals
         const vEl = document.getElementById('v');
         vEl.innerText = volt.toFixed(1)+"V"; 
-        vEl.style.color = (volt > 260) ? "#ef4444" : "white"; // Red if high
+        vEl.style.color = (volt > 260) ? "#ef4444" : "white";
 
         document.getElementById('pf').innerText = pf.toFixed(2);
         document.getElementById('c1').innerText = c1.toFixed(1)+"A"; 
@@ -399,11 +429,11 @@
         
         const tEl = document.getElementById('t');
         tEl.innerText = temp.toFixed(1)+"°C"; 
-        tEl.style.color = (temp > 80) ? "#ef4444" : "white"; // Red if high
+        tEl.style.color = (temp > 80) ? "#ef4444" : "white";
 
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
 
-        // Update Charts
+        // Charts
         updateSingleChart(vChart, volt); 
         updateSingleChart(pfChart, pf); 
         updateSingleChart(tChart, temp); 
@@ -413,11 +443,10 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
         
-        // Trigger AI Analysis
         runAIAnalysis(volt, temp, vib);
     }
 
-    // --- 4. STANDARD UI LOGIC ---
+    // --- 5. SETUP ---
     function selectRole(role) {
         userRole = role === 'admin' ? 'admin' : 'observer';
         if (role === 'observer') {
@@ -456,11 +485,11 @@
         if (userRole === 'observer') {
             roleText.innerText = "Observer Mode";
             toggle.disabled = true; label.classList.add('disabled');
-            maintPanel.style.display = 'none'; // Hide Maintenance for Observer
+            maintPanel.style.display = 'none'; 
         } else {
             roleText.innerText = "System Operator"; roleText.style.color = "var(--success)";
             toggle.disabled = false; label.classList.remove('disabled');
-            maintPanel.style.display = 'block'; // Show Maintenance for Admin
+            maintPanel.style.display = 'block'; 
         }
     }
 
@@ -470,12 +499,10 @@
             alert("ACCESS DENIED: Observer credentials cannot modify system state.");
             return;
         }
-        if(currentDeviceID) {
-            db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
-        }
+        if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
     }
 
-    // --- 5. CHARTS & AI ---
+    // --- CHARTS & AI ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef');
@@ -495,6 +522,10 @@
 
     function showView(viewId) { ['dashboardView', 'historyView', 'dailyView'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById(viewId).style.display = 'block'; }
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'; }
+
+    // Start Watchdog immediately
+    startWatchdog(); 
+
 </script>
 </body>
 </html>
