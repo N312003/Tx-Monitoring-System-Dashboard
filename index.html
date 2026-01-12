@@ -74,7 +74,7 @@
         }
         .device-selector:hover { border-color: var(--accent-purple); }
 
-        /* --- STATUS BADGES (NEW) --- */
+        /* --- STATUS BADGES --- */
         .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; transition: all 0.3s ease; }
         .status-online { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
         .status-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; }
@@ -156,7 +156,6 @@
                 <div>
                     <h1>TxMS PRO</h1>
                     <span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span>
-                    
                     <select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)">
                         <option value="" disabled selected>Searching Network...</option>
                     </select>
@@ -259,12 +258,34 @@
         </div>
 
         <div class="daily-overlay" id="dailyView">
-            <div style="display:flex; justify-content:space-between; margin-bottom:25px;">
-                <div><h2>DAILY REPORT</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Aggregated averages</span></div>
-                <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <div>
+                    <h2>DAILY REPORT</h2>
+                    <span style="color:var(--text-muted); font-size: 0.8rem;">Aggregated averages from active session</span>
+                </div>
+                <div>
+                    <button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;">
+                        <i class="fa-solid fa-file-csv"></i> EXPORT CSV
+                    </button>
+                    <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
+                </div>
             </div>
+            
             <div class="card" style="min-height: 500px;">
-                <table class="data-table"><thead><tr><th>DATE</th><th>AVG VOLTAGE</th><th>AVG P.F.</th><th>AVG L1/L2</th><th>AVG TEMP</th><th>AVG VIB</th><th>STATUS</th></tr></thead><tbody id="dailyTableBody"></tbody></table>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>TIMESTAMP</th>
+                            <th>VOLTAGE (V)</th>
+                            <th>CURRENT L1 (A)</th>
+                            <th>CURRENT L2 (A)</th>
+                            <th>TEMP (°C)</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dailyTableBody">
+                        </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -279,28 +300,25 @@
         appId: "1:743234758196:web:d9af692ea827088e940c61" 
     };
     
-    // Initialize
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
     emailjs.init("2wsEDwcqVrLmPDV7e");
 
+    // --- GLOBAL VARIABLES ---
     let userRole = 'observer'; 
     let activeListener = null; 
     let currentDeviceID = null; 
     let isTestMode = false; 
-    
-    // --- VARIABLES FOR WATCHDOG ---
     let lastHeartbeat = Date.now(); 
+    let sessionLog = []; // Stores data for CSV Export
 
-    // --- 2. START THE WATCHDOG TIMER ---
-    // Runs every 1 second to check if connection is lost
+    // --- 2. START WATCHDOG ---
     function startWatchdog() {
         setInterval(() => {
             const now = Date.now();
             const el = document.getElementById('netStatus');
-            
-            // 5 MINUTES = 5 * 60 * 1000 = 300,000 milliseconds
+            // 5 MINUTES (300,000 ms) Timeout
             if (now - lastHeartbeat > 300000) {
                 el.innerText = "OFFLINE";
                 el.className = "status-badge status-offline";
@@ -334,35 +352,35 @@
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
         
-        // Reset status to Connecting
+        // Reset status
         document.getElementById('netStatus').innerText = "CONNECTING...";
         document.getElementById('netStatus').className = "status-badge status-offline";
 
+        // Detach old listeners
         if (activeListener) {
             activeListener.off(); 
             db.ref('devices/' + deviceId + '/control/testMode').off();
             db.ref('devices/' + deviceId + '/control/alarmArmed').off();
         }
 
+        // Attach new listener
         activeListener = db.ref('devices/' + deviceId);
         
         activeListener.on('value', snap => {
             const d = snap.val();
             if(!d) return;
 
-            // ** HEARTBEAT: We received data, so reset the timer **
+            // Heartbeat received
             lastHeartbeat = Date.now(); 
-
             updateDashboard(d);
         });
 
-        // Sync Alarm Toggle
+        // Sync Aux Listeners
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const toggle = document.getElementById('alarmArmToggle');
             if(toggle) toggle.checked = s.val(); 
         });
 
-        // Sync Test Mode State
         db.ref('devices/' + deviceId + '/control/testMode').on('value', s => {
             isTestMode = s.val();
             const btn = document.getElementById('simBtn');
@@ -399,8 +417,9 @@
         db.ref('devices/' + currentDeviceID + '/control/testValues/' + key).set(parseFloat(val));
     }
 
+    // --- 5. DASHBOARD UPDATE ---
     function updateDashboard(d) {
-        // Status Badge Logic
+        // Status Badge
         const statusEl = document.getElementById('netStatus');
         if (d.status === "TEST_MODE") {
             statusEl.innerText = "TEST MODE";
@@ -410,7 +429,6 @@
             statusEl.className = "status-badge status-online";
         }
 
-        // Data Mapping
         const volt = d.voltage || 0;
         const pf = d.pf || 0;
         const c1 = d.currentL1 || 0;
@@ -419,41 +437,62 @@
         const vib = d.vib || d.vibration || 0;
 
         // Visuals
-        const vEl = document.getElementById('v');
-        vEl.innerText = volt.toFixed(1)+"V"; 
-        vEl.style.color = (volt > 260) ? "#ef4444" : "white";
-
+        const vEl = document.getElementById('v'); vEl.innerText = volt.toFixed(1)+"V"; vEl.style.color = (volt > 260) ? "#ef4444" : "white";
         document.getElementById('pf').innerText = pf.toFixed(2);
         document.getElementById('c1').innerText = c1.toFixed(1)+"A"; 
         document.getElementById('c2').innerText = c2.toFixed(1)+"A";
-        
-        const tEl = document.getElementById('t');
-        tEl.innerText = temp.toFixed(1)+"°C"; 
-        tEl.style.color = (temp > 80) ? "#ef4444" : "white";
-
+        const tEl = document.getElementById('t'); tEl.innerText = temp.toFixed(1)+"°C"; tEl.style.color = (temp > 80) ? "#ef4444" : "white";
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
 
         // Charts
-        updateSingleChart(vChart, volt); 
-        updateSingleChart(pfChart, pf); 
-        updateSingleChart(tChart, temp); 
-        updateSingleChart(vibChart, vib);
-        
+        updateSingleChart(vChart, volt); updateSingleChart(pfChart, pf); updateSingleChart(tChart, temp); updateSingleChart(vibChart, vib);
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); 
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
         
         runAIAnalysis(volt, temp, vib);
+        
+        // Log Data for Report
+        addToReport(d);
     }
 
-    // --- 5. SETUP ---
+    // --- 6. REPORTING & EXPORT ---
+    function addToReport(d) {
+        const now = new Date().toLocaleTimeString();
+        const status = d.status || "ONLINE";
+        
+        // Add to array
+        sessionLog.push({ time: now, v: d.voltage, c1: d.currentL1, c2: d.currentL2, t: d.temp, s: status });
+        if(sessionLog.length > 100) sessionLog.shift(); // Keep last 100
+
+        // Update HTML Table
+        const tbody = document.getElementById('dailyTableBody');
+        let row = `<tr><td>${now}</td><td>${Number(d.voltage).toFixed(1)}</td><td>${Number(d.currentL1).toFixed(1)}</td><td>${Number(d.currentL2).toFixed(1)}</td><td>${Number(d.temp).toFixed(1)}</td><td><span style="color:${status==='TEST_MODE'?'orange':'#10b981'}">${status}</span></td></tr>`;
+        tbody.insertAdjacentHTML('afterbegin', row);
+        if(tbody.rows.length > 50) tbody.deleteRow(50);
+    }
+
+    function downloadCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,Timestamp,Voltage,Current L1,Current L2,Temp,Status\n";
+        sessionLog.forEach(row => {
+            csvContent += `${row.time},${row.v},${row.c1},${row.c2},${row.t},${row.s}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "txms_report_" + new Date().toISOString().slice(0,10) + ".csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- 7. AUTH & UI ---
     function selectRole(role) {
         userRole = role === 'admin' ? 'admin' : 'observer';
         if (role === 'observer') {
             document.getElementById('landingView').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
-            updateRoleUI();
-            loadDeviceList(); 
+            updateRoleUI(); loadDeviceList(); 
         } else {
             document.getElementById('landingView').style.display = 'none';
             document.getElementById('loginView').style.display = 'flex';
@@ -469,8 +508,7 @@
             userRole = 'admin';
             document.getElementById('loginView').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
-            updateRoleUI();
-            loadDeviceList(); 
+            updateRoleUI(); loadDeviceList(); 
         }).catch(err => { document.getElementById('loginError').style.display = 'block'; });
     }
 
@@ -494,17 +532,12 @@
     }
 
     function toggleAlarm(cb) {
-        if (userRole !== 'admin') {
-            cb.checked = !cb.checked; 
-            alert("ACCESS DENIED: Observer credentials cannot modify system state.");
-            return;
-        }
+        if (userRole !== 'admin') { cb.checked = !cb.checked; alert("ACCESS DENIED"); return; }
         if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
     }
 
-    // --- CHARTS & AI ---
+    // --- 8. CHART UTILS ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
-    
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef');
     const tChart = createMiniChart('chartTemp', '#ef4444'); const vibChart = createMiniChart('chartVib', '#fbbf24');
     const cChart = new Chart(document.getElementById('chartCurr').getContext('2d'), { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'L1',data:Array(20).fill(0),borderColor:'#10b981',borderWidth:2,pointRadius:0,tension:0.4},{label:'L2',data:Array(20).fill(0),borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:0.4}]}, options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{display:true,grid:{display:false},ticks:{color:'#555',font:{size:9}}}},plugins:{legend:{display:true,labels:{color:'#ccc'}}},animation:false} });
@@ -523,7 +556,7 @@
     function showView(viewId) { ['dashboardView', 'historyView', 'dailyView'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById(viewId).style.display = 'block'; }
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'; }
 
-    // Start Watchdog immediately
+    // Start Watchdog
     startWatchdog(); 
 
 </script>
