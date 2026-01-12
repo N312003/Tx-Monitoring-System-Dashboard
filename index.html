@@ -248,7 +248,7 @@
         document.getElementById('t').innerText = d.temp.toFixed(1) + "°C";
         document.getElementById('vib').innerText = (d.vib || 0).toFixed(2) + "g";
 
-        // Update Charts
+        // Update Charts Individually
         updateSingleChart(vChart, d.voltage);
         updateSingleChart(tChart, d.temp);
         updateSingleChart(vibChart, d.vib || 0);
