@@ -13,18 +13,10 @@
 
     <style>
         :root {
-            /* Professional Dark Theme Palette */
-            --bg-body: #05070a; 
-            --bg-sidebar: #0f121a; 
-            --bg-card: rgba(28, 33, 44, 0.7);
-            --accent-purple: #8b5cf6; 
-            --accent-glow: rgba(139, 92, 246, 0.3);
-            --text-main: #f8fafc; 
-            --text-muted: #94a3b8;
-            --success: #10b981; 
-            --warning: #fbbf24; 
-            --danger: #ef4444;
-            --blue-alert: #3b82f6;
+            --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7);
+            --accent-purple: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3);
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; --blue-alert: #3b82f6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -40,7 +32,6 @@
         /* --- MAIN CONTENT --- */
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
-        
         .alarm-active { background: rgba(239, 68, 68, 0.1) !important; border-color: var(--danger) !important; animation: pulseAlarm 1.5s infinite; }
         @keyframes pulseAlarm { 0% { box-shadow: 0 0 0px var(--danger); } 50% { box-shadow: 0 0 15px var(--danger); } 100% { box-shadow: 0 0 0px var(--danger); } }
 
@@ -48,14 +39,9 @@
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         
         .card { 
-            background-color: var(--bg-card); 
-            border-radius: 20px; 
-            padding: 20px; 
-            border: 1px solid rgba(255,255,255,0.05); 
-            backdrop-filter: blur(10px); 
-            display: flex; 
-            flex-direction: column;
-            justify-content: space-between;
+            background-color: var(--bg-card); border-radius: 20px; padding: 20px; 
+            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); 
+            display: flex; flex-direction: column; justify-content: space-between;
         }
         
         .chart-container { height: 120px; margin-top: 15px; width: 100%; }
@@ -65,7 +51,6 @@
         .ai-thermal { background: linear-gradient(135deg, #1c212c 0%, #7f1d1d 100%) !important; border-color: var(--danger) !important; }
         .ai-mechanical { background: linear-gradient(135deg, #1c212c 0%, #78350f 100%) !important; border-color: var(--warning) !important; }
         .ai-voltage { background: linear-gradient(135deg, #1c212c 0%, #1e3a8a 100%) !important; border-color: var(--blue-alert) !important; }
-        
         .pulse-icon { animation: icon-glow 1.5s infinite; }
         @keyframes icon-glow { 0% { filter: drop-shadow(0 0 2px currentColor); } 50% { filter: drop-shadow(0 0 8px currentColor); } 100% { filter: drop-shadow(0 0 2px currentColor); } }
 
@@ -117,8 +102,11 @@
                 <div class="chart-container"><canvas id="chartVolt"></canvas></div>
             </div>
 
-            <div class="card">
-                <div style="color:var(--text-muted); font-size:0.75rem; display:flex; justify-content:space-between;">CURRENT L1 <span id="c1" style="color:white; font-weight:bold;">--</span></div>
+            <div class="card" style="grid-column: span 2;">
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <div><div style="color:var(--success); font-size:0.7rem;">CURRENT L1</div><div id="c1" style="color:white; font-weight:bold; font-size:1.4rem;">--</div></div>
+                    <div><div style="color:var(--cyan); font-size:0.7rem;">CURRENT L2</div><div id="c2" style="color:white; font-weight:bold; font-size:1.4rem;">--</div></div>
+                </div>
                 <div class="chart-container"><canvas id="chartCurr"></canvas></div>
             </div>
 
@@ -132,7 +120,7 @@
                 <div class="chart-container"><canvas id="chartVib"></canvas></div>
             </div>
 
-            <div class="card" style="grid-column: span 2; padding: 0; overflow: hidden; border: 1px solid #2d3748;">
+            <div class="card" style="grid-column: span 3; padding: 0; overflow: hidden; border: 1px solid #2d3748;">
                 <div style="background: rgba(124, 58, 237, 0.1); padding: 12px 20px; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between;">
                     <span style="font-size: 0.75rem; font-weight: bold; color: var(--accent-purple);">DIAGNOSTIC EVENT LOG</span>
                     <button onclick="clearLog()" style="background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;">CLEAR</button>
@@ -174,6 +162,8 @@
         <div class="card" style="height:480px;">
             <div style="display:flex; gap:10px; margin-bottom:20px;">
                 <button class="btn-ghost" onclick="updateHistoryChart('voltage', '#7c3aed')">VOLTAGE</button>
+                <button class="btn-ghost" onclick="updateHistoryChart('currentL1', '#10b981')">CURR L1</button>
+                <button class="btn-ghost" onclick="updateHistoryChart('currentL2', '#06b6d4')">CURR L2</button>
                 <button class="btn-ghost" onclick="updateHistoryChart('temp', '#ef4444')">TEMP</button>
                 <button class="btn-ghost" onclick="updateHistoryChart('vib', '#fbbf24')">VIB</button>
             </div>
@@ -182,7 +172,7 @@
     </div>
 
 <script>
-    // --- 1. FIREBASE & API CONFIG ---
+    // --- 1. FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI",
         authDomain: "tx-monitoring-system.firebaseapp.com",
@@ -194,48 +184,55 @@
     const db = firebase.database();
     emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    // --- 2. GLOBAL VARIABLES ---
+    // --- 2. VARIABLES ---
     let alarmArmed = false;
     let buffers = { t: [], v: [], vib: [] };
     let currentHistoryData = [];
     let historyChartInstance = null;
 
-    // --- 3. REAL-TIME CHART SETUP ---
+    // --- 3. CHART SETUP (REAL-TIME) ---
     function createMiniChart(canvasId, color) {
         const ctx = document.getElementById(canvasId).getContext('2d');
         return new Chart(ctx, {
             type: 'line',
             data: {
                 labels: Array(20).fill(''),
-                datasets: [{ 
-                    data: Array(20).fill(0), 
-                    borderColor: color, 
-                    borderWidth: 2, 
-                    pointRadius: 0, 
-                    tension: 0.4, 
-                    fill: true, 
-                    backgroundColor: color + '11' 
-                }]
+                datasets: [{ data: Array(20).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: color + '11' }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    x: { display: false }, 
-                    y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } 
-                },
+                scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } },
                 plugins: { legend: { display: false } },
                 animation: false
             }
         });
     }
 
-    // Initialize the 4 individual charts
+    // Individual Charts
     const vChart = createMiniChart('chartVolt', '#7c3aed');
-    const cChart = createMiniChart('chartCurr', '#10b981');
     const tChart = createMiniChart('chartTemp', '#ef4444');
     const vibChart = createMiniChart('chartVib', '#fbbf24');
 
-    // --- 4. REAL-TIME DATA HANDLING ---
+    // SPECIAL COMBINED CHART FOR CURRENT
+    const ctxCurr = document.getElementById('chartCurr').getContext('2d');
+    const cChart = new Chart(ctxCurr, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [
+                { label: 'L1', data: Array(20).fill(0), borderColor: '#10b981', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                { label: 'L2', data: Array(20).fill(0), borderColor: '#06b6d4', borderWidth: 2, pointRadius: 0, tension: 0.4 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { x: { display: false }, y: { display: true, grid: { display: false }, ticks: { color: '#555', font: { size: 9 } } } },
+            plugins: { legend: { display: true, labels: { color: '#ccc' } } },
+            animation: false
+        }
+    });
+
+    // --- 4. DATA HANDLING ---
     db.ref('control/alarmArmed').on('value', s => { 
         alarmArmed = s.val(); 
         document.getElementById('alarmArmToggle').checked = alarmArmed; 
@@ -244,55 +241,53 @@
     db.ref('sensors').on('value', (snap) => {
         const d = snap.val(); if(!d) return;
         
-        // Update Text Values
+        // Update Text
         document.getElementById('v').innerText = d.voltage.toFixed(1) + "V";
         document.getElementById('c1').innerText = d.currentL1.toFixed(1) + "A";
+        document.getElementById('c2').innerText = (d.currentL2 || 0).toFixed(1) + "A"; // NEW L2 Value
         document.getElementById('t').innerText = d.temp.toFixed(1) + "°C";
         document.getElementById('vib').innerText = (d.vib || 0).toFixed(2) + "g";
 
-        // Update Charts Individually
-        updateChart(vChart, d.voltage);
-        updateChart(cChart, d.currentL1);
-        updateChart(tChart, d.temp);
-        updateChart(vibChart, d.vib || 0);
+        // Update Charts
+        updateSingleChart(vChart, d.voltage);
+        updateSingleChart(tChart, d.temp);
+        updateSingleChart(vibChart, d.vib || 0);
 
-        // Feed AI Buffer
-        updateBuffer('t', d.temp); 
-        updateBuffer('v', d.voltage); 
-        updateBuffer('vib', d.vib || 0);
-        
+        // Update Combined Current Chart
+        cChart.data.datasets[0].data.push(d.currentL1);
+        cChart.data.datasets[0].data.shift();
+        cChart.data.datasets[1].data.push(d.currentL2 || 0);
+        cChart.data.datasets[1].data.shift();
+        cChart.update();
+
+        // AI Logic
+        updateBuffer('t', d.temp); updateBuffer('v', d.voltage); updateBuffer('vib', d.vib || 0);
         if(buffers.t.length >= 10) performAIAnalysis();
     });
 
-    function updateChart(chart, val) { 
+    function updateSingleChart(chart, val) { 
         chart.data.datasets[0].data.push(val); 
         chart.data.datasets[0].data.shift(); 
         chart.update(); 
     }
     
-    function updateBuffer(k, v) { 
-        buffers[k].push(v); 
-        if(buffers[k].length > 15) buffers[k].shift(); 
-    }
+    function updateBuffer(k, v) { buffers[k].push(v); if(buffers[k].length > 15) buffers[k].shift(); }
 
-    // --- 5. AI PREDICTIVE LOGIC ---
+    // --- 5. AI ENGINE ---
     function performAIAnalysis() {
         const tSlope = calculateSlope(buffers.t);
         const vSlope = calculateSlope(buffers.v);
         const vibSlope = calculateSlope(buffers.vib);
-        
         const aiCard = document.getElementById('aiCard');
         const aiIcon = document.getElementById('aiIcon');
         const msg = document.getElementById('predictMsg');
         
         let anomaly = ""; let style = "";
 
-        // Thresholds
         if(tSlope > 0.08) { anomaly = "Thermal Overload"; style = "ai-thermal"; }
         else if(Math.abs(vSlope) > 1.2) { anomaly = "Voltage Instability"; style = "ai-voltage"; }
         else if(vibSlope > 0.04) { anomaly = "Mechanical Stress"; style = "ai-mechanical"; }
 
-        // Update UI
         if(anomaly !== "") {
             msg.innerText = "ALARM: " + anomaly;
             aiCard.className = "card ai-card " + style;
@@ -313,7 +308,7 @@
         return (n*sXY - sX*sY) / (n*sXX - sX*sX);
     }
 
-    // --- 6. HISTORY & EXPORT LOGIC ---
+    // --- 6. HISTORY & UTILS ---
     function showDashboard() { 
         document.getElementById('dashboardView').style.display='block'; 
         document.getElementById('historyView').style.display='none'; 
@@ -327,17 +322,15 @@
         document.getElementById('navHist').classList.add('active');
         document.getElementById('navDash').classList.remove('active');
         
-        // Load data on open
         db.ref('history').limitToLast(100).once('value', s => {
             const val = s.val(); currentHistoryData = val ? Object.values(val) : [];
-            updateHistoryChart('voltage', '#7c3aed'); // Default view
+            updateHistoryChart('voltage', '#7c3aed'); 
         });
     }
 
     function updateHistoryChart(key, color) {
         const dataPoints = currentHistoryData.map(p => p[key] || 0);
-        const max = Math.max(...dataPoints); 
-        const min = Math.min(...dataPoints);
+        const max = Math.max(...dataPoints); const min = Math.min(...dataPoints);
         const avg = dataPoints.reduce((a, b) => a + b, 0) / (dataPoints.length || 1);
 
         document.getElementById('histMax').innerText = max.toFixed(2);
@@ -348,41 +341,22 @@
         const ctx = document.getElementById('historyChart').getContext('2d');
         historyChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { 
-                labels: dataPoints.map((_,i)=>i), 
-                datasets: [{ 
-                    data: dataPoints, 
-                    borderColor: color, 
-                    backgroundColor: color + '22', 
-                    fill: true, 
-                    tension: 0.3, 
-                    pointRadius: 2 
-                }] 
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                scales: { 
-                    y: { grid: { color: '#2d3748' }, ticks: { color: '#94a3b8' } }, 
-                    x: { display: false } 
-                }, 
-                plugins: { legend: { display: false } } 
-            }
+            data: { labels: dataPoints.map((_,i)=>i), datasets: [{ data: dataPoints, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#2d3748' }, ticks: { color: '#94a3b8' } }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
     }
 
     function exportToCSV() {
-        if (currentHistoryData.length === 0) return alert("No history data to export.");
-        let csv = "TimestampIdx,Voltage,CurrentL1,Temp,Vibration\n";
+        if (currentHistoryData.length === 0) return alert("No history data.");
+        let csv = "TimestampIdx,Voltage,CurrentL1,CurrentL2,Temp,Vibration\n";
         currentHistoryData.forEach((p, i) => { 
-            csv += `${i},${p.voltage || 0},${p.currentL1 || 0},${p.temp || 0},${p.vib || 0}\n`; 
+            csv += `${i},${p.voltage || 0},${p.currentL1 || 0},${p.currentL2 || 0},${p.temp || 0},${p.vib || 0}\n`; 
         });
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = 'TxMS_Audit_Report.csv'; a.click();
     }
 
-    // --- 7. UTILS ---
     function addEventToLog(type, level) {
         const log = document.getElementById('eventLog');
         if (log.innerHTML.includes("Monitoring for anomalies")) log.innerHTML = "";
