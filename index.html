@@ -65,16 +65,19 @@
         
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
         
-        /* UPDATED HEADER FOR DEVICE SELECTOR */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         
-        /* NEW SELECTOR STYLE */
         .device-selector {
             background: #1c212c; color: white; border: 1px solid #444;
             padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px;
             cursor: pointer; outline: none;
         }
         .device-selector:hover { border-color: var(--accent-purple); }
+
+        /* --- MAINTENANCE CONSOLE STYLES (NEW) --- */
+        .maintenance-panel { background: #151921; border: 1px solid #d946ef; padding: 20px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 0 15px rgba(217, 70, 239, 0.1); }
+        .sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; opacity: 0.5; pointer-events: none; transition: 0.3s; margin-top: 15px; }
+        .sim-slider { width: 100%; cursor: pointer; accent-color: #d946ef; }
 
         /* --- UI COMPONENTS --- */
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
@@ -164,6 +167,49 @@
                 </div>
             </div>
 
+            <div id="maintenancePanel" class="maintenance-panel" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 style="color:#d946ef; margin:0;"><i class="fa-solid fa-syringe"></i> Remote Injection</h3>
+                        <small style="color:#aaa;">Override physical sensors to test physical alarms.</small>
+                    </div>
+                    <button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">ENABLE TEST MODE</button>
+                </div>
+
+                <div class="sim-controls" id="simControls">
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Voltage (V)</label>
+                        <input type="range" min="0" max="300" value="230" class="sim-slider" onchange="updateSim('voltage', this.value)">
+                        <div id="simVal_voltage" style="color:white; font-weight:bold; text-align:right;">230</div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Current L1 (A)</label>
+                        <input type="range" min="0" max="100" value="10" class="sim-slider" onchange="updateSim('currentL1', this.value)">
+                        <div id="simVal_currentL1" style="color:white; font-weight:bold; text-align:right;">10</div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Current L2 (A)</label>
+                        <input type="range" min="0" max="100" value="12" class="sim-slider" onchange="updateSim('currentL2', this.value)">
+                        <div id="simVal_currentL2" style="color:white; font-weight:bold; text-align:right;">12</div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Power Factor</label>
+                        <input type="range" min="0" max="1" step="0.01" value="0.95" class="sim-slider" onchange="updateSim('pf', this.value)">
+                        <div id="simVal_pf" style="color:white; font-weight:bold; text-align:right;">0.95</div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Temp (°C)</label>
+                        <input type="range" min="20" max="120" value="45" class="sim-slider" onchange="updateSim('temp', this.value)">
+                        <div id="simVal_temp" style="color:white; font-weight:bold; text-align:right;">45</div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Vibration (g)</label>
+                        <input type="range" min="0" max="5" step="0.1" value="0.05" class="sim-slider" onchange="updateSim('vib', this.value)">
+                        <div id="simVal_vib" style="color:white; font-weight:bold; text-align:right;">0.05</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid-cards">
                 <div class="card ai-card" id="aiCard">
                     <div style="color:var(--text-main); font-weight:bold; font-size:0.85rem; margin-bottom:10px;"><i class="fa-solid fa-microchip" id="aiIcon"></i> AI PREDICTIVE ENGINE</div>
@@ -218,7 +264,6 @@
 
 <script>
     // --- 1. CONFIGURATION ---
-    // Make sure these match your actual Firebase project
     const firebaseConfig = { 
         apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI", 
         authDomain: "tx-monitoring-system.firebaseapp.com", 
@@ -236,8 +281,9 @@
     let userRole = 'observer'; 
     let activeListener = null; // Keeps track of active data stream
     let currentDeviceID = null; // Currently selected transformer
+    let isTestMode = false; // Tracks if simulation is active
 
-    // --- 2. MULTI-DEVICE LOGIC (NEW) ---
+    // --- 2. MULTI-DEVICE LOGIC ---
     function loadDeviceList() {
         const selector = document.getElementById('deviceSelect');
         db.ref('devices').once('value', (snapshot) => {
@@ -248,7 +294,7 @@
                 Object.keys(data).forEach((key) => {
                     let option = document.createElement("option");
                     option.value = key;
-                    option.text = key.replace(/_/g, " "); // Make "TRANSFORMER_A" look like "TRANSFORMER A"
+                    option.text = key.replace(/_/g, " "); 
                     selector.appendChild(option);
                 });
                 
@@ -266,14 +312,14 @@
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
         
-        // Detach old listener to stop mixing data
+        // Detach old listeners
         if (activeListener) {
             activeListener.off(); 
-            // Optional: db.ref('devices/'+prevID+'/control/alarmArmed').off();
+            db.ref('devices/' + deviceId + '/control/testMode').off();
+            db.ref('devices/' + deviceId + '/control/alarmArmed').off();
         }
 
-        // Connect to NEW device
-        // LISTENING TO PATH: devices/{ID}
+        // Connect to NEW device stream
         activeListener = db.ref('devices/' + deviceId);
         
         activeListener.on('value', snap => {
@@ -282,28 +328,79 @@
             updateDashboard(d);
         });
 
-        // Listen for Alarm State (Per Device)
+        // Sync Alarm Toggle
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const toggle = document.getElementById('alarmArmToggle');
             if(toggle) toggle.checked = s.val(); 
         });
+
+        // Sync Test Mode State
+        db.ref('devices/' + deviceId + '/control/testMode').on('value', s => {
+            isTestMode = s.val();
+            const btn = document.getElementById('simBtn');
+            const controls = document.getElementById('simControls');
+            if(btn && controls) {
+                if(isTestMode) {
+                    btn.innerText = "⛔ STOP INJECTION"; 
+                    btn.style.background = "#ef4444"; 
+                    controls.style.opacity = "1"; 
+                    controls.style.pointerEvents = "all";
+                } else {
+                    btn.innerText = "ENABLE TEST MODE"; 
+                    btn.style.background = "#333"; 
+                    controls.style.opacity = "0.5"; 
+                    controls.style.pointerEvents = "none";
+                }
+            }
+        });
+    }
+
+    // --- 3. MAINTENANCE / SIMULATION LOGIC ---
+    function toggleSimulation() {
+        if(!currentDeviceID) { alert("No device selected!"); return; }
+        
+        isTestMode = !isTestMode;
+        
+        // Send flag to Firebase (ESP32 listens for this)
+        db.ref('devices/' + currentDeviceID + '/control/testMode').set(isTestMode);
+
+        if(isTestMode) {
+            // Set some default safe values when starting
+            updateSim('voltage', 230);
+            updateSim('temp', 45);
+            updateSim('vib', 0);
+        }
+    }
+
+    function updateSim(key, val) {
+        if(!currentDeviceID) return;
+        document.getElementById('simVal_' + key).innerText = val;
+        // Write slider value to Firebase
+        db.ref('devices/' + currentDeviceID + '/control/testValues/' + key).set(parseFloat(val));
     }
 
     function updateDashboard(d) {
-        // Map data (Handle missing values safely)
+        // Map data
         const volt = d.voltage || 0;
         const pf = d.pf || 0;
         const c1 = d.currentL1 || 0;
         const c2 = d.currentL2 || 0;
-        const temp = d.temp || d.oil_temp || 0; // Supports both naming conventions
+        const temp = d.temp || d.oil_temp || 0; 
         const vib = d.vib || d.vibration || 0;
 
-        // Update Text
-        document.getElementById('v').innerText = volt.toFixed(1)+"V"; 
+        // Update Text & Visual Alarms
+        const vEl = document.getElementById('v');
+        vEl.innerText = volt.toFixed(1)+"V"; 
+        vEl.style.color = (volt > 260) ? "#ef4444" : "white"; // Red if high
+
         document.getElementById('pf').innerText = pf.toFixed(2);
         document.getElementById('c1').innerText = c1.toFixed(1)+"A"; 
         document.getElementById('c2').innerText = c2.toFixed(1)+"A";
-        document.getElementById('t').innerText = temp.toFixed(1)+"°C"; 
+        
+        const tEl = document.getElementById('t');
+        tEl.innerText = temp.toFixed(1)+"°C"; 
+        tEl.style.color = (temp > 80) ? "#ef4444" : "white"; // Red if high
+
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
 
         // Update Charts
@@ -316,18 +413,18 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
         
-        // Trigger AI Analysis (Simplified for stability)
+        // Trigger AI Analysis
         runAIAnalysis(volt, temp, vib);
     }
 
-    // --- 3. STANDARD UI LOGIC (UNCHANGED) ---
+    // --- 4. STANDARD UI LOGIC ---
     function selectRole(role) {
         userRole = role === 'admin' ? 'admin' : 'observer';
         if (role === 'observer') {
             document.getElementById('landingView').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
             updateRoleUI();
-            loadDeviceList(); // LOAD DEVICES ON START
+            loadDeviceList(); 
         } else {
             document.getElementById('landingView').style.display = 'none';
             document.getElementById('loginView').style.display = 'flex';
@@ -344,7 +441,7 @@
             document.getElementById('loginView').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
             updateRoleUI();
-            loadDeviceList(); // LOAD DEVICES ON START
+            loadDeviceList(); 
         }).catch(err => { document.getElementById('loginError').style.display = 'block'; });
     }
 
@@ -354,12 +451,16 @@
         const toggle = document.getElementById('alarmArmToggle');
         const label = document.getElementById('alarmSwitchLabel');
         const roleText = document.getElementById('roleDisplay');
+        const maintPanel = document.getElementById('maintenancePanel');
+
         if (userRole === 'observer') {
             roleText.innerText = "Observer Mode";
             toggle.disabled = true; label.classList.add('disabled');
+            maintPanel.style.display = 'none'; // Hide Maintenance for Observer
         } else {
             roleText.innerText = "System Operator"; roleText.style.color = "var(--success)";
             toggle.disabled = false; label.classList.remove('disabled');
+            maintPanel.style.display = 'block'; // Show Maintenance for Admin
         }
     }
 
@@ -374,7 +475,7 @@
         }
     }
 
-    // --- 4. CHARTS & AI ---
+    // --- 5. CHARTS & AI ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef');
@@ -388,6 +489,7 @@
         const aiDet = document.getElementById('predictDetail');
         if(t > 60) { aiMsg.innerText = "Overheat Warning"; aiMsg.style.color = "var(--warning)"; aiDet.innerText = "Temp gradient steep."; }
         else if(vib > 0.5) { aiMsg.innerText = "Vibration Alert"; aiMsg.style.color = "var(--danger)"; aiDet.innerText = "Possible mounting failure."; }
+        else if(v > 260) { aiMsg.innerText = "Overvoltage"; aiMsg.style.color = "var(--danger)"; aiDet.innerText = "Spike Detected."; }
         else { aiMsg.innerText = "System Nominal"; aiMsg.style.color = "var(--success)"; aiDet.innerText = "Efficiency optimal."; }
     }
 
