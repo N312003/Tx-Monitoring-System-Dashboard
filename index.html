@@ -13,38 +13,35 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
-        /* --- CORE THEME --- */
         :root { --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7); --accent-purple: #8b5cf6; --text-main: #f8fafc; --text-muted: #94a3b8; --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
-        /* SCREENS */
+        /* OVERLAYS */
         #landingView, #loginView, #authOverlay, #confirmOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #authOverlay, #confirmOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
-        
+        .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
+
+        /* UI ELEMENTS */
         .role-container { display: flex; gap: 30px; margin-top: 30px; }
         .role-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; width: 280px; text-align: center; cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); }
         .role-card:hover { transform: translateY(-10px); border-color: var(--accent-purple); box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.1); }
         .login-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 400px; text-align: center; box-shadow: 0 0 50px rgba(139, 92, 246, 0.2); }
         .login-input { width: 100%; padding: 12px; margin: 10px 0; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 8px; color: white; outline: none; transition: 0.3s; }
         .login-btn { width: 100%; padding: 12px; background: var(--accent-purple); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .back-link { color: var(--text-muted); font-size: 0.8rem; margin-top: 15px; cursor: pointer; text-decoration: underline; }
+        .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
 
-        /* APP LAYOUT */
+        /* LAYOUT */
         #appContainer { display: none; width: 100%; } 
         .sidebar { width: 80px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; align-items: center; padding-top: 20px; position: fixed; height: 100%; z-index: 100; border-right: 1px solid #2d3748; }
-        .logo { font-size: 1.2rem; font-weight: 800; margin-bottom: 40px; color: var(--accent-purple); }
         .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
         .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
-        .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px var(--accent-glow); }
-        .logout-btn { margin-top: auto; margin-bottom: 30px; color: #ef4444 !important; }
-        .logout-btn:hover { background: rgba(239,68,68,0.1); color: #ffcccc !important; }
-        
+        .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         .device-selector { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; outline: none; }
         
-        /* WIDGETS */
+        /* DASHBOARD */
         .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; transition: all 0.3s ease; }
         .status-online { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
         .status-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; }
@@ -61,20 +58,15 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
-        
-        /* NEW OVERLAYS & CONTROLS */
-        .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
-        .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .data-table td, .data-table th { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); text-align: left; }
 
-        /* NEW FILTER BUTTONS */
+        /* CONTROLS */
         .filter-btn { background: #333; border: 1px solid #555; color: #ccc; padding: 5px 15px; border-radius: 20px; cursor: pointer; margin-right: 5px; font-size: 0.8rem; }
         .filter-btn.active { background: var(--accent-purple); color: white; border-color: var(--accent-purple); }
         .date-picker { background: #1c212c; border: 1px solid #444; color: white; padding: 8px; border-radius: 8px; margin-right: 15px; }
-
-        /* MAINTENANCE */
-        .maint-card { background: #151921; border: 1px solid #d946ef; padding: 30px; border-radius: 15px; box-shadow: 0 0 25px rgba(217, 70, 239, 0.1); max-width: 800px; margin: 0 auto 40px auto; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table td, .data-table th { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); text-align: left; }
+        
+        .maint-card { background: #151921; border: 1px solid #d946ef; padding: 30px; border-radius: 15px; margin-bottom: 20px; }
         .sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; opacity: 0.5; pointer-events: none; transition: 0.3s; margin-top: 30px; }
         .cal-controls { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
         .sim-slider, .cal-slider { width: 100%; margin-top: 10px; cursor: pointer; }
@@ -83,14 +75,14 @@
 <body>
 
     <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Node</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div></div></div></section>
-    <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Email" class="login-input"><input type="password" id="password" placeholder="Password" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()">Return</div></div></section>
-    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
+    <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Email" class="login-input"><input type="password" id="password" placeholder="Password" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()" style="margin-top:15px; cursor:pointer;">Return</div></div></section>
     
+    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
     <div id="confirmOverlay"><div class="login-card" style="border-color: #ef4444; width: 350px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">DISARM safety alarm system?</p><div style="display: flex; gap: 15px;"><button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">DISARM</button><button class="login-btn" onclick="cancelDisarm()" style="background: #333; margin:0;">CANCEL</button></div></div></div>
 
     <div id="appContainer">
         <nav class="sidebar">
-            <div class="logo">TxMS</div>
+            <div style="color:var(--accent-purple); font-weight:bold; margin:20px 0;">TxMS</div>
             <div class="nav-item active" id="navDash" onclick="showView('dashboardView')"><i class="fa-solid fa-house"></i></div>
             <div class="nav-item" id="navHist" onclick="showView('historyView')"><i class="fa-solid fa-chart-area"></i></div>
             <div class="nav-item" id="navDaily" onclick="showView('dailyView')"><i class="fa-solid fa-calendar-days"></i></div>
@@ -99,22 +91,22 @@
         </nav>
 
         <main class="main-content" id="dashboardView">
-            <div class="header" id="mainHeader">
+            <div class="header">
                 <div><h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span><select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)"><option value="" disabled selected>Searching Network...</option></select></div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="text-align: right;">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ARM ALARM</div>
-                        <label class="switch" id="alarmSwitchLabel"><input type="checkbox" id="alarmArmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
+                        <label class="switch"><input type="checkbox" id="alarmArmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
                     </div>
                     <div id="netStatus" class="status-badge status-offline">CONNECTING...</div>
                 </div>
             </div>
 
             <div class="grid-cards">
-                <div class="card ai-card" id="aiCard"><div style="color:var(--text-main); font-weight:bold; font-size:0.85rem; margin-bottom:10px;"><i class="fa-solid fa-microchip" id="aiIcon"></i> AI PREDICTIVE ENGINE</div><div id="predictMsg" style="font-size: 1.2rem; margin-bottom: 5px; font-weight: bold;">Synchronizing...</div><div id="predictDetail" style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Analyzing derivative slopes.</div></div>
+                <div class="card ai-card"><div style="color:var(--text-main); font-weight:bold; font-size:0.85rem; margin-bottom:10px;">AI PREDICTIVE ENGINE</div><div id="predictMsg" style="font-size: 1.2rem; margin-bottom: 5px; font-weight: bold;">Synchronizing...</div><div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">Analyzing derivative slopes.</div></div>
                 <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">VOLTAGE <span id="v" style="color:white; font-weight:bold;">--</span></div><div class="chart-container"><canvas id="chartVolt"></canvas></div></div>
                 <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">POWER FACTOR <span id="pf" style="color:white; font-weight:bold;">--</span></div><div class="chart-container"><canvas id="chartPF"></canvas></div></div>
-                <div class="card" style="grid-column: span 2;"><div style="display:flex; justify-content:space-between; width:100%;"><div><div style="color:var(--success); font-size:0.7rem;">CURRENT L1</div><div id="c1" style="color:white; font-weight:bold; font-size:1.4rem;">--</div></div><div><div style="color:var(--cyan); font-size:0.7rem;">CURRENT L2</div><div id="c2" style="color:white; font-weight:bold; font-size:1.4rem;">--</div></div></div><div class="chart-container"><canvas id="chartCurr"></canvas></div></div>
+                <div class="card" style="grid-column: span 2;"><div style="display:flex; justify-content:space-between;"><div><div style="color:var(--success); font-size:0.7rem;">CURRENT L1</div><div id="c1" style="color:white; font-weight:bold; font-size:1.4rem;">--</div></div><div><div style="color:var(--cyan); font-size:0.7rem;">CURRENT L2</div><div id="c2" style="color:white; font-weight:bold; font-size:1.4rem;">--</div></div></div><div class="chart-container"><canvas id="chartCurr"></canvas></div></div>
                 <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">TEMPERATURE <span id="t" style="color:white; font-weight:bold;">--</span></div><div class="chart-container"><canvas id="chartTemp"></canvas></div></div>
                 <div class="card"><div style="color:var(--text-muted); font-size:0.75rem;">VIBRATION <span id="vib" style="color:white; font-weight:bold;">--</span></div><div class="chart-container"><canvas id="chartVib"></canvas></div></div>
                 <div class="card" style="grid-column: 1 / -1; padding: 0; overflow: hidden; border: 1px solid #2d3748;"><div style="background: rgba(124, 58, 237, 0.1); padding: 12px 20px; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between;"><span style="font-size: 0.75rem; font-weight: bold; color: var(--accent-purple);">DIAGNOSTIC EVENT LOG</span><button onclick="clearLog()" style="background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;">CLEAR</button></div><div id="eventLog" style="height: 150px; overflow-y: auto; padding: 10px;"><div style="color: #444; text-align: center; padding-top: 40px; font-size: 0.8rem;">Monitoring for anomalies...</div></div></div>
@@ -126,24 +118,22 @@
                 <div><h2 style="color:#d946ef">MAINTENANCE CONSOLE</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Remote Injection & Calibration</span></div><button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
             </div>
             <div class="maint-card" style="border-color: #d946ef;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;"><div><h3 style="color:white; margin:0;">Test Injection Mode</h3><small style="color:#aaa;">Overrides sensors to test alarm logic.</small></div><button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; transition:0.3s;">ENABLE TEST MODE</button></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;"><div><h3 style="color:white; margin:0;">Test Injection Mode</h3></div><button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer;">ENABLE TEST MODE</button></div>
                 <div class="sim-controls" id="simControls">
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Voltage</label><span id="simVal_voltage" style="color:#d946ef; font-weight:bold;">230</span></div><input type="range" min="0" max="300" value="230" class="sim-slider" oninput="updateSim('voltage', this.value)"></div>
-                    </div>
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Voltage</label><span id="simVal_voltage" style="color:#d946ef;">230</span></div><input type="range" min="0" max="300" value="230" class="sim-slider" oninput="updateSim('voltage', this.value)"></div>
+                </div>
             </div>
             <div class="maint-card" style="border-color: #06b6d4;">
-                <div style="border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px;">
-                    <h3 style="color:white; margin:0;">Sensor Calibration</h3><small style="color:#aaa;">Fine-tune sensor multipliers directly on the ESP32.</small>
-                </div>
+                <h3 style="color:white;">Sensor Calibration</h3>
                 <div class="cal-controls">
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Voltage Factor</label><span id="calDisp_volt" style="color:#06b6d4; font-weight:bold;">0.3284</span></div><input type="range" min="0.1" max="1.0" step="0.0001" value="0.328381" class="cal-slider" oninput="updateCal('volt', this.value)"></div>
-                    </div>
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Voltage Factor</label><span id="calDisp_volt" style="color:#06b6d4;">0.3284</span></div><input type="range" min="0.1" max="1.0" step="0.0001" value="0.328381" class="cal-slider" oninput="updateCal('volt', this.value)"></div>
+                </div>
             </div>
         </div>
 
         <div class="history-overlay" id="historyView">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Session Telemetry Log</span></div>
+                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Permanent Storage Log</span></div>
                 <div>
                     <button class="filter-btn active" onclick="filterHistory('1h', this)">1 Hour</button>
                     <button class="filter-btn" onclick="filterHistory('6h', this)">6 Hours</button>
@@ -157,11 +147,11 @@
 
         <div class="daily-overlay" id="dailyView">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                <div><h2>DAILY REPORT</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Log Export & Filtering</span></div>
+                <div><h2>DAILY REPORT</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Daily Aggregated Data</span></div>
                 <div style="display:flex; align-items:center;">
                     <span style="margin-right:10px; font-size:0.9rem; color:#aaa;">Filter Date:</span>
                     <input type="date" id="reportDate" class="date-picker" onchange="filterReportByDate()">
-                    <button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;"><i class="fa-solid fa-file-csv"></i> EXPORT CSV</button>
+                    <button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;">EXPORT CSV</button>
                     <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
                 </div>
             </div>
@@ -176,7 +166,7 @@
 
     let userRole = 'observer'; let savedPassword = ""; let activeListener = null; let currentDeviceID = null; 
     let isTestMode = false; let lastHeartbeat = Date.now(); 
-    let sessionLog = []; // Stores actual data objects now, not just strings
+    let sessionLog = []; 
     let historyChartInstance = null;
     let isAlarmArmed = false; 
     let lastEmailSent = 0; 
@@ -196,24 +186,39 @@
         document.getElementById('netStatus').innerText = "CONNECTING..."; document.getElementById('netStatus').className = "status-badge status-offline";
         if (activeListener) { activeListener.off(); db.ref('devices/' + deviceId + '/control').off(); }
 
-        activeListener = db.ref('devices/' + deviceId);
-        activeListener.on('value', snap => { const d = snap.val(); if(!d) return; lastHeartbeat = Date.now(); updateDashboard(d); });
+        // 1. FETCH PERMANENT HISTORY (Last 100 Points)
+        sessionLog = [];
+        db.ref('devices/' + deviceId + '/history').limitToLast(100).once('value', snap => {
+            if(snap.exists()) {
+                const hist = snap.val();
+                Object.keys(hist).forEach(k => {
+                    const d = hist[k];
+                    // Handle server timestamp or fallback
+                    const t = d.timestamp ? new Date(d.timestamp) : new Date();
+                    sessionLog.push({time: t, v:d.v, c1:d.c1, c2:d.c2, pf:d.pf, t:d.t, vib:d.vib});
+                });
+                refreshHistoryChart(sessionLog);
+            }
+        });
 
-        // --- UPDATED: 2-WAY SYNC FOR ALARM TOGGLE ---
+        // 2. START LIVE LISTENER
+        activeListener = db.ref('devices/' + deviceId);
+        activeListener.on('value', snap => { 
+            const d = snap.val(); if(!d) return; 
+            // Ignore history folder in live feed
+            if(d.history) delete d.history;
+            lastHeartbeat = Date.now(); 
+            updateDashboard(d); 
+        });
+
+        // 3. SYNC CONTROLS
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const serverState = s.val();
             const toggle = document.getElementById('alarmArmToggle');
-            // Only update visual state if it doesn't match, preventing loop
-            if (toggle.checked !== serverState) {
-                isAlarmArmed = serverState;
-                toggle.checked = serverState; 
-            }
+            if (toggle.checked !== serverState) { isAlarmArmed = serverState; toggle.checked = serverState; }
         });
         
         db.ref('devices/' + deviceId + '/control/testMode').on('value', s => { isTestMode = s.val(); updateTestUI(); });
-        db.ref('devices/' + deviceId + '/config').once('value', s => { if(s.val()) { const c = s.val(); if(c.cal_volt) document.getElementById('calDisp_volt').innerText = c.cal_volt; } });
-        
-        // Init Report Date Picker to Today
         document.getElementById('reportDate').valueAsDate = new Date();
     }
 
@@ -239,10 +244,8 @@
         else { t.disabled = false; m.style.display = 'flex'; rDisplay.innerText = "System Operator"; rDisplay.style.color = "var(--success)"; } 
     }
     
-    // --- SAFETY INTERLOCK ---
     function toggleAlarm(cb) { 
         if (userRole !== 'admin') { cb.checked = !cb.checked; return; } 
-        // If unchecking (Disarm), ask confirmation
         if (!cb.checked) { cb.checked = true; document.getElementById('confirmOverlay').style.display = 'flex'; } 
         else { if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(true); }
     }
@@ -261,43 +264,33 @@
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
         updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); cChart.update();
-        runAIAnalysis(v, t, vib); addToReport(d); checkAndSendEmail(d);
-    }
-
-    // --- DATA LOGGING & FILTERING ---
-    function addToReport(d) {
-        const now = new Date(); // Store as Object
-        sessionLog.push({time: now, v:d.voltage, c1:d.currentL1, c2:d.currentL2, pf:d.pf, t:d.temp, vib:d.vib});
-        // Filter immediately if Report View is open
-        if(document.getElementById('reportView').style.display === 'block') filterReportByDate();
+        runAIAnalysis(v, t, vib); checkAndSendEmail(d);
+        
+        // Add live point to session log & history
+        const now = new Date();
+        const pt = {time: now, v:v, c1:c1, c2:c2, pf:pf, t:t, vib:vib};
+        sessionLog.push(pt);
+        if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
     }
 
     function filterReportByDate() {
-        const picker = document.getElementById('reportDate');
-        if(!picker.value) return;
-        const selectedDate = picker.value; // YYYY-MM-DD
-        const tbody = document.getElementById('dailyTableBody');
-        tbody.innerHTML = "";
-
+        const picker = document.getElementById('reportDate'); if(!picker.value) return;
+        const selectedDate = picker.value;
+        const tbody = document.getElementById('dailyTableBody'); tbody.innerHTML = "";
         const filtered = sessionLog.filter(d => d.time.toISOString().split('T')[0] === selectedDate);
-        filtered.forEach(d => {
-             // Prepend (newest top)
+        filtered.reverse().forEach(d => {
             let r = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${Number(d.v).toFixed(1)}</td><td>${Number(d.c1).toFixed(1)}</td><td>${Number(d.c2).toFixed(1)}</td><td>${Number(d.pf).toFixed(2)}</td><td>${Number(d.t).toFixed(1)}</td><td>${Number(d.vib).toFixed(2)}</td></tr>`; 
-            tbody.insertAdjacentHTML('afterbegin',r);
+            tbody.insertAdjacentHTML('beforeend',r);
         });
     }
 
     function filterHistory(range, btn) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const now = new Date();
-        let cutoff = new Date();
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+        const now = new Date(); let cutoff = new Date();
         if (range === '1h') cutoff.setHours(now.getHours() - 1);
         if (range === '6h') cutoff.setHours(now.getHours() - 6);
         if (range === '24h') cutoff.setHours(now.getHours() - 24);
         if (range === 'all') cutoff = new Date(0);
-
         const filtered = sessionLog.filter(d => d.time >= cutoff);
         refreshHistoryChart(filtered);
     }
@@ -315,7 +308,6 @@
         if(v==='dailyView') filterReportByDate();
     }
 
-    // --- CHART LOGIC ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef'); const tChart = createMiniChart('chartTemp', '#ef4444'); const vibChart = createMiniChart('chartVib', '#fbbf24');
     const cChart = new Chart(document.getElementById('chartCurr').getContext('2d'), { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'L1',data:Array(20).fill(0),borderColor:'#10b981',borderWidth:2,pointRadius:0,tension:0.4},{label:'L2',data:Array(20).fill(0),borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:0.4}]}, options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{display:true,grid:{display:false},ticks:{color:'#555',font:{size:9}}}},plugins:{legend:{display:true,labels:{color:'#ccc'}}},animation:false} });
