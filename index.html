@@ -43,8 +43,7 @@
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         .device-selector { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; outline: none; }
-        .device-selector:hover { border-color: var(--accent-purple); }
-
+        
         /* WIDGETS */
         .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; transition: all 0.3s ease; }
         .status-online { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
@@ -62,33 +61,32 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
-        .switch input:disabled + .slider { opacity: 0.6; cursor: not-allowed; }
-        .switch input:checked:disabled + .slider { background-color: var(--accent-purple); }
-
-        .ai-card { grid-column: span 2; border: 1px solid var(--accent-purple); background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); }
+        
+        /* NEW OVERLAYS & CONTROLS */
         .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .data-table td, .data-table th { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); text-align: left; }
 
+        /* NEW FILTER BUTTONS */
+        .filter-btn { background: #333; border: 1px solid #555; color: #ccc; padding: 5px 15px; border-radius: 20px; cursor: pointer; margin-right: 5px; font-size: 0.8rem; }
+        .filter-btn.active { background: var(--accent-purple); color: white; border-color: var(--accent-purple); }
+        .date-picker { background: #1c212c; border: 1px solid #444; color: white; padding: 8px; border-radius: 8px; margin-right: 15px; }
+
         /* MAINTENANCE */
         .maint-card { background: #151921; border: 1px solid #d946ef; padding: 30px; border-radius: 15px; box-shadow: 0 0 25px rgba(217, 70, 239, 0.1); max-width: 800px; margin: 0 auto 40px auto; }
         .sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; opacity: 0.5; pointer-events: none; transition: 0.3s; margin-top: 30px; }
         .cal-controls { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
-        .sim-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: #333; border-radius: 5px; outline: none; cursor: pointer; margin-top: 10px; }
-        .sim-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: #d946ef; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 10px rgba(217, 70, 239, 0.5); }
-        .sim-slider::-moz-range-thumb { width: 22px; height: 22px; background: #d946ef; border-radius: 50%; cursor: pointer; border: 2px solid white; }
-        .cal-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: #333; border-radius: 5px; outline: none; cursor: pointer; margin-top: 10px; }
-        .cal-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: #06b6d4; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+        .sim-slider, .cal-slider { width: 100%; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Node</div><div class="role-desc">Read-only access to real-time telemetry.</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div><div class="role-desc">Full administrative control.</div></div></div></section>
-    <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Operator ID" class="login-input"><input type="password" id="password" placeholder="Access Key" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()">Return to Role Selection</div></div></section>
-    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 20px;">Re-enter Access Key to unlock Calibration Controls.</p><input type="password" id="reAuthPass" placeholder="Access Key" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer; font-size:0.8rem; color:#aaa;">Cancel</div></div></div>
+    <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Node</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div></div></div></section>
+    <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Email" class="login-input"><input type="password" id="password" placeholder="Password" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()">Return</div></div></section>
+    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
     
-    <div id="confirmOverlay"><div class="login-card" style="border-color: #ef4444; width: 350px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">Are you sure you want to <b>DISARM</b> the safety alarm system? Email alerts and buzzer will be disabled.</p><div style="display: flex; gap: 15px;"><button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">YES, DISARM</button><button class="login-btn" onclick="cancelDisarm()" style="background: #333; border: 1px solid #555; margin:0;">CANCEL</button></div></div></div>
+    <div id="confirmOverlay"><div class="login-card" style="border-color: #ef4444; width: 350px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">DISARM safety alarm system?</p><div style="display: flex; gap: 15px;"><button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">DISARM</button><button class="login-btn" onclick="cancelDisarm()" style="background: #333; margin:0;">CANCEL</button></div></div></div>
 
     <div id="appContainer">
         <nav class="sidebar">
@@ -131,38 +129,57 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;"><div><h3 style="color:white; margin:0;">Test Injection Mode</h3><small style="color:#aaa;">Overrides sensors to test alarm logic.</small></div><button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; transition:0.3s;">ENABLE TEST MODE</button></div>
                 <div class="sim-controls" id="simControls">
                     <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Voltage</label><span id="simVal_voltage" style="color:#d946ef; font-weight:bold;">230</span></div><input type="range" min="0" max="300" value="230" class="sim-slider" oninput="updateSim('voltage', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Current L1</label><span id="simVal_currentL1" style="color:#d946ef; font-weight:bold;">10</span></div><input type="range" min="0" max="100" value="10" class="sim-slider" oninput="updateSim('currentL1', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Current L2</label><span id="simVal_currentL2" style="color:#d946ef; font-weight:bold;">12</span></div><input type="range" min="0" max="100" value="12" class="sim-slider" oninput="updateSim('currentL2', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>PF</label><span id="simVal_pf" style="color:#d946ef; font-weight:bold;">0.95</span></div><input type="range" min="0" max="1" step="0.01" value="0.95" class="sim-slider" oninput="updateSim('pf', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Temp</label><span id="simVal_temp" style="color:#d946ef; font-weight:bold;">45</span></div><input type="range" min="20" max="120" value="45" class="sim-slider" oninput="updateSim('temp', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Vib</label><span id="simVal_vib" style="color:#d946ef; font-weight:bold;">0.05</span></div><input type="range" min="0" max="5" step="0.1" value="0.05" class="sim-slider" oninput="updateSim('vib', this.value)"></div>
-                </div>
+                    </div>
             </div>
             <div class="maint-card" style="border-color: #06b6d4;">
                 <div style="border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 20px;">
                     <h3 style="color:white; margin:0;">Sensor Calibration</h3><small style="color:#aaa;">Fine-tune sensor multipliers directly on the ESP32.</small>
                 </div>
                 <div class="cal-controls">
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Voltage Factor (Default: 0.3284)</label><span id="calDisp_volt" style="color:#06b6d4; font-weight:bold;">0.3284</span></div><input type="range" min="0.1" max="1.0" step="0.0001" value="0.328381" class="cal-slider" oninput="updateCal('volt', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Current L1 Factor (Default: 0.066)</label><span id="calDisp_curr1" style="color:#06b6d4; font-weight:bold;">0.066</span></div><input type="range" min="0.01" max="0.2" step="0.0001" value="0.066" class="cal-slider" oninput="updateCal('curr1', this.value)"></div>
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Current L2 Factor (Default: 0.066)</label><span id="calDisp_curr2" style="color:#06b6d4; font-weight:bold;">0.066</span></div><input type="range" min="0.01" max="0.2" step="0.0001" value="0.066" class="cal-slider" oninput="updateCal('curr2', this.value)"></div>
-                </div>
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Voltage Factor</label><span id="calDisp_volt" style="color:#06b6d4; font-weight:bold;">0.3284</span></div><input type="range" min="0.1" max="1.0" step="0.0001" value="0.328381" class="cal-slider" oninput="updateCal('volt', this.value)"></div>
+                    </div>
             </div>
         </div>
 
-        <div class="history-overlay" id="historyView"><div style="display:flex; justify-content:space-between; margin-bottom:25px;"><div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Session Telemetry Log</span></div><button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button></div><div class="card" style="height:500px; padding:20px;"><canvas id="historyChart"></canvas></div></div>
-        <div class="daily-overlay" id="dailyView"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;"><div><h2>DAILY REPORT</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Aggregated averages from active session</span></div><div><button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;"><i class="fa-solid fa-file-csv"></i> EXPORT CSV</button><button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button></div></div><div class="card" style="min-height: 500px;"><table class="data-table"><thead><tr><th>TIMESTAMP</th><th>VOLT</th><th>L1</th><th>L2</th><th>PF</th><th>TEMP</th><th>VIB</th></tr></thead><tbody id="dailyTableBody"></tbody></table></div></div>
+        <div class="history-overlay" id="historyView">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Session Telemetry Log</span></div>
+                <div>
+                    <button class="filter-btn active" onclick="filterHistory('1h', this)">1 Hour</button>
+                    <button class="filter-btn" onclick="filterHistory('6h', this)">6 Hours</button>
+                    <button class="filter-btn" onclick="filterHistory('24h', this)">24 Hours</button>
+                    <button class="filter-btn" onclick="filterHistory('all', this)">All Data</button>
+                    <button class="btn-action" style="background:#333; margin-left: 20px;" onclick="showView('dashboardView')">CLOSE</button>
+                </div>
+            </div>
+            <div class="card" style="height:500px; padding:20px;"><canvas id="historyChart"></canvas></div>
+        </div>
+
+        <div class="daily-overlay" id="dailyView">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <div><h2>DAILY REPORT</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Log Export & Filtering</span></div>
+                <div style="display:flex; align-items:center;">
+                    <span style="margin-right:10px; font-size:0.9rem; color:#aaa;">Filter Date:</span>
+                    <input type="date" id="reportDate" class="date-picker" onchange="filterReportByDate()">
+                    <button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;"><i class="fa-solid fa-file-csv"></i> EXPORT CSV</button>
+                    <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
+                </div>
+            </div>
+            <div class="card" style="min-height: 500px;"><table class="data-table"><thead><tr><th>TIMESTAMP</th><th>VOLT</th><th>L1</th><th>L2</th><th>PF</th><th>TEMP</th><th>VIB</th></tr></thead><tbody id="dailyTableBody"></tbody></table></div>
+        </div>
     </div>
 
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI", authDomain: "tx-monitoring-system.firebaseapp.com", databaseURL: "https://tx-monitoring-system-default-rtdb.asia-southeast1.firebasedatabase.app/", projectId: "tx-monitoring-system", appId: "1:743234758196:web:d9af692ea827088e940c61" };
+    const firebaseConfig = { apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI", authDomain: "tx-monitoring-system.firebaseapp.com", databaseURL: "https://tx-monitoring-system-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "tx-monitoring-system", appId: "1:743234758196:web:d9af692ea827088e940c61" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database(); const auth = firebase.auth(); emailjs.init("2wsEDwcqVrLmPDV7e");
 
     let userRole = 'observer'; let savedPassword = ""; let activeListener = null; let currentDeviceID = null; 
-    let isTestMode = false; let lastHeartbeat = Date.now(); let sessionLog = []; let historyChartInstance = null;
-    let isAlarmArmed = false; // Tracks current state
-    let lastEmailSent = 0; // Throttling for email
+    let isTestMode = false; let lastHeartbeat = Date.now(); 
+    let sessionLog = []; // Stores actual data objects now, not just strings
+    let historyChartInstance = null;
+    let isAlarmArmed = false; 
+    let lastEmailSent = 0; 
 
     function startWatchdog() { setInterval(() => { if (Date.now() - lastHeartbeat > 300000) { document.getElementById('netStatus').innerText = "OFFLINE"; document.getElementById('netStatus').className = "status-badge status-offline"; } }, 1000); }
 
@@ -182,12 +199,22 @@
         activeListener = db.ref('devices/' + deviceId);
         activeListener.on('value', snap => { const d = snap.val(); if(!d) return; lastHeartbeat = Date.now(); updateDashboard(d); });
 
+        // --- UPDATED: 2-WAY SYNC FOR ALARM TOGGLE ---
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
-            isAlarmArmed = s.val();
-            document.getElementById('alarmArmToggle').checked = isAlarmArmed; 
+            const serverState = s.val();
+            const toggle = document.getElementById('alarmArmToggle');
+            // Only update visual state if it doesn't match, preventing loop
+            if (toggle.checked !== serverState) {
+                isAlarmArmed = serverState;
+                toggle.checked = serverState; 
+            }
         });
+        
         db.ref('devices/' + deviceId + '/control/testMode').on('value', s => { isTestMode = s.val(); updateTestUI(); });
-        db.ref('devices/' + deviceId + '/config').once('value', s => { if(s.val()) { const c = s.val(); if(c.cal_volt) { document.querySelector('input[oninput*="volt"]').value = c.cal_volt; document.getElementById('calDisp_volt').innerText = c.cal_volt; } if(c.cal_curr1) { document.querySelector('input[oninput*="curr1"]').value = c.cal_curr1; document.getElementById('calDisp_curr1').innerText = c.cal_curr1; } if(c.cal_curr2) { document.querySelector('input[oninput*="curr2"]').value = c.cal_curr2; document.getElementById('calDisp_curr2').innerText = c.cal_curr2; } } });
+        db.ref('devices/' + deviceId + '/config').once('value', s => { if(s.val()) { const c = s.val(); if(c.cal_volt) document.getElementById('calDisp_volt').innerText = c.cal_volt; } });
+        
+        // Init Report Date Picker to Today
+        document.getElementById('reportDate').valueAsDate = new Date();
     }
 
     function updateTestUI() {
@@ -199,7 +226,7 @@
     }
 
     function selectRole(role) { userRole = role === 'admin' ? 'admin' : 'observer'; if (role === 'observer') { document.getElementById('landingView').style.display = 'none'; document.getElementById('appContainer').style.display = 'block'; updateRoleUI(); loadDeviceList(); } else { document.getElementById('landingView').style.display = 'none'; document.getElementById('loginView').style.display = 'flex'; } }
-    function login() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).then(() => { userRole = 'admin'; savedPassword = document.getElementById('password').value; document.getElementById('loginView').style.display = 'none'; document.getElementById('appContainer').style.display = 'block'; updateRoleUI(); loadDeviceList(); }).catch(() => document.getElementById('loginError').style.display = 'block'); }
+    function login() { auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value).then(() => { userRole = 'admin'; savedPassword = document.getElementById('password').value; document.getElementById('loginView').style.display = 'none'; document.getElementById('appContainer').style.display = 'block'; updateRoleUI(); loadDeviceList(); }).catch((e) => alert(e.message)); }
     function checkMaintenanceAuth() { if(userRole !== 'admin') return; document.getElementById('authOverlay').style.display = 'flex'; document.getElementById('reAuthPass').value = ""; }
     function verifyMaintenanceAccess() { if(document.getElementById('reAuthPass').value === savedPassword) { document.getElementById('authOverlay').style.display = 'none'; showView('maintenanceView'); } else { alert("Incorrect Access Key"); } }
     function closeAuthOverlay() { document.getElementById('authOverlay').style.display = 'none'; }
@@ -212,37 +239,16 @@
         else { t.disabled = false; m.style.display = 'flex'; rDisplay.innerText = "System Operator"; rDisplay.style.color = "var(--success)"; } 
     }
     
-    // --- SAFETY INTERLOCK & EMAIL ---
+    // --- SAFETY INTERLOCK ---
     function toggleAlarm(cb) { 
         if (userRole !== 'admin') { cb.checked = !cb.checked; return; } 
+        // If unchecking (Disarm), ask confirmation
         if (!cb.checked) { cb.checked = true; document.getElementById('confirmOverlay').style.display = 'flex'; } 
         else { if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(true); }
     }
     function confirmDisarm() { document.getElementById('confirmOverlay').style.display = 'none'; document.getElementById('alarmArmToggle').checked = false; if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(false); }
     function cancelDisarm() { document.getElementById('confirmOverlay').style.display = 'none'; document.getElementById('alarmArmToggle').checked = true; }
 
-    function checkAndSendEmail(d) {
-        if (!isAlarmArmed) return; // Feature disabled if Disarmed
-        if (Date.now() - lastEmailSent < 300000) return; // 5 Minute Cooldown
-
-        let fault = "";
-        if (d.voltage > 260) fault = "High Voltage";
-        else if (d.temp > 80) fault = "Overheating";
-        else if (d.vib > 0.5) fault = "High Vibration";
-
-        if (fault !== "") {
-            lastEmailSent = Date.now();
-            emailjs.send("service_id", "template_id", { // REPLACE WITH YOUR ID
-                device: currentDeviceID,
-                fault_type: fault,
-                voltage: d.voltage,
-                temp: d.temp,
-                timestamp: new Date().toLocaleString()
-            }).then(() => console.log("Email Sent")).catch(e => console.error(e));
-        }
-    }
-
-    function toggleSimulation() { if(!currentDeviceID) return; isTestMode = !isTestMode; db.ref('devices/' + currentDeviceID + '/control/testMode').set(isTestMode); if(isTestMode) { updateSim('voltage', 230); updateSim('temp', 45); updateSim('vib', 0); } }
     function updateSim(key, val) { if(!currentDeviceID) return; document.getElementById('simVal_' + key).innerText = val; db.ref('devices/' + currentDeviceID + '/control/testValues/' + key).set(parseFloat(val)); }
     function updateCal(key, val) { if(!currentDeviceID) return; document.getElementById('calDisp_' + key).innerText = val; db.ref('devices/' + currentDeviceID + '/config/cal_' + key).set(parseFloat(val)); }
 
@@ -258,23 +264,89 @@
         runAIAnalysis(v, t, vib); addToReport(d); checkAndSendEmail(d);
     }
 
+    // --- DATA LOGGING & FILTERING ---
     function addToReport(d) {
-        const now = new Date().toLocaleTimeString(); const s = d.status||"ONLINE"; sessionLog.push({time:now,v:d.voltage,c1:d.currentL1,c2:d.currentL2,pf:d.pf,t:d.temp,vib:d.vib}); if(sessionLog.length>200) sessionLog.shift();
-        const b = document.getElementById('dailyTableBody'); let r = `<tr><td>${now}</td><td>${Number(d.voltage).toFixed(1)}</td><td>${Number(d.currentL1).toFixed(1)}</td><td>${Number(d.currentL2).toFixed(1)}</td><td>${Number(d.pf).toFixed(2)}</td><td>${Number(d.temp).toFixed(1)}</td><td>${Number(d.vib).toFixed(2)}</td></tr>`; b.insertAdjacentHTML('afterbegin',r); if(b.rows.length>50) b.deleteRow(50);
+        const now = new Date(); // Store as Object
+        sessionLog.push({time: now, v:d.voltage, c1:d.currentL1, c2:d.currentL2, pf:d.pf, t:d.temp, vib:d.vib});
+        // Filter immediately if Report View is open
+        if(document.getElementById('reportView').style.display === 'block') filterReportByDate();
     }
-    function downloadCSV() { let c = "data:text/csv;charset=utf-8,Time,V,L1,L2,PF,Temp,Vib\n"; sessionLog.forEach(r => { c += `${r.time},${r.v},${r.c1},${r.c2},${r.pf},${r.t},${r.vib}\n`; }); const l = document.createElement("a"); l.href = encodeURI(c); l.download = "txms.csv"; l.click(); }
-    function showView(v) { ['dashboardView', 'historyView', 'dailyView', 'maintenanceView'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById(v).style.display = 'block'; if(v==='historyView') refreshHistoryChart(); }
+
+    function filterReportByDate() {
+        const picker = document.getElementById('reportDate');
+        if(!picker.value) return;
+        const selectedDate = picker.value; // YYYY-MM-DD
+        const tbody = document.getElementById('dailyTableBody');
+        tbody.innerHTML = "";
+
+        const filtered = sessionLog.filter(d => d.time.toISOString().split('T')[0] === selectedDate);
+        filtered.forEach(d => {
+             // Prepend (newest top)
+            let r = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${Number(d.v).toFixed(1)}</td><td>${Number(d.c1).toFixed(1)}</td><td>${Number(d.c2).toFixed(1)}</td><td>${Number(d.pf).toFixed(2)}</td><td>${Number(d.t).toFixed(1)}</td><td>${Number(d.vib).toFixed(2)}</td></tr>`; 
+            tbody.insertAdjacentHTML('afterbegin',r);
+        });
+    }
+
+    function filterHistory(range, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const now = new Date();
+        let cutoff = new Date();
+        if (range === '1h') cutoff.setHours(now.getHours() - 1);
+        if (range === '6h') cutoff.setHours(now.getHours() - 6);
+        if (range === '24h') cutoff.setHours(now.getHours() - 24);
+        if (range === 'all') cutoff = new Date(0);
+
+        const filtered = sessionLog.filter(d => d.time >= cutoff);
+        refreshHistoryChart(filtered);
+    }
+
+    function downloadCSV() { 
+        let c = "data:text/csv;charset=utf-8,Time,V,L1,L2,PF,Temp,Vib\n"; 
+        sessionLog.forEach(r => { c += `${r.time.toLocaleString()},${r.v},${r.c1},${r.c2},${r.pf},${r.t},${r.vib}\n`; }); 
+        const l = document.createElement("a"); l.href = encodeURI(c); l.download = "txms.csv"; l.click(); 
+    }
+
+    function showView(v) { 
+        ['dashboardView', 'historyView', 'dailyView', 'maintenanceView'].forEach(id => document.getElementById(id).style.display = 'none'); 
+        document.getElementById(v).style.display = 'block'; 
+        if(v==='historyView') refreshHistoryChart(sessionLog); 
+        if(v==='dailyView') filterReportByDate();
+    }
+
+    // --- CHART LOGIC ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef'); const tChart = createMiniChart('chartTemp', '#ef4444'); const vibChart = createMiniChart('chartVib', '#fbbf24');
     const cChart = new Chart(document.getElementById('chartCurr').getContext('2d'), { type:'line', data:{labels:Array(20).fill(''), datasets:[{label:'L1',data:Array(20).fill(0),borderColor:'#10b981',borderWidth:2,pointRadius:0,tension:0.4},{label:'L2',data:Array(20).fill(0),borderColor:'#06b6d4',borderWidth:2,pointRadius:0,tension:0.4}]}, options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false},y:{display:true,grid:{display:false},ticks:{color:'#555',font:{size:9}}}},plugins:{legend:{display:true,labels:{color:'#ccc'}}},animation:false} });
+    
     function updateSingleChart(c, v) { c.data.datasets[0].data.push(v); c.data.datasets[0].data.shift(); c.update(); }
+    
+    function initHistoryChart() { 
+        const ctx = document.getElementById('historyChart').getContext('2d'); 
+        historyChartInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [ { label: 'V', data: [], borderColor: '#7c3aed', yAxisID: 'y' }, { label: 'Temp', data: [], borderColor: '#ef4444', yAxisID: 'y1' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left' }, y1: { position: 'right', grid: { drawOnChartArea: false } } } } }); 
+    }
+    
+    function refreshHistoryChart(data) { 
+        if (!historyChartInstance) initHistoryChart(); 
+        if (!data) data = sessionLog;
+        historyChartInstance.data.labels = data.map(d => d.time.toLocaleTimeString()); 
+        historyChartInstance.data.datasets[0].data = data.map(d => d.v); 
+        historyChartInstance.data.datasets[1].data = data.map(d => d.t); 
+        historyChartInstance.update(); 
+    }
+
+    function checkAndSendEmail(d) {
+        if (!isAlarmArmed || Date.now() - lastEmailSent < 300000) return;
+        let fault = "";
+        if (d.voltage > 260) fault = "High Voltage"; else if (d.temp > 80) fault = "Overheating"; else if (d.vib > 0.5) fault = "High Vibration";
+        if (fault !== "") { lastEmailSent = Date.now(); emailjs.send("service_id", "template_id", { device: currentDeviceID, fault_type: fault, voltage: d.voltage, temp: d.temp }).then(() => console.log("Email Sent")).catch(e => console.error(e)); }
+    }
+    
     function runAIAnalysis(v, t, vib) { const a = document.getElementById('predictMsg'); if(t>60){a.innerText="Overheat Warning";a.style.color="var(--warning)";}else if(vib>0.5){a.innerText="Vibration Alert";a.style.color="var(--danger)";}else if(v>260){a.innerText="Overvoltage";a.style.color="var(--danger)";}else{a.innerText="System Nominal";a.style.color="var(--success)";} }
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'; }
-    function initHistoryChart() { const ctx = document.getElementById('historyChart').getContext('2d'); historyChartInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [ { label: 'V', data: [], borderColor: '#7c3aed', yAxisID: 'y' }, { label: 'L1', data: [], borderColor: '#10b981', yAxisID: 'y1' }, { label: 'L2', data: [], borderColor: '#06b6d4', yAxisID: 'y1' }, { label: 'Temp', data: [], borderColor: '#ef4444', yAxisID: 'y1' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left' }, y1: { position: 'right', grid: { drawOnChartArea: false } } } } }); }
-    function refreshHistoryChart() { if (!historyChartInstance) initHistoryChart(); const l = sessionLog.map(d => d.time); historyChartInstance.data.labels = l; historyChartInstance.data.datasets[0].data = sessionLog.map(d => d.v); historyChartInstance.data.datasets[1].data = sessionLog.map(d => d.c1); historyChartInstance.data.datasets[2].data = sessionLog.map(d => d.c2); historyChartInstance.data.datasets[3].data = sessionLog.map(d => d.t); historyChartInstance.update(); }
     
     startWatchdog(); 
 </script>
 </body>
 </html>
-
