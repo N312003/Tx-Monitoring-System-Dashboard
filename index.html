@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TxMS PRO | Maintenance Access</title>
+    <title>TxMS PRO | Multi-Node Access</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -25,12 +25,12 @@
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
         /* --- SCREENS (Login, Landing, Auth) --- */
-        #landingView, #loginView, #authOverlay {
+        #landingView, #loginView, #authOverlay, #confirmOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%);
             z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        #authOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
+        #authOverlay, #confirmOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
         
         .role-container { display: flex; gap: 30px; margin-top: 30px; }
         .role-card {
@@ -69,30 +69,25 @@
         .device-selector { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; outline: none; }
         .device-selector:hover { border-color: var(--accent-purple); }
 
-        /* --- STATUS BADGES --- */
+        /* --- WIDGETS --- */
         .status-badge { padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; transition: all 0.3s ease; }
         .status-online { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
         .status-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; }
         .status-test { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* --- UI COMPONENTS --- */
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between; }
         .chart-container { height: 120px; margin-top: 15px; width: 100%; }
         
-        /* TOGGLE SWITCH WITH OBSERVER FIX */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
-        
-        /* VISUAL FIX FOR DISABLED TOGGLE IN OBSERVER MODE */
-        /* Normally disabled buttons go gray. This keeps it colored if checked, but adds opacity to show it's read-only. */
         .switch input:disabled + .slider { opacity: 0.6; cursor: not-allowed; }
-        .switch input:checked:disabled + .slider { background-color: var(--accent-purple); } /* Keeps status visible */
+        .switch input:checked:disabled + .slider { background-color: var(--accent-purple); }
 
         .ai-card { grid-column: span 2; border: 1px solid var(--accent-purple); background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); }
         .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
@@ -101,22 +96,12 @@
         .data-table td, .data-table th { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); text-align: left; }
 
         /* --- MAINTENANCE CONSOLE SPECIFIC --- */
-        .maint-card { 
-            background: #151921; 
-            border: 1px solid #d946ef; 
-            padding: 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 0 25px rgba(217, 70, 239, 0.1); 
-            max-width: 800px;
-            margin: 0 auto 40px auto; 
-        }
+        .maint-card { background: #151921; border: 1px solid #d946ef; padding: 30px; border-radius: 15px; box-shadow: 0 0 25px rgba(217, 70, 239, 0.1); max-width: 800px; margin: 0 auto 40px auto; }
         .sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; opacity: 0.5; pointer-events: none; transition: 0.3s; margin-top: 30px; }
         .cal-controls { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
-        
         .sim-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: #333; border-radius: 5px; outline: none; cursor: pointer; margin-top: 10px; }
         .sim-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: #d946ef; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 10px rgba(217, 70, 239, 0.5); }
         .sim-slider::-moz-range-thumb { width: 22px; height: 22px; background: #d946ef; border-radius: 50%; cursor: pointer; border: 2px solid white; }
-        
         .cal-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: #333; border-radius: 5px; outline: none; cursor: pointer; margin-top: 10px; }
         .cal-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: #06b6d4; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
     </style>
@@ -125,7 +110,20 @@
 
     <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Node</div><div class="role-desc">Read-only access to real-time telemetry.</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div><div class="role-desc">Full administrative control.</div></div></div></section>
     <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Operator ID" class="login-input"><input type="password" id="password" placeholder="Access Key" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()">Return to Role Selection</div></div></section>
+    
     <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 20px;">Re-enter Access Key to unlock Calibration Controls.</p><input type="password" id="reAuthPass" placeholder="Access Key" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer; font-size:0.8rem; color:#aaa;">Cancel</div></div></div>
+
+    <div id="confirmOverlay">
+        <div class="login-card" style="border-color: #ef4444; width: 350px;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i>
+            <h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2>
+            <p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">Are you sure you want to <b>DISARM</b> the safety alarm system?</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">YES, DISARM</button>
+                <button class="login-btn" onclick="cancelDisarm()" style="background: #333; border: 1px solid #555; margin:0;">CANCEL</button>
+            </div>
+        </div>
+    </div>
 
     <div id="appContainer">
         <nav class="sidebar">
@@ -139,7 +137,13 @@
 
         <main class="main-content" id="dashboardView">
             <div class="header" id="mainHeader">
-                <div><h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span><select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)"><option value="" disabled selected>Searching Network...</option></select></div>
+                <div>
+                    <h1>TxMS PRO</h1>
+                    <span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span>
+                    <select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)">
+                        <option value="" disabled selected>Searching Network...</option>
+                    </select>
+                </div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="text-align: right;">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ARM ALARM</div>
@@ -247,29 +251,48 @@
     function logout() { auth.signOut(); window.location.reload(); }
     function goBackToLanding() { document.getElementById('loginView').style.display = 'none'; document.getElementById('landingView').style.display = 'flex'; }
     
-    // --- ROLE & UI UPDATES ---
+    // --- UPDATED UI ROLE LOGIC ---
     function updateRoleUI() { 
         const t = document.getElementById('alarmArmToggle'); 
         const m = document.getElementById('navMaint'); 
-        
+        const rDisplay = document.getElementById('roleDisplay');
+
         if (userRole === 'observer') { 
-            // DISABLE INTERACTION BUT SHOW STATUS
             t.disabled = true; 
             m.style.display = 'none'; 
+            rDisplay.innerText = "Observer Mode";
+            rDisplay.style.color = "var(--text-muted)";
         } else { 
-            // ENABLE INTERACTION
             t.disabled = false; 
             m.style.display = 'flex'; 
+            rDisplay.innerText = "System Operator";
+            rDisplay.style.color = "var(--success)";
         } 
     }
     
+    // --- SAFETY INTERLOCK LOGIC ---
     function toggleAlarm(cb) { 
-        // DOUBLE CHECK ROLE TO PREVENT UNAUTHORIZED CHANGES
-        if (userRole !== 'admin') { 
-            cb.checked = !cb.checked; // REVERT IF CLICKED SOMEHOW
-            return; 
-        } 
-        if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked); 
+        if (userRole !== 'admin') { cb.checked = !cb.checked; return; } 
+        
+        // If attempting to Turn OFF (Disarm) -> Show Confirmation
+        if (!cb.checked) {
+            cb.checked = true; // Revert visually until confirmed
+            document.getElementById('confirmOverlay').style.display = 'flex';
+        } else {
+            // Turning ON (Arming) is safe -> Execute immediately
+            if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(true); 
+        }
+    }
+
+    function confirmDisarm() {
+        document.getElementById('confirmOverlay').style.display = 'none';
+        document.getElementById('alarmArmToggle').checked = false; // Visual OFF
+        if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(false); // Logic OFF
+    }
+
+    function cancelDisarm() {
+        document.getElementById('confirmOverlay').style.display = 'none';
+        document.getElementById('alarmArmToggle').checked = true; // Keep ON
     }
 
     function toggleSimulation() { if(!currentDeviceID) return; isTestMode = !isTestMode; db.ref('devices/' + currentDeviceID + '/control/testMode').set(isTestMode); if(isTestMode) { updateSim('voltage', 230); updateSim('temp', 45); updateSim('vib', 0); } }
