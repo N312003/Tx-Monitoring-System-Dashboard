@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TxMS PRO | Maintenance Access</title>
+    <title>TxMS | Multi-Node Access</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
+        /* --- CORE THEME --- */
         :root {
             --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: rgba(28, 33, 44, 0.7);
             --accent-purple: #8b5cf6; --accent-glow: rgba(139, 92, 246, 0.3);
@@ -23,14 +24,13 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
-        /* --- LANDING & LOGIN SCREENS --- */
+        /* --- SCREENS (Login, Landing, Auth) --- */
         #landingView, #loginView, #authOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%);
             z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        /* Auth Overlay (Hidden by default) */
-        #authOverlay { background: rgba(5, 7, 10, 0.9); backdrop-filter: blur(10px); display: none; }
+        #authOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
         
         .role-container { display: flex; gap: 30px; margin-top: 30px; }
         .role-card {
@@ -54,10 +54,8 @@
         .login-btn:hover { box-shadow: 0 0 20px var(--accent-glow); transform: scale(1.02); }
         .back-link { color: var(--text-muted); font-size: 0.8rem; margin-top: 15px; cursor: pointer; text-decoration: underline; }
 
-        /* --- APP CONTAINER --- */
+        /* --- APP LAYOUT --- */
         #appContainer { display: none; width: 100%; } 
-        
-        /* --- SIDEBAR & LAYOUT --- */
         .sidebar { width: 80px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; align-items: center; padding-top: 20px; position: fixed; height: 100%; z-index: 100; border-right: 1px solid #2d3748; }
         .logo { font-size: 1.2rem; font-weight: 800; margin-bottom: 40px; color: var(--accent-purple); }
         .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
@@ -66,7 +64,6 @@
         .logout-btn { margin-top: auto; margin-bottom: 20px; color: var(--danger); }
         
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
-        
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         
         .device-selector {
@@ -83,11 +80,12 @@
         .status-test { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* --- UI COMPONENTS --- */
+        /* --- COMPONENTS --- */
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         .card { background-color: var(--bg-card); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between; }
         .chart-container { height: 120px; margin-top: 15px; width: 100%; }
         
+        /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
@@ -97,21 +95,55 @@
         .switch.disabled { opacity: 0.5; cursor: not-allowed; }
         .switch.disabled .slider { cursor: not-allowed; background-color: #222; }
 
-        /* --- AI COLORS --- */
+        /* AI Colors */
         .ai-card { grid-column: span 2; transition: all 0.5s ease; border: 1px solid var(--accent-purple); background: linear-gradient(135deg, #1c212c 0%, #2a1a3f 100%); }
         .pulse-icon { animation: icon-glow 1.5s infinite; }
         @keyframes icon-glow { 0% { filter: drop-shadow(0 0 2px currentColor); } 50% { filter: drop-shadow(0 0 8px currentColor); } 100% { filter: drop-shadow(0 0 2px currentColor); } }
 
-        /* --- OVERLAYS --- */
+        /* Overlays (History, Report, Maintenance) */
         .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .data-table td, .data-table th { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main); text-align: left; }
-        
-        /* --- MAINTENANCE SPECIFIC --- */
-        .sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; opacity: 0.5; pointer-events: none; transition: 0.3s; margin-top: 30px; }
-        .sim-slider { width: 100%; cursor: pointer; accent-color: #d946ef; height: 8px; background: #333; border-radius: 5px; outline: none; }
-        .maint-card { background: #151921; border: 1px solid #d946ef; padding: 30px; border-radius: 15px; box-shadow: 0 0 25px rgba(217, 70, 239, 0.1); }
+
+        /* --- MAINTENANCE CONSOLE SPECIFIC --- */
+        .maint-card { 
+            background: #151921; 
+            border: 1px solid #d946ef; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 0 25px rgba(217, 70, 239, 0.1); 
+            max-width: 800px;
+            margin: 0 auto; 
+        }
+        .sim-controls { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 40px; 
+            opacity: 0.5; 
+            pointer-events: none; 
+            transition: 0.3s; 
+            margin-top: 30px; 
+        }
+        /* Slider Styling Fix for Dark Mode */
+        .sim-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 10px;
+            background: #333; border-radius: 5px;
+            outline: none; cursor: pointer; margin-top: 10px;
+        }
+        .sim-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 22px; height: 22px;
+            background: #d946ef; border-radius: 50%;
+            cursor: pointer; border: 2px solid white;
+            box-shadow: 0 0 10px rgba(217, 70, 239, 0.5);
+        }
+        .sim-slider::-moz-range-thumb {
+            width: 22px; height: 22px;
+            background: #d946ef; border-radius: 50%;
+            cursor: pointer; border: 2px solid white;
+        }
     </style>
 </head>
 <body>
@@ -161,9 +193,7 @@
             <div class="nav-item active" id="navDash" onclick="showView('dashboardView')"><i class="fa-solid fa-house"></i></div>
             <div class="nav-item" id="navHist" onclick="showView('historyView')"><i class="fa-solid fa-chart-area"></i></div>
             <div class="nav-item" id="navDaily" onclick="showView('dailyView')"><i class="fa-solid fa-calendar-days"></i></div>
-            
-            <div class="nav-item" id="navMaint" onclick="checkMaintenanceAuth()" style="color: #d946ef;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-            
+            <div class="nav-item" id="navMaint" onclick="checkMaintenanceAuth()" style="color: #d946ef; display:none;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
             <div class="nav-item logout-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i></div>
         </nav>
 
@@ -176,7 +206,6 @@
                         <option value="" disabled selected>Searching Network...</option>
                     </select>
                 </div>
-
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="text-align: right;">
                         <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ARM ALARM</div>
@@ -223,7 +252,7 @@
         </main>
 
         <div class="maintenance-overlay" id="maintenanceView">
-            <div style="display:flex; justify-content:space-between; margin-bottom:25px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:25px; max-width: 800px; margin: 0 auto 25px auto;">
                 <div>
                     <h2 style="color:#d946ef">MAINTENANCE CONSOLE</h2>
                     <span style="color:var(--text-muted); font-size: 0.8rem;">Remote Injection & Calibration</span>
@@ -235,41 +264,35 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;">
                     <div>
                         <h3 style="color:white; margin:0;">Test Injection Mode</h3>
-                        <small style="color:#aaa;">Overrides physical sensors. Data is sent to ESP32 for alarm testing.</small>
+                        <small style="color:#aaa;">Overrides physical sensors to test alarm logic.</small>
                     </div>
                     <button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold; transition:0.3s;">ENABLE TEST MODE</button>
                 </div>
 
                 <div class="sim-controls" id="simControls">
                     <div>
-                        <label style="color:#aaa; display:block; margin-bottom:10px;">Voltage Calibration (V)</label>
+                        <div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Voltage</label><span id="simVal_voltage" style="color:#d946ef; font-weight:bold;">230</span></div>
                         <input type="range" min="0" max="300" value="230" class="sim-slider" oninput="updateSim('voltage', this.value)">
-                        <div id="simVal_voltage" style="color:white; font-weight:bold; font-size: 1.5rem; margin-top: 10px;">230</div>
                     </div>
                     <div>
-                        <label style="color:#aaa; display:block; margin-bottom:10px;">Current L1 (A)</label>
+                        <div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Current L1</label><span id="simVal_currentL1" style="color:#d946ef; font-weight:bold;">10</span></div>
                         <input type="range" min="0" max="100" value="10" class="sim-slider" oninput="updateSim('currentL1', this.value)">
-                        <div id="simVal_currentL1" style="color:white; font-weight:bold; font-size: 1.5rem; margin-top: 10px;">10</div>
                     </div>
                     <div>
-                        <label style="color:#aaa; display:block; margin-bottom:10px;">Current L2 (A)</label>
+                        <div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Current L2</label><span id="simVal_currentL2" style="color:#d946ef; font-weight:bold;">12</span></div>
                         <input type="range" min="0" max="100" value="12" class="sim-slider" oninput="updateSim('currentL2', this.value)">
-                        <div id="simVal_currentL2" style="color:white; font-weight:bold; font-size: 1.5rem; margin-top: 10px;">12</div>
                     </div>
                     <div>
-                        <label style="color:#aaa; display:block; margin-bottom:10px;">Power Factor</label>
+                        <div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Power Factor</label><span id="simVal_pf" style="color:#d946ef; font-weight:bold;">0.95</span></div>
                         <input type="range" min="0" max="1" step="0.01" value="0.95" class="sim-slider" oninput="updateSim('pf', this.value)">
-                        <div id="simVal_pf" style="color:white; font-weight:bold; font-size: 1.5rem; margin-top: 10px;">0.95</div>
                     </div>
                     <div>
-                        <label style="color:#aaa; display:block; margin-bottom:10px;">Temperature (°C)</label>
+                        <div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Temperature</label><span id="simVal_temp" style="color:#d946ef; font-weight:bold;">45</span></div>
                         <input type="range" min="20" max="120" value="45" class="sim-slider" oninput="updateSim('temp', this.value)">
-                        <div id="simVal_temp" style="color:white; font-weight:bold; font-size: 1.5rem; margin-top: 10px;">45</div>
                     </div>
                     <div>
-                        <label style="color:#aaa; display:block; margin-bottom:10px;">Vibration (g)</label>
+                        <div style="display:flex; justify-content:space-between; color:#ddd; font-size:0.9rem;"><label>Vibration</label><span id="simVal_vib" style="color:#d946ef; font-weight:bold;">0.05</span></div>
                         <input type="range" min="0" max="5" step="0.1" value="0.05" class="sim-slider" oninput="updateSim('vib', this.value)">
-                        <div id="simVal_vib" style="color:white; font-weight:bold; font-size: 1.5rem; margin-top: 10px;">0.05</div>
                     </div>
                 </div>
             </div>
@@ -287,22 +310,15 @@
 
         <div class="daily-overlay" id="dailyView">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <div><h2>DAILY REPORT</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Aggregated session data</span></div>
                 <div>
-                    <h2>DAILY REPORT</h2>
-                    <span style="color:var(--text-muted); font-size: 0.8rem;">Aggregated averages from active session</span>
-                </div>
-                <div>
-                    <button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;">
-                        <i class="fa-solid fa-file-csv"></i> EXPORT CSV
-                    </button>
+                    <button class="btn-action" onclick="downloadCSV()" style="margin-right:10px; background:#10b981;"><i class="fa-solid fa-file-csv"></i> EXPORT CSV</button>
                     <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
                 </div>
             </div>
             <div class="card" style="min-height: 500px;">
                 <table class="data-table">
-                    <thead>
-                        <tr><th>TIMESTAMP</th><th>VOLT</th><th>CURR L1</th><th>CURR L2</th><th>PF</th><th>TEMP</th><th>VIB</th></tr>
-                    </thead>
+                    <thead><tr><th>TIMESTAMP</th><th>VOLT</th><th>L1</th><th>L2</th><th>PF</th><th>TEMP</th><th>VIB</th></tr></thead>
                     <tbody id="dailyTableBody"></tbody>
                 </table>
             </div>
@@ -310,7 +326,7 @@
     </div>
 
 <script>
-    // --- 1. CONFIGURATION ---
+    // --- CONFIGURATION ---
     const firebaseConfig = { 
         apiKey: "AIzaSyBcwor5bhr6U1XiZ4i-Z1aMwfj_A5SJ_SI", 
         authDomain: "tx-monitoring-system.firebaseapp.com", 
@@ -324,22 +340,22 @@
     const auth = firebase.auth();
     emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    // --- GLOBAL VARIABLES ---
+    // --- VARIABLES ---
     let userRole = 'observer'; 
+    let savedPassword = ""; // For maintenance re-auth
     let activeListener = null; 
     let currentDeviceID = null; 
     let isTestMode = false; 
     let lastHeartbeat = Date.now(); 
     let sessionLog = []; 
     let historyChartInstance = null;
-    let savedPassword = ""; // To store password temporarily for re-auth
 
-    // --- 2. START WATCHDOG ---
+    // --- WATCHDOG ---
     function startWatchdog() {
         setInterval(() => {
             const now = Date.now();
             const el = document.getElementById('netStatus');
-            // 5 MINUTES Timeout
+            // 5 Minutes Timeout
             if (now - lastHeartbeat > 300000) {
                 el.innerText = "OFFLINE";
                 el.className = "status-badge status-offline";
@@ -347,7 +363,7 @@
         }, 1000);
     }
 
-    // --- 3. MULTI-DEVICE LOGIC ---
+    // --- MULTI-DEVICE LOGIC ---
     function loadDeviceList() {
         const selector = document.getElementById('deviceSelect');
         db.ref('devices').once('value', (snapshot) => {
@@ -356,17 +372,11 @@
             if (data) {
                 Object.keys(data).forEach((key) => {
                     let option = document.createElement("option");
-                    option.value = key;
-                    option.text = key.replace(/_/g, " "); 
+                    option.value = key; option.text = key.replace(/_/g, " "); 
                     selector.appendChild(option);
                 });
-                if(selector.options.length > 0) {
-                    selector.selectedIndex = 0;
-                    switchDevice(selector.value);
-                }
-            } else {
-                selector.innerHTML = "<option>No Devices Found</option>";
-            }
+                if(selector.options.length > 0) { selector.selectedIndex = 0; switchDevice(selector.value); }
+            } else { selector.innerHTML = "<option>No Devices Found</option>"; }
         });
     }
 
@@ -383,15 +393,13 @@
 
         activeListener = db.ref('devices/' + deviceId);
         activeListener.on('value', snap => {
-            const d = snap.val();
-            if(!d) return;
+            const d = snap.val(); if(!d) return;
             lastHeartbeat = Date.now(); 
             updateDashboard(d);
         });
 
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
-            const toggle = document.getElementById('alarmArmToggle');
-            if(toggle) toggle.checked = s.val(); 
+            const toggle = document.getElementById('alarmArmToggle'); if(toggle) toggle.checked = s.val(); 
         });
 
         db.ref('devices/' + deviceId + '/control/testMode').on('value', s => {
@@ -400,54 +408,86 @@
             const controls = document.getElementById('simControls');
             if(btn && controls) {
                 if(isTestMode) {
-                    btn.innerText = "⛔ STOP INJECTION"; 
-                    btn.style.background = "#ef4444"; 
-                    controls.style.opacity = "1"; 
-                    controls.style.pointerEvents = "all";
+                    btn.innerText = "⛔ STOP INJECTION"; btn.style.background = "#ef4444"; 
+                    controls.style.opacity = "1"; controls.style.pointerEvents = "all";
                 } else {
-                    btn.innerText = "ENABLE TEST MODE"; 
-                    btn.style.background = "#333"; 
-                    controls.style.opacity = "0.5"; 
-                    controls.style.pointerEvents = "none";
+                    btn.innerText = "ENABLE TEST MODE"; btn.style.background = "#333"; 
+                    controls.style.opacity = "0.5"; controls.style.pointerEvents = "none";
                 }
             }
         });
     }
 
-    // --- 4. AUTH & SECURITY ---
-    function checkMaintenanceAuth() {
-        if(userRole !== 'admin') {
-            alert("ACCESS DENIED: Maintenance is for System Operators only.");
-            return;
+    // --- AUTHENTICATION ---
+    function selectRole(role) {
+        userRole = role === 'admin' ? 'admin' : 'observer';
+        if (role === 'observer') {
+            document.getElementById('landingView').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            updateRoleUI(); loadDeviceList(); 
+        } else {
+            document.getElementById('landingView').style.display = 'none';
+            document.getElementById('loginView').style.display = 'flex';
         }
-        // Show Re-Auth Overlay
+    }
+    
+    function login() {
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('password').value;
+        auth.signInWithEmailAndPassword(e, p).then(() => {
+            userRole = 'admin';
+            savedPassword = p; // Store for maintenance re-auth
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            updateRoleUI(); loadDeviceList(); 
+        }).catch(err => { document.getElementById('loginError').style.display = 'block'; });
+    }
+
+    function checkMaintenanceAuth() {
+        if(userRole !== 'admin') { alert("Access Denied"); return; }
         document.getElementById('authOverlay').style.display = 'flex';
-        document.getElementById('reAuthPass').value = ""; // Clear field
+        document.getElementById('reAuthPass').value = "";
     }
 
     function verifyMaintenanceAccess() {
-        const inputPass = document.getElementById('reAuthPass').value;
-        if(inputPass === savedPassword) {
-            // Success
+        if(document.getElementById('reAuthPass').value === savedPassword) {
             document.getElementById('authOverlay').style.display = 'none';
             showView('maintenanceView');
+        } else { alert("Incorrect Access Key"); }
+    }
+    
+    function closeAuthOverlay() { document.getElementById('authOverlay').style.display = 'none'; }
+    function logout() { auth.signOut(); window.location.reload(); }
+    function goBackToLanding() { document.getElementById('loginView').style.display = 'none'; document.getElementById('landingView').style.display = 'flex'; }
+
+    function updateRoleUI() {
+        const toggle = document.getElementById('alarmArmToggle');
+        const label = document.getElementById('alarmSwitchLabel');
+        const roleText = document.getElementById('roleDisplay');
+        const navMaint = document.getElementById('navMaint');
+
+        if (userRole === 'observer') {
+            roleText.innerText = "Observer Mode";
+            toggle.disabled = true; label.classList.add('disabled');
+            navMaint.style.display = 'none'; 
         } else {
-            alert("Incorrect Access Key.");
+            roleText.innerText = "System Operator"; roleText.style.color = "var(--success)";
+            toggle.disabled = false; label.classList.remove('disabled');
+            navMaint.style.display = 'flex'; 
         }
     }
 
-    function closeAuthOverlay() {
-        document.getElementById('authOverlay').style.display = 'none';
+    function toggleAlarm(cb) {
+        if (userRole !== 'admin') { cb.checked = !cb.checked; alert("ACCESS DENIED"); return; }
+        if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
     }
 
-    // --- 5. MAINTENANCE & SIMULATION ---
+    // --- SIMULATION ---
     function toggleSimulation() {
         if(!currentDeviceID) { alert("No device selected!"); return; }
         isTestMode = !isTestMode;
         db.ref('devices/' + currentDeviceID + '/control/testMode').set(isTestMode);
-        if(isTestMode) {
-            updateSim('voltage', 230); updateSim('temp', 45); updateSim('vib', 0);
-        }
+        if(isTestMode) { updateSim('voltage', 230); updateSim('temp', 45); updateSim('vib', 0); }
     }
 
     function updateSim(key, val) {
@@ -456,23 +496,15 @@
         db.ref('devices/' + currentDeviceID + '/control/testValues/' + key).set(parseFloat(val));
     }
 
-    // --- 6. DASHBOARD UPDATE ---
+    // --- DASHBOARD UPDATE ---
     function updateDashboard(d) {
         const statusEl = document.getElementById('netStatus');
-        if (d.status === "TEST_MODE") {
-            statusEl.innerText = "TEST MODE";
-            statusEl.className = "status-badge status-test";
-        } else {
-            statusEl.innerText = "ONLINE";
-            statusEl.className = "status-badge status-online";
-        }
+        if (d.status === "TEST_MODE") { statusEl.innerText = "TEST MODE"; statusEl.className = "status-badge status-test"; } 
+        else { statusEl.innerText = "ONLINE"; statusEl.className = "status-badge status-online"; }
 
-        const volt = d.voltage || 0;
-        const pf = d.pf || 0;
-        const c1 = d.currentL1 || 0;
-        const c2 = d.currentL2 || 0;
-        const temp = d.temp || d.oil_temp || 0; 
-        const vib = d.vib || d.vibration || 0;
+        const volt = d.voltage || 0; const pf = d.pf || 0;
+        const c1 = d.currentL1 || 0; const c2 = d.currentL2 || 0;
+        const temp = d.temp || d.oil_temp || 0; const vib = d.vib || d.vibration || 0;
 
         const vEl = document.getElementById('v'); vEl.innerText = volt.toFixed(1)+"V"; vEl.style.color = (volt > 260) ? "#ef4444" : "white";
         document.getElementById('pf').innerText = pf.toFixed(2);
@@ -490,11 +522,10 @@
         addToReport(d);
     }
 
-    // --- 7. REPORTING ---
+    // --- REPORTING ---
     function addToReport(d) {
         const now = new Date().toLocaleTimeString();
-        const status = d.status || "ONLINE";
-        sessionLog.push({ time: now, v: d.voltage, c1: d.currentL1, c2: d.currentL2, pf: d.pf, t: d.temp, vib: d.vib, s: status });
+        sessionLog.push({ time: now, v: d.voltage, c1: d.currentL1, c2: d.currentL2, pf: d.pf, t: d.temp, vib: d.vib });
         if(sessionLog.length > 200) sessionLog.shift();
         const tbody = document.getElementById('dailyTableBody');
         let row = `<tr><td>${now}</td><td>${Number(d.voltage).toFixed(1)}</td><td>${Number(d.currentL1).toFixed(1)}</td><td>${Number(d.currentL2).toFixed(1)}</td><td>${Number(d.pf).toFixed(2)}</td><td>${Number(d.temp).toFixed(1)}</td><td>${Number(d.vib).toFixed(2)}</td></tr>`;
@@ -502,74 +533,22 @@
         if(tbody.rows.length > 50) tbody.deleteRow(50);
     }
     function downloadCSV() {
-        let csvContent = "data:text/csv;charset=utf-8,Timestamp,Voltage,Current L1,Current L2,PF,Temp,Vibration,Status\n";
-        sessionLog.forEach(row => { csvContent += `${row.time},${row.v},${row.c1},${row.c2},${row.pf},${row.t},${row.vib},${row.s}\n`; });
+        let csvContent = "data:text/csv;charset=utf-8,Timestamp,Voltage,Current L1,Current L2,PF,Temp,Vibration\n";
+        sessionLog.forEach(row => { csvContent += `${row.time},${row.v},${row.c1},${row.c2},${row.pf},${row.t},${row.vib}\n`; });
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri); link.setAttribute("download", "txms_report.csv");
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // --- 8. AUTH & VIEW MANAGEMENT ---
-    function selectRole(role) {
-        userRole = role === 'admin' ? 'admin' : 'observer';
-        if (role === 'observer') {
-            document.getElementById('landingView').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            updateRoleUI(); loadDeviceList(); 
-        } else {
-            document.getElementById('landingView').style.display = 'none';
-            document.getElementById('loginView').style.display = 'flex';
-        }
-    }
-    
-    function goBackToLanding() { document.getElementById('loginView').style.display = 'none'; document.getElementById('landingView').style.display = 'flex'; }
-    
-    function login() {
-        const e = document.getElementById('email').value;
-        const p = document.getElementById('password').value;
-        auth.signInWithEmailAndPassword(e, p).then(() => {
-            userRole = 'admin';
-            savedPassword = p; // STORE PASSWORD FOR RE-AUTH
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            updateRoleUI(); loadDeviceList(); 
-        }).catch(err => { document.getElementById('loginError').style.display = 'block'; });
-    }
-
-    function logout() { auth.signOut(); window.location.reload(); }
-
-    function updateRoleUI() {
-        const toggle = document.getElementById('alarmArmToggle');
-        const label = document.getElementById('alarmSwitchLabel');
-        const roleText = document.getElementById('roleDisplay');
-        const navMaint = document.getElementById('navMaint');
-
-        if (userRole === 'observer') {
-            roleText.innerText = "Observer Mode";
-            toggle.disabled = true; label.classList.add('disabled');
-            navMaint.style.display = 'none'; // HIDE MAINTENANCE TAB
-        } else {
-            roleText.innerText = "System Operator"; roleText.style.color = "var(--success)";
-            toggle.disabled = false; label.classList.remove('disabled');
-            navMaint.style.display = 'flex'; // SHOW MAINTENANCE TAB
-        }
-    }
-
-    function toggleAlarm(cb) {
-        if (userRole !== 'admin') { cb.checked = !cb.checked; alert("ACCESS DENIED"); return; }
-        if(currentDeviceID) db.ref('devices/' + currentDeviceID + '/control/alarmArmed').set(cb.checked);
-    }
-
+    // --- VIEW LOGIC ---
     function showView(viewId) {
-        ['dashboardView', 'historyView', 'dailyView', 'maintenanceView'].forEach(id => {
-            document.getElementById(id).style.display = 'none';
-        });
+        ['dashboardView', 'historyView', 'dailyView', 'maintenanceView'].forEach(id => { document.getElementById(id).style.display = 'none'; });
         document.getElementById(viewId).style.display = 'block';
         if(viewId === 'historyView') refreshHistoryChart();
     }
 
-    // --- 9. CHARTS ---
+    // --- CHART LOGIC ---
     function createMiniChart(id, color) { return new Chart(document.getElementById(id).getContext('2d'), { type: 'line', data: { labels:Array(20).fill(''), datasets:[{data:Array(20).fill(0), borderColor:color, borderWidth:2, pointRadius:0, tension:0.4, fill:true, backgroundColor:color+'11'}] }, options: { responsive:true, maintainAspectRatio:false, scales:{x:{display:false}, y:{display:true, grid:{display:false}, ticks:{color:'#555', font:{size:9}}}}, plugins:{legend:{display:false}}, animation:false } }); }
     const vChart = createMiniChart('chartVolt', '#7c3aed'); const pfChart = createMiniChart('chartPF', '#d946ef');
     const tChart = createMiniChart('chartTemp', '#ef4444'); const vibChart = createMiniChart('chartVib', '#fbbf24');
@@ -584,10 +563,9 @@
         else if(v > 260) { aiMsg.innerText = "Overvoltage"; aiMsg.style.color = "var(--danger)"; aiDet.innerText = "Spike Detected."; }
         else { aiMsg.innerText = "System Nominal"; aiMsg.style.color = "var(--success)"; aiDet.innerText = "Efficiency optimal."; }
     }
-    
     function clearLog() { document.getElementById('eventLog').innerHTML = '<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'; }
 
-    // --- FULL ANALYTICAL HISTORIAN CHART ---
+    // --- ANALYTICAL HISTORIAN ---
     function initHistoryChart() {
         const ctx = document.getElementById('historyChart').getContext('2d');
         historyChartInstance = new Chart(ctx, {
@@ -595,12 +573,12 @@
             data: {
                 labels: [], 
                 datasets: [
-                    { label: 'Voltage (V)', data: [], borderColor: '#7c3aed', yAxisID: 'y', tension: 0.4 },
-                    { label: 'Current L1 (A)', data: [], borderColor: '#10b981', yAxisID: 'y1', tension: 0.4 },
-                    { label: 'Current L2 (A)', data: [], borderColor: '#06b6d4', yAxisID: 'y1', tension: 0.4 },
-                    { label: 'Temp (°C)', data: [], borderColor: '#ef4444', yAxisID: 'y1', tension: 0.4 },
+                    { label: 'Voltage', data: [], borderColor: '#7c3aed', yAxisID: 'y', tension: 0.4 },
+                    { label: 'Curr L1', data: [], borderColor: '#10b981', yAxisID: 'y1', tension: 0.4 },
+                    { label: 'Curr L2', data: [], borderColor: '#06b6d4', yAxisID: 'y1', tension: 0.4 },
+                    { label: 'Temp', data: [], borderColor: '#ef4444', yAxisID: 'y1', tension: 0.4 },
                     { label: 'PF', data: [], borderColor: '#d946ef', yAxisID: 'y2', borderDash: [5, 5], tension: 0.4 },
-                    { label: 'Vibration', data: [], borderColor: '#fbbf24', yAxisID: 'y2', borderDash: [5, 5], tension: 0.4 }
+                    { label: 'Vib', data: [], borderColor: '#fbbf24', yAxisID: 'y2', borderDash: [5, 5], tension: 0.4 }
                 ]
             },
             options: {
@@ -609,7 +587,7 @@
                     x: { ticks: { color: '#888' }, grid: { color: '#333' } },
                     y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Voltage', color: '#7c3aed' }, ticks: { color: '#ccc' }, grid: { color: '#444' } },
                     y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Amps/Temp', color: '#10b981' }, grid: { drawOnChartArea: false }, ticks: { color: '#ccc' } },
-                    y2: { type: 'linear', display: false, position: 'right' } 
+                    y2: { type: 'linear', display: false }
                 },
                 plugins: { legend: { labels: { color: 'white' } } }
             }
@@ -630,7 +608,6 @@
     }
 
     startWatchdog(); 
-
 </script>
 </body>
 </html>
