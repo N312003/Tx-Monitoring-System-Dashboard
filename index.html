@@ -37,6 +37,11 @@
         .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
         .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
         .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
+        
+        /* --- FIXED LOGOUT BUTTON STYLES --- */
+        .logout-btn { margin-top: auto; margin-bottom: 30px; color: var(--danger) !important; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.1) !important; color: #ffcccc !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+
         .main-content { margin-left: 80px; padding: 30px; width: 100%; max-width: 1600px; flex-grow: 1; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         .device-selector { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; outline: none; }
@@ -60,7 +65,7 @@
         input:checked + .slider { background-color: var(--accent-purple); }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        /* NEW: CHART CONTROLS & CHECKBOXES */
+        /* CHART CONTROLS */
         .chart-controls { display: flex; gap: 15px; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 12px; align-items: center; flex-wrap: wrap; }
         .chart-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; color: #ccc; }
         .chart-check input { accent-color: var(--accent-purple); transform: scale(1.2); cursor: pointer; }
@@ -122,16 +127,42 @@
             <div style="display:flex; justify-content:space-between; margin-bottom:25px; max-width: 800px; margin: 0 auto 25px auto;">
                 <div><h2 style="color:#d946ef">MAINTENANCE CONSOLE</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Remote Injection & Calibration</span></div><button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
             </div>
+            
             <div class="maint-card" style="border-color: #d946ef;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;"><div><h3 style="color:white; margin:0;">Test Injection Mode</h3></div><button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer;">ENABLE TEST MODE</button></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;"><div><h3 style="color:white; margin:0;">Test Injection Mode</h3><span style="color:#888; font-size:0.8rem;">Override sensor values</span></div><button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer;">ENABLE TEST MODE</button></div>
+                
                 <div class="sim-controls" id="simControls">
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Voltage</label><span id="simVal_voltage" style="color:#d946ef;">230</span></div><input type="range" min="0" max="300" value="230" class="sim-slider" oninput="updateSim('voltage', this.value)"></div>
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Voltage (V)</label><span id="simVal_voltage" style="color:#d946ef;">230</span></div>
+                    <input type="range" min="0" max="300" value="230" class="sim-slider" oninput="updateSim('voltage', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Current L1 (A)</label><span id="simVal_currentL1" style="color:#d946ef;">0</span></div>
+                    <input type="range" min="0" max="100" value="0" class="sim-slider" oninput="updateSim('currentL1', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Current L2 (A)</label><span id="simVal_currentL2" style="color:#d946ef;">0</span></div>
+                    <input type="range" min="0" max="100" value="0" class="sim-slider" oninput="updateSim('currentL2', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Power Factor</label><span id="simVal_pf" style="color:#d946ef;">0.95</span></div>
+                    <input type="range" min="0" max="1" step="0.01" value="0.95" class="sim-slider" oninput="updateSim('pf', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Temperature (°C)</label><span id="simVal_temp" style="color:#d946ef;">30</span></div>
+                    <input type="range" min="0" max="150" value="30" class="sim-slider" oninput="updateSim('temp', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Vibration (g)</label><span id="simVal_vib" style="color:#d946ef;">0</span></div>
+                    <input type="range" min="0" max="5" step="0.1" value="0" class="sim-slider" oninput="updateSim('vib', this.value)"></div>
                 </div>
             </div>
+
             <div class="maint-card" style="border-color: #06b6d4;">
-                <h3 style="color:white;">Sensor Calibration</h3>
+                <h3 style="color:white; margin-bottom: 20px;">Sensor Calibration</h3>
                 <div class="cal-controls">
-                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Voltage Factor</label><span id="calDisp_volt" style="color:#06b6d4;">0.3284</span></div><input type="range" min="0.1" max="1.0" step="0.0001" value="0.328381" class="cal-slider" oninput="updateCal('volt', this.value)"></div>
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Voltage Factor</label><span id="calDisp_volt" style="color:#06b6d4;">0.3284</span></div>
+                    <input type="range" min="0.1" max="1.0" step="0.0001" value="0.328381" class="cal-slider" oninput="updateCal('volt', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Current L1 Factor</label><span id="calDisp_curr1" style="color:#06b6d4;">0.066</span></div>
+                    <input type="range" min="0.01" max="1.0" step="0.0001" value="0.066" class="cal-slider" oninput="updateCal('curr1', this.value)"></div>
+
+                    <div><div style="display:flex; justify-content:space-between; color:#ddd;"><label>Current L2 Factor</label><span id="calDisp_curr2" style="color:#06b6d4;">0.066</span></div>
+                    <input type="range" min="0.01" max="1.0" step="0.0001" value="0.066" class="cal-slider" oninput="updateCal('curr2', this.value)"></div>
                 </div>
             </div>
         </div>
@@ -277,14 +308,11 @@
         updateHistoryChart();
     }
 
-    // NEW: TOGGLE DATASETS VIA CHECKBOX
     function toggleDataset(index) {
         if (!historyChartInstance) return;
-        // Toggle the 'hidden' property directly
         const meta = historyChartInstance.getDatasetMeta(index);
         meta.hidden = meta.hidden === null ? !historyChartInstance.data.datasets[index].hidden : null;
         
-        // Simpler way for Chart.js 3+:
         const isVisible = historyChartInstance.isDatasetVisible(index);
         if (isVisible) historyChartInstance.hide(index);
         else historyChartInstance.show(index);
@@ -331,12 +359,11 @@
                     y: { position: 'left', grid: { color: '#333' }, title: { display: true, text: 'Voltage (V)' } }, 
                     y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Other' } } 
                 },
-                plugins: { legend: { display: false } } // Hide default legend since we made a custom one
+                plugins: { legend: { display: false } } 
             } 
         }); 
     }
 
-    // ... (Keeping remaining functions consistent with previous) ...
     function filterReportByDate(){const e=document.getElementById("reportDate");if(!e.value)return;const t=e.value,n=document.getElementById("dailyTableBody");n.innerHTML="";sessionLog.filter((e=>e.time.toISOString().split("T")[0]===t)).reverse().forEach((e=>{let t=`<tr><td>${e.time.toLocaleTimeString()}</td><td>${Number(e.v).toFixed(1)}</td><td>${Number(e.c1).toFixed(1)}</td><td>${Number(e.c2).toFixed(1)}</td><td>${Number(e.pf).toFixed(2)}</td><td>${Number(e.t).toFixed(1)}</td><td>${Number(e.vib).toFixed(2)}</td></tr>`;n.insertAdjacentHTML("beforeend",t)}))}
     function downloadCSV(){let e="data:text/csv;charset=utf-8,Time,V,L1,L2,PF,Temp,Vib\n";sessionLog.forEach((t=>{e+=`${t.time.toLocaleString()},${t.v},${t.c1},${t.c2},${t.pf},${t.t},${t.vib}\n`}));const t=document.createElement("a");t.href=encodeURI(e),t.download="txms.csv",t.click()}
     function showView(e){["dashboardView","historyView","dailyView","maintenanceView"].forEach((e=>document.getElementById(e).style.display="none")),document.getElementById(e).style.display="block","historyView"===e&&updateHistoryChart(),"dailyView"===e&&filterReportByDate()}
