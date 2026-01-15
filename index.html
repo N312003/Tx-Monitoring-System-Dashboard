@@ -325,13 +325,24 @@
         });
     }
 
+    // --- UPDATED: LOGGING FUNCTION WITH LIMIT & SCROLL ---
     function addDiagnosticLog(message, colorCode) {
         const logBox = document.getElementById("eventLog");
         const time = new Date().toLocaleTimeString();
         if(logBox.innerText.includes("Monitoring for anomalies...")) logBox.innerHTML = "";
-        const logEntry = `<div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;"><span style="color: #666; font-size: 0.7rem;">[${time}]</span><span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span></div>`;
+        
+        const logEntry = `
+            <div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;">
+                <span style="color: #666; font-size: 0.7rem;">[${time}]</span>
+                <span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span>
+            </div>
+        `;
         logBox.insertAdjacentHTML("afterbegin", logEntry);
-        while (logBox.children.length > 100) logBox.removeChild(logBox.lastChild);
+
+        // Limit to 100 entries to prevent memory issues
+        while (logBox.children.length > 100) {
+            logBox.removeChild(logBox.lastChild);
+        }
     }
 
     function switchDevice(deviceId) {
@@ -448,18 +459,52 @@
     function updateSim(e,t){currentDeviceID&&(document.getElementById("simVal_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/control/testValues/"+e).set(parseFloat(t)))}
     function updateCal(e,t){currentDeviceID&&(document.getElementById("calDisp_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/config/cal_"+e).set(parseFloat(t)))}
 
+    // --- REVISED UPDATE DASHBOARD (INJECTION LOGIC) ---
     function updateDashboard(d) {
-        const sEl = document.getElementById('netStatus'); sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
-        const v = d.voltage||0; const c1 = d.currentL1||0; const c2 = d.currentL2||0; const t = d.temp||0; const vib = d.vib||0; const pf = d.pf||0;
+        const sEl = document.getElementById('netStatus'); 
+        sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; 
+        sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
         
-        document.getElementById('v').innerText = v.toFixed(1)+"V"; document.getElementById('pf').innerText = pf.toFixed(2); 
-        document.getElementById('c1').innerText = c1.toFixed(1); document.getElementById('c2').innerText = c2.toFixed(1);
-        document.getElementById('t').innerText = t.toFixed(1)+"°C"; document.getElementById('vib').innerText = vib.toFixed(2)+"g";
+        let v, c1, c2, t, vib, pf;
+
+        // 1. INJECTION OVERRIDE: If Test Mode is ON, use test values
+        if (d.control && d.control.testMode && d.control.testValues) {
+            const sim = d.control.testValues;
+            v = sim.voltage || 0;
+            c1 = sim.currentL1 || 0;
+            c2 = sim.currentL2 || 0;
+            pf = sim.pf || 0;
+            t = sim.temp || 0;
+            vib = sim.vib || 0;
+        } else {
+            // 2. NORMAL: Use live sensor data
+            v = d.voltage || 0;
+            c1 = d.currentL1 || 0;
+            c2 = d.currentL2 || 0;
+            pf = d.pf || 0;
+            t = d.temp || 0;
+            vib = d.vib || 0;
+        }
         
-        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
-        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); cChart.update();
+        // Update DOM
+        document.getElementById('v').innerText = v.toFixed(1)+"V"; 
+        document.getElementById('pf').innerText = pf.toFixed(2); 
+        document.getElementById('c1').innerText = c1.toFixed(1); 
+        document.getElementById('c2').innerText = c2.toFixed(1);
+        document.getElementById('t').innerText = t.toFixed(1)+"°C"; 
+        document.getElementById('vib').innerText = vib.toFixed(2)+"g";
         
-        checkFaults(v, c1, c2, t, vib, pf); checkAndSendEmail(d);
+        // Update Charts
+        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
+        updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
+        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); 
+        cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
+        cChart.update();
+        
+        // Pass the ACTIVE values (real or injected) to fault checkers
+        const activeData = { voltage: v, currentL1: c1, currentL2: c2, temp: t, vib: vib, pf: pf };
+        checkFaults(v, c1, c2, t, vib, pf); 
+        checkAndSendEmail(activeData);
         
         const now = new Date();
         sessionLog.push({time: now, v:v, c1:c1, c2:c2, pf:pf, t:t, vib:vib});
