@@ -338,25 +338,17 @@
 
                 if (sessionLog.length > 0) {
                     const recent = sessionLog.slice(-20); 
-                    
                     const fill = (chart, key) => {
                         const vals = recent.map(d => d[key]);
                         while(vals.length < 20) vals.unshift(0); 
                         chart.data.datasets[0].data = vals;
                         chart.update();
                     };
-
-                    fill(vChart, 'v');
-                    fill(pfChart, 'pf');
-                    fill(tChart, 't');
-                    fill(vibChart, 'vib');
-
+                    fill(vChart, 'v'); fill(pfChart, 'pf'); fill(tChart, 't'); fill(vibChart, 'vib');
                     const c1Vals = recent.map(d => d.c1); while(c1Vals.length < 20) c1Vals.unshift(0);
                     const c2Vals = recent.map(d => d.c2); while(c2Vals.length < 20) c2Vals.unshift(0);
-                    cChart.data.datasets[0].data = c1Vals;
-                    cChart.data.datasets[1].data = c2Vals;
-                    cChart.update();
-
+                    cChart.data.datasets[0].data = c1Vals; cChart.data.datasets[1].data = c2Vals; cChart.update();
+                    
                     const last = recent[recent.length - 1];
                     document.getElementById('v').innerText = last.v.toFixed(1)+"V";
                     document.getElementById('pf').innerText = last.pf.toFixed(2);
@@ -386,7 +378,31 @@
         document.getElementById('reportDate').valueAsDate = new Date();
     }
 
-    function updateTestUI(){const btn=document.getElementById('simBtn');const controls=document.getElementById('simControls');if(btn&&controls){if(isTestMode){btn.innerText="⛔ STOP INJECTION";btn.style.background="#ef4444";controls.style.opacity="1";controls.style.pointerEvents="all"}else{btn.innerText="ENABLE TEST MODE";btn.style.background="#333";controls.style.opacity="0.5";controls.style.pointerEvents="none"}}}
+    // --- ADDED: Missing Toggle Function ---
+    function toggleSimulation() {
+        if (!currentDeviceID) return;
+        const newState = !isTestMode;
+        db.ref('devices/' + currentDeviceID + '/control/testMode').set(newState);
+    }
+
+    function updateTestUI(){
+        const btn=document.getElementById('simBtn');
+        const controls=document.getElementById('simControls');
+        if(btn&&controls){
+            if(isTestMode){
+                btn.innerText="⛔ STOP INJECTION";
+                btn.style.background="#ef4444";
+                controls.style.opacity="1";
+                controls.style.pointerEvents="all";
+            } else {
+                btn.innerText="ENABLE TEST MODE";
+                btn.style.background="#333";
+                controls.style.opacity="0.5";
+                controls.style.pointerEvents="none";
+            }
+        }
+    }
+
     function selectRole(e){userRole="admin"===e?"admin":"observer","observer"===e?(document.getElementById("landingView").style.display="none",document.getElementById("appContainer").style.display="block",updateRoleUI(),loadDeviceList()):(document.getElementById("landingView").style.display="none",document.getElementById("loginView").style.display="flex")}
     function login(){auth.signInWithEmailAndPassword(document.getElementById("email").value,document.getElementById("password").value).then((()=>{userRole="admin",savedPassword=document.getElementById("password").value,document.getElementById("loginView").style.display="none",document.getElementById("appContainer").style.display="block",updateRoleUI(),loadDeviceList()})).catch((e=>alert(e.message)))}
     function checkMaintenanceAuth(){"admin"===userRole&&(document.getElementById("authOverlay").style.display="flex",document.getElementById("reAuthPass").value="")}
@@ -429,7 +445,7 @@
         updateHistoryChart();
     }
 
-    // FIXED TOGGLE FUNCTION
+    // --- FIXED: Updated Toggle Logic ---
     function toggleDataset(index, checkbox) {
         if (!historyChartInstance) return;
         historyChartInstance.data.datasets[index].hidden = !checkbox.checked;
