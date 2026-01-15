@@ -118,7 +118,7 @@
 </head>
 <body>
 
-    <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Node</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div></div></div></section>
+    <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Mode</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div></div></div></section>
     <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Email" class="login-input"><input type="password" id="password" placeholder="Password" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()" style="margin-top:15px; cursor:pointer;">Return</div></div></section>
     
     <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
@@ -676,3 +676,4 @@
 </script>
 </body>
 </html>
+
