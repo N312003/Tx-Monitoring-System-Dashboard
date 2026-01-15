@@ -420,28 +420,50 @@
     function updateSim(e,t){currentDeviceID&&(document.getElementById("simVal_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/control/testValues/"+e).set(parseFloat(t)))}
     function updateCal(e,t){currentDeviceID&&(document.getElementById("calDisp_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/config/cal_"+e).set(parseFloat(t)))}
 
-    function updateDashboard(d) {
-        const sEl = document.getElementById('netStatus'); sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
-        const v = d.voltage||0; const c1 = d.currentL1||0; const c2 = d.currentL2||0; const t = d.temp||0; const vib = d.vib||0; const pf = d.pf||0;
+   function updateDashboard(d) {
+        const sEl = document.getElementById('netStatus'); 
+        sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; 
+        sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
         
-        document.getElementById('v').innerText = v.toFixed(1)+"V"; document.getElementById('v').style.color = (v > 260) ? "#ef4444" : "white";
+        const v = d.voltage||0; const c1 = d.currentL1||0; const c2 = d.currentL2||0; 
+        const t = d.temp||0; const vib = d.vib||0; const pf = d.pf||0;
+        
+        // Update Stats
+        document.getElementById('v').innerText = v.toFixed(1)+"V"; 
+        document.getElementById('v').style.color = (v > 260) ? "#ef4444" : "white";
         document.getElementById('pf').innerText = pf.toFixed(2); 
         document.getElementById('c1').innerText = c1.toFixed(1); 
         document.getElementById('c2').innerText = c2.toFixed(1);
-        document.getElementById('t').innerText = t.toFixed(1)+"°C"; document.getElementById('t').style.color = (t > 80) ? "#ef4444" : "white";
+        document.getElementById('t').innerText = t.toFixed(1)+"°C"; 
+        document.getElementById('t').style.color = (t > 80) ? "#ef4444" : "white";
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
         
-        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
-        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); cChart.update();
+        // Update Live Charts (These are fine, they already shift old data out)
+        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
+        updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
+        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); 
+        cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
+        cChart.update();
         
         runAIAnalysis(v, t, vib); checkAndSendEmail(d);
         
+        // --- MEMORY LEAK FIX ---
         const now = new Date();
         sessionLog.push({time: now, v:v, c1:c1, c2:c2, pf:pf, t:t, vib:vib});
-        if(document.getElementById('historyView').style.display === 'block') updateHistoryChart();
-        if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
-    }
+        
+        // 1. LIMIT ARRAY SIZE: Keep only the last 5000 points to prevent crashing
+        if (sessionLog.length > 5000) {
+            sessionLog.shift(); // Remove the oldest data
+        }
 
+        // 2. THROTTLE UPDATES: Only update heavy views if they are actually visible
+        if(document.getElementById('historyView').style.display === 'block') {
+            updateHistoryChart();
+        }
+        if(document.getElementById('dailyView').style.display === 'block') {
+            filterReportByDate();
+        }
+    }
     function filterHistory(range, btn) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
         currentHistoryRange = range;
@@ -593,4 +615,5 @@
 </script>
 </body>
 </html>
+
 
