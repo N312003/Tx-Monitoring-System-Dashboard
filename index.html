@@ -329,7 +329,7 @@
         const logBox = document.getElementById("eventLog");
         const time = new Date().toLocaleTimeString();
         if(logBox.innerText.includes("Monitoring for anomalies...")) logBox.innerHTML = "";
-        // INCREASED FONT SIZE HERE to 1.0rem
+        // UPDATED FONT SIZE for Log
         const logEntry = `<div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;"><span style="color: #666; font-size: 0.7rem;">[${time}]</span><span style="color: white; font-size: 1.0rem; margin-left: 5px;">${message}</span></div>`;
         logBox.insertAdjacentHTML("afterbegin", logEntry);
         while (logBox.children.length > 100) logBox.removeChild(logBox.lastChild);
@@ -643,7 +643,39 @@
 
     function showView(e){["dashboardView","historyView","dailyView","maintenanceView"].forEach((e=>document.getElementById(e).style.display="none")),document.getElementById(e).style.display="block","historyView"===e&&updateHistoryChart(),"dailyView"===e&&filterReportByDate()}
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
-    const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{display:!1},ticks:{color:"#555",font:{size:9}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
+    const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),
+    
+    // --- UPDATED MAIN CHART (CLEARER Y AXIS) ---
+    cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{
+        type:"line",
+        data:{
+            labels:Array(20).fill(""),
+            datasets:[
+                {label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},
+                {label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}
+            ]
+        },
+        options:{
+            responsive:!0,
+            maintainAspectRatio:!1,
+            scales:{
+                x:{
+                    display:!1
+                },
+                y:{
+                    display:!0,
+                    grid:{color:"#444"}, // VISIBLE GRID
+                    ticks:{
+                        color:"#ffffff", // BRIGHT WHITE TEXT
+                        font:{size:12, weight:'bold'} // BIGGER BOLD TEXT
+                    }
+                }
+            },
+            plugins:{legend:{display:!0,labels:{color:"#ccc"}}},
+            animation:!1
+        }
+    });
+
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
     
     // --- EMAIL LOGIC ---
