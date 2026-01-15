@@ -469,13 +469,21 @@
         if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
     }
 
-    // --- REVISED FAULT LOGIC (Only works when ARMED) ---
+    // --- REVISED FAULT LOGIC (STRICT: ONLY SHOW WHEN ARMED) ---
     function checkFaults(v, c1, c2, t, vib, pf) {
         const msgEl = document.getElementById("predictMsg");
         
+        // If Disarmed, clear all alarms and exit
         if (!isAlarmArmed) {
-            msgEl.innerText = "Safety Systems Disarmed"; msgEl.style.color = "#64748b";
-            ["card_v", "card_c", "card_pf", "card_t", "card_vib"].forEach(id => { document.getElementById(id).classList.remove("blink-red"); });
+            msgEl.innerText = "Safety Systems Disarmed"; 
+            msgEl.style.color = "#64748b";
+            
+            // Clear blinking red from all cards
+            ["card_v", "card_c", "card_pf", "card_t", "card_vib"].forEach(id => { 
+                document.getElementById(id).classList.remove("blink-red"); 
+            });
+            
+            // Reset internal fault states so they re-trigger when armed
             faultStates = { voltage: "ok", current: "ok", temp: "ok", vib: "ok", pf: "ok" };
             return; 
         }
@@ -637,7 +645,7 @@
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{display:!1},ticks:{color:"#555",font:{size:9}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
     
-    // --- EMAIL LOGIC (Matches Dashboard Alerts) ---
+    // --- EMAIL LOGIC ---
     function checkAndSendEmail(d){
         if(!isAlarmArmed || (Date.now() - lastEmailSent < 300000)) return; // 5 min cooldown
 
@@ -676,4 +684,3 @@
 </script>
 </body>
 </html>
-
