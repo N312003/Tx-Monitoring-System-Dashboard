@@ -22,12 +22,7 @@
         /* SCREENS & OVERLAYS */
         #landingView, #loginView, #authOverlay, #confirmOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #authOverlay, #confirmOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
-        
-        /* OVERLAYS (History, Daily, Maintenance) */
-        .history-overlay, .daily-overlay, .maintenance-overlay { 
-            position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; 
-            background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; 
-        }
+        .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; }
 
         /* UI COMPONENTS */
         .role-container { display: flex; gap: 30px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
@@ -45,10 +40,8 @@
         .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
         .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
         .logout-btn { margin-top: auto; margin-bottom: 30px; color: var(--danger) !important; }
-        .logout-btn:hover { background: rgba(239, 68, 68, 0.1) !important; color: #ffcccc !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
-
+        
         .main-content { margin-left: 80px; padding: 30px; width: calc(100% - 80px); max-width: 100%; flex-grow: 1; }
-
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         .device-selector { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; outline: none; }
         
@@ -57,32 +50,25 @@
         .status-offline { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid #64748b; }
         .status-test { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-
-        /* ALARM BLINKING */
+        
         .blink-red { animation: blink-animation 1s infinite; border: 1px solid #ef4444 !important; background: rgba(239, 68, 68, 0.1) !important; }
         @keyframes blink-animation { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* DASHBOARD LAYOUT */
         .card { background-color: var(--bg-card); border-radius: 20px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); }
-        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; align-items: stretch; }
         .stat-card { background: #1a1f2b; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; height: 100%; }
-        .stat-card:hover { transform: translateY(-5px); border-color: var(--accent-purple); }
         .stat-icon { font-size: 1.4rem; margin-bottom: 10px; }
         .stat-value { font-size: 1.8rem; font-weight: bold; margin: 5px 0; color: white; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; }
         .stat-pill { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; width: 90%; }
 
         .dashboard-split { display: grid; grid-template-columns: 2fr 1.5fr; gap: 25px; margin-bottom: 25px; align-items: stretch; }
-        @media (max-width: 1200px) { .dashboard-split { grid-template-columns: 1fr; } }
-        
         .big-chart-card { display: flex; flex-direction: column; height: 100%; }
         .small-charts-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 20px; height: 100%; }
         .small-chart-card { padding: 15px; display: flex; flex-direction: column; height: 100%; }
         .chart-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted); }
         .chart-box { flex-grow: 1; position: relative; width: 100%; min-height: 0; }
 
-        /* TOGGLES & SLIDERS */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
@@ -105,56 +91,18 @@
         .cal-controls { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
         .sim-slider, .cal-slider { width: 100%; margin-top: 10px; cursor: pointer; }
 
-        /* --- MOBILE RESPONSIVENESS ADJUSTMENTS --- */
         @media (max-width: 768px) {
-            /* 1. Sidebar becomes a Bottom Navigation Bar */
-            .sidebar {
-                width: 100%;
-                height: 60px;
-                bottom: 0;
-                top: auto;
-                flex-direction: row;
-                justify-content: space-around;
-                padding: 0;
-                border-right: none;
-                border-top: 1px solid #2d3748;
-                background: #0f121a;
-            }
+            .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; }
             .nav-item { width: 100%; margin: 0; border-radius: 0; }
             .logout-btn { margin: 0 !important; color: #ef4444; }
-            
-            /* 2. Main Content expands to full width */
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-                padding: 15px;
-                padding-bottom: 80px; /* Space for bottom nav */
-            }
-
-            /* 3. Header Stacking */
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
+            .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 15px; }
             .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-
-            /* 4. Grid Stacking */
             .dashboard-split { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .stat-card { padding: 15px; }
             .stat-value { font-size: 1.4rem; }
-
-            /* 5. Overlays cover full screen */
-            .history-overlay, .daily-overlay, .maintenance-overlay {
-                left: 0;
-                width: 100%;
-                padding: 15px;
-                padding-bottom: 80px;
-                z-index: 2000;
-            }
-            
-            /* 6. Table scrolling */
+            .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; }
             .data-table { display: block; overflow-x: auto; white-space: nowrap; }
         }
     </style>
@@ -182,8 +130,8 @@
                 <div><h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span><select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)"><option value="" disabled selected>Searching Network...</option></select></div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div style="text-align: right;">
-                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ARM ALARM</div>
-                        <label class="switch"><input type="checkbox" id="alarmArmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
+                        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 4px;">ALARM STATUS</div>
+                        <div id="alarmStatusBadge" class="status-badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;">DISARMED</div>
                     </div>
                     <div id="netStatus" class="status-badge status-offline">CONNECTING...</div>
                 </div>
@@ -274,6 +222,14 @@
             <div style="display:flex; justify-content:space-between; margin-bottom:25px; max-width: 800px; margin: 0 auto 25px auto;">
                 <div><h2 style="color:#d946ef">MAINTENANCE CONSOLE</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Remote Injection & Calibration</span></div><button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
             </div>
+            
+            <div class="maint-card" style="border-color: #ef4444;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><h3 style="color:white; margin:0;">Safety Interlock</h3><span style="color:#888; font-size:0.8rem;">Master Alarm Control</span></div>
+                    <label class="switch"><input type="checkbox" id="alarmArmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
+                </div>
+            </div>
+
             <div class="maint-card" style="border-color: #d946ef;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;"><div><h3 style="color:white; margin:0;">Test Injection Mode</h3><span style="color:#888; font-size:0.8rem;">Override sensor values</span></div><button onclick="toggleSimulation()" id="simBtn" style="background:#333; color:white; border:1px solid #555; padding:10px 20px; border-radius:8px; cursor:pointer;">ENABLE TEST MODE</button></div>
                 <div class="sim-controls" id="simControls">
@@ -308,7 +264,6 @@
                 <label class="chart-check"><input type="checkbox" onchange="toggleDataset(3, this)" checked> Current L2</label>
                 <label class="chart-check"><input type="checkbox" onchange="toggleDataset(4, this)"> PF</label>
                 <label class="chart-check"><input type="checkbox" onchange="toggleDataset(5, this)"> Vibration</label>
-                
                 <div style="flex-grow:1; text-align:right;">
                     <button class="filter-btn active" onclick="filterHistory('1h', this)">1 Hour</button>
                     <button class="filter-btn" onclick="filterHistory('6h', this)">6 Hours</button>
@@ -347,7 +302,6 @@
     let lastEmailSent = 0; 
     let currentHistoryRange = 'all'; 
 
-    // STATE TRACKERS
     let faultStates = { voltage: "ok", current: "ok", temp: "ok", vib: "ok", pf: "ok" };
     let lastAlarmState = null;
     let lastTestState = null;
@@ -368,6 +322,7 @@
         if(logBox.innerText.includes("Monitoring for anomalies...")) logBox.innerHTML = "";
         const logEntry = `<div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;"><span style="color: #666; font-size: 0.7rem;">[${time}]</span><span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span></div>`;
         logBox.insertAdjacentHTML("afterbegin", logEntry);
+        while (logBox.children.length > 100) logBox.removeChild(logBox.lastChild);
     }
 
     function switchDevice(deviceId) {
@@ -417,9 +372,24 @@
 
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const serverState = s.val();
-            const toggle = document.getElementById('alarmArmToggle');
-            if (toggle.checked !== serverState) toggle.checked = serverState;
             isAlarmArmed = serverState;
+
+            // 1. UPDATE TOGGLE IN MAINT TAB
+            const toggle = document.getElementById('alarmArmToggle');
+            if (toggle && toggle.checked !== serverState) toggle.checked = serverState;
+
+            // 2. UPDATE BADGE IN DASHBOARD
+            const badge = document.getElementById('alarmStatusBadge');
+            if (badge) {
+                if (serverState) {
+                    badge.innerText = "ARMED";
+                    badge.style.cssText = "background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981;";
+                } else {
+                    badge.innerText = "DISARMED";
+                    badge.style.cssText = "background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444;";
+                }
+            }
+
             if (lastAlarmState !== null && lastAlarmState !== serverState) {
                 if (serverState) addDiagnosticLog("SAFETY INTERLOCK ARMED", "#10b981");
                 else addDiagnosticLog("SAFETY INTERLOCK DISARMED", "#ef4444");
@@ -459,7 +429,11 @@
     function closeAuthOverlay(){document.getElementById("authOverlay").style.display="none"}
     function logout(){auth.signOut(),window.location.reload()}
     function goBackToLanding(){document.getElementById("loginView").style.display="none",document.getElementById("landingView").style.display="flex"}
-    function updateRoleUI(){const e=document.getElementById("alarmArmToggle"),t=document.getElementById("navMaint"),n=document.getElementById("roleDisplay");"observer"===userRole?(e.disabled=!0,t.style.display="none",n.innerText="Observer Mode",n.style.color="var(--text-muted)"):(e.disabled=!1,t.style.display="flex",n.innerText="System Operator",n.style.color="var(--success)")}
+    function updateRoleUI(){
+        // Remove old toggle logic reference here since we moved it
+        const t=document.getElementById("navMaint"),n=document.getElementById("roleDisplay");
+        "observer"===userRole?(t.style.display="none",n.innerText="Observer Mode",n.style.color="var(--text-muted)"):(t.style.display="flex",n.innerText="System Operator",n.style.color="var(--success)")
+    }
     function toggleAlarm(e){"admin"===userRole?e.checked||(e.checked=!0,document.getElementById("confirmOverlay").style.display="flex"):e.checked=!e.checked,currentDeviceID&&db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(!0)}
     function confirmDisarm(){document.getElementById("confirmOverlay").style.display="none",document.getElementById("alarmArmToggle").checked=!1,currentDeviceID&&db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(!1)}
     function cancelDisarm(){document.getElementById("confirmOverlay").style.display="none",document.getElementById("alarmArmToggle").checked=!0}
@@ -487,7 +461,6 @@
         if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
     }
 
-    // --- REVISED FAULT LOGIC (Only works when ARMED) ---
     function checkFaults(v, c1, c2, t, vib, pf) {
         const msgEl = document.getElementById("predictMsg");
         
@@ -661,7 +634,7 @@
 
         let faults = [];
         if (d.voltage < 216 && d.voltage > 0) faults.push("Undervoltage (<216V)");
-        else if (d.voltage > 250) faults.push("High Voltage (>250V)");
+        else if (d.voltage >= 250) faults.push("High Voltage (>250V)");
 
         if (d.currentL1 > 312 || d.currentL2 > 312) faults.push("Overcurrent (>312A)");
         
@@ -677,9 +650,12 @@
             emailjs.send("service_aejvhq7", "template_9i69k4t", {
                 device: currentDeviceID,
                 fault_type: faultMessage,
-                voltage: d.voltage,
-                temp: d.temp,
-                vib: d.vib
+                voltage: d.voltage.toFixed(1) + "V",
+                temp: d.temp.toFixed(1) + "°C",
+                vib: d.vib.toFixed(2) + "g",
+                currentL1: d.currentL1.toFixed(1) + "A",
+                currentL2: d.currentL2.toFixed(1) + "A",
+                pf: d.pf.toFixed(2)
             })
             .then(() => console.log("📧 Email Alert Sent: " + faultMessage))
             .catch((err) => console.error("❌ Email Failed:", err));
