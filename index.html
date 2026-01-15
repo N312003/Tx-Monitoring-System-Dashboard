@@ -325,13 +325,24 @@
         });
     }
 
+    // --- UPDATED: LOGGING FUNCTION WITH LIMIT & SCROLL ---
     function addDiagnosticLog(message, colorCode) {
         const logBox = document.getElementById("eventLog");
         const time = new Date().toLocaleTimeString();
         if(logBox.innerText.includes("Monitoring for anomalies...")) logBox.innerHTML = "";
-        const logEntry = `<div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;"><span style="color: #666; font-size: 0.7rem;">[${time}]</span><span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span></div>`;
+        
+        const logEntry = `
+            <div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;">
+                <span style="color: #666; font-size: 0.7rem;">[${time}]</span>
+                <span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span>
+            </div>
+        `;
         logBox.insertAdjacentHTML("afterbegin", logEntry);
-        while (logBox.children.length > 100) logBox.removeChild(logBox.lastChild);
+
+        // Limit to 100 entries to prevent memory issues
+        while (logBox.children.length > 100) {
+            logBox.removeChild(logBox.lastChild);
+        }
     }
 
     function switchDevice(deviceId) {
@@ -442,31 +453,9 @@
         const t=document.getElementById("navMaint"),n=document.getElementById("roleDisplay");
         "observer"===userRole?(t.style.display="none",n.innerText="Observer Mode",n.style.color="var(--text-muted)"):(t.style.display="flex",n.innerText="System Operator",n.style.color="var(--success)")
     }
-    
-    function toggleAlarm(element) {
-        if (userRole !== 'admin') {
-            element.checked = !element.checked; 
-            alert("Observer access only. Cannot change alarm state.");
-            return;
-        }
-
-        if (element.checked) {
-            db.ref("devices/" + currentDeviceID + "/control/alarmArmed").set(true);
-        } else {
-            element.checked = true; 
-            document.getElementById("confirmOverlay").style.display = "flex";
-        }
-    }
-
-    function confirmDisarm(){
-        document.getElementById("confirmOverlay").style.display="none";
-        const toggle = document.getElementById('alarmArmToggle');
-        toggle.checked = false;
-        if(currentDeviceID) db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(false);
-    }
-    
-    function cancelDisarm(){document.getElementById("confirmOverlay").style.display="none"; document.getElementById("alarmArmToggle").checked=true;}
-    
+    function toggleAlarm(e){"admin"===userRole?e.checked||(e.checked=!0,document.getElementById("confirmOverlay").style.display="flex"):e.checked=!e.checked,currentDeviceID&&db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(!0)}
+    function confirmDisarm(){document.getElementById("confirmOverlay").style.display="none",document.getElementById("alarmArmToggle").checked=!1,currentDeviceID&&db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(!1)}
+    function cancelDisarm(){document.getElementById("confirmOverlay").style.display="none",document.getElementById("alarmArmToggle").checked=!0}
     function updateSim(e,t){currentDeviceID&&(document.getElementById("simVal_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/control/testValues/"+e).set(parseFloat(t)))}
     function updateCal(e,t){currentDeviceID&&(document.getElementById("calDisp_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/config/cal_"+e).set(parseFloat(t)))}
 
@@ -478,15 +467,17 @@
         
         let v, c1, c2, t, vib, pf;
 
-        // 1. INJECTION OVERRIDE: If Test Mode is ON, use test values
-        if (d.control && d.control.testMode && d.control.testValues) {
-            const sim = d.control.testValues;
-            v = sim.voltage || 0;
-            c1 = sim.currentL1 || 0;
-            c2 = sim.currentL2 || 0;
-            pf = sim.pf || 0;
-            t = sim.temp || 0;
-            vib = sim.vib || 0;
+        // 1. INJECTION OVERRIDE: If Test Mode is ON, check testMode flag
+        // The check 'd.control.testMode' is the key here.
+        if (d.control && d.control.testMode) {
+            // Safe access to testValues, defaulting to 0 if they don't exist yet
+            const sim = d.control.testValues || {}; 
+            v = (sim.voltage !== undefined) ? sim.voltage : 0;
+            c1 = (sim.currentL1 !== undefined) ? sim.currentL1 : 0;
+            c2 = (sim.currentL2 !== undefined) ? sim.currentL2 : 0;
+            pf = (sim.pf !== undefined) ? sim.pf : 0;
+            t = (sim.temp !== undefined) ? sim.temp : 0;
+            vib = (sim.vib !== undefined) ? sim.vib : 0;
         } else {
             // 2. NORMAL: Use live sensor data
             v = d.voltage || 0;
