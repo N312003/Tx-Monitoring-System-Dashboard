@@ -310,6 +310,10 @@
     let lastEmailSent = 0; 
     let currentHistoryRange = 'all'; 
 
+    // STATE TRACKERS (For Logging)
+    let lastAlarmState = null;
+    let lastTestState = null;
+
     function startWatchdog() { setInterval(() => { if (Date.now() - lastHeartbeat > 300000) { document.getElementById('netStatus').innerText = "OFFLINE"; document.getElementById('netStatus').className = "status-badge status-offline"; } }, 1000); }
 
     function loadDeviceList() {
@@ -320,9 +324,31 @@
         });
     }
 
+    // --- NEW: DIAGNOSTIC LOGGER FUNCTION ---
+    function addDiagnosticLog(message, colorCode) {
+        const logBox = document.getElementById("eventLog");
+        const time = new Date().toLocaleTimeString();
+        
+        // Clear the initial "Monitoring..." text if it exists
+        if(logBox.innerText.includes("Monitoring for anomalies...")) logBox.innerHTML = "";
+
+        const logEntry = `
+            <div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;">
+                <span style="color: #666; font-size: 0.7rem;">[${time}]</span>
+                <span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span>
+            </div>
+        `;
+        logBox.insertAdjacentHTML("afterbegin", logEntry);
+    }
+
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
         document.getElementById('netStatus').innerText = "CONNECTING..."; document.getElementById('netStatus').className = "status-badge status-offline";
+        
+        // Reset trackers on device switch
+        lastAlarmState = null;
+        lastTestState = null;
+
         if (activeListener) { activeListener.off(); db.ref('devices/' + deviceId + '/control').off(); }
 
         sessionLog = [];
@@ -368,15 +394,35 @@
             updateDashboard(d); 
         });
 
+        // --- UPDATED ALARM LISTENER WITH LOGGING ---
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const serverState = s.val();
             const toggle = document.getElementById('alarmArmToggle');
-            if (toggle.checked !== serverState) { isAlarmArmed = serverState; toggle.checked = serverState; }
+            
+            if (toggle.checked !== serverState) toggle.checked = serverState;
+            isAlarmArmed = serverState;
+
+            // Log only if state CHANGED (prevents logging on page refresh)
+            if (lastAlarmState !== null && lastAlarmState !== serverState) {
+                if (serverState) addDiagnosticLog("SAFETY INTERLOCK ARMED", "#10b981"); // Green
+                else addDiagnosticLog("SAFETY INTERLOCK DISARMED", "#ef4444");          // Red
+            }
+            lastAlarmState = serverState;
         });
         
-        db.ref('devices/' + deviceId + '/control/testMode').on('value', s => { isTestMode = s.val(); updateTestUI(); });
+        // --- UPDATED TEST MODE LISTENER WITH LOGGING ---
+        db.ref('devices/' + deviceId + '/control/testMode').on('value', s => { 
+            const serverState = s.val();
+            isTestMode = serverState; 
+            updateTestUI(); 
+
+            if (lastTestState !== null && lastTestState !== serverState) {
+                if (serverState) addDiagnosticLog("TEST INJECTION MODE STARTED", "#d946ef"); // Purple
+                else addDiagnosticLog("TEST INJECTION MODE ENDED", "#fbbf24");               // Yellow
+            }
+            lastTestState = serverState;
+        });
         
-        // --- FIXED: Set Default Date Correctly (Local Time) ---
         const today = new Date();
         const localDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
         document.getElementById('reportDate').value = localDate;
@@ -420,50 +466,30 @@
     function updateSim(e,t){currentDeviceID&&(document.getElementById("simVal_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/control/testValues/"+e).set(parseFloat(t)))}
     function updateCal(e,t){currentDeviceID&&(document.getElementById("calDisp_"+e).innerText=t,db.ref("devices/"+currentDeviceID+"/config/cal_"+e).set(parseFloat(t)))}
 
-   function updateDashboard(d) {
-        const sEl = document.getElementById('netStatus'); 
-        sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; 
-        sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
+    function updateDashboard(d) {
+        const sEl = document.getElementById('netStatus'); sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
+        const v = d.voltage||0; const c1 = d.currentL1||0; const c2 = d.currentL2||0; const t = d.temp||0; const vib = d.vib||0; const pf = d.pf||0;
         
-        const v = d.voltage||0; const c1 = d.currentL1||0; const c2 = d.currentL2||0; 
-        const t = d.temp||0; const vib = d.vib||0; const pf = d.pf||0;
-        
-        // Update Stats
-        document.getElementById('v').innerText = v.toFixed(1)+"V"; 
-        document.getElementById('v').style.color = (v > 260) ? "#ef4444" : "white";
+        document.getElementById('v').innerText = v.toFixed(1)+"V"; document.getElementById('v').style.color = (v > 260) ? "#ef4444" : "white";
         document.getElementById('pf').innerText = pf.toFixed(2); 
         document.getElementById('c1').innerText = c1.toFixed(1); 
         document.getElementById('c2').innerText = c2.toFixed(1);
-        document.getElementById('t').innerText = t.toFixed(1)+"°C"; 
-        document.getElementById('t').style.color = (t > 80) ? "#ef4444" : "white";
+        document.getElementById('t').innerText = t.toFixed(1)+"°C"; document.getElementById('t').style.color = (t > 80) ? "#ef4444" : "white";
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
         
-        // Update Live Charts (These are fine, they already shift old data out)
-        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
-        updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
-        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); 
-        cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
-        cChart.update();
+        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
+        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); cChart.update();
         
         runAIAnalysis(v, t, vib); checkAndSendEmail(d);
         
-        // --- MEMORY LEAK FIX ---
         const now = new Date();
         sessionLog.push({time: now, v:v, c1:c1, c2:c2, pf:pf, t:t, vib:vib});
-        
-        // 1. LIMIT ARRAY SIZE: Keep only the last 5000 points to prevent crashing
-        if (sessionLog.length > 5000) {
-            sessionLog.shift(); // Remove the oldest data
-        }
+        if (sessionLog.length > 5000) sessionLog.shift();
 
-        // 2. THROTTLE UPDATES: Only update heavy views if they are actually visible
-        if(document.getElementById('historyView').style.display === 'block') {
-            updateHistoryChart();
-        }
-        if(document.getElementById('dailyView').style.display === 'block') {
-            filterReportByDate();
-        }
+        if(document.getElementById('historyView').style.display === 'block') updateHistoryChart();
+        if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
     }
+
     function filterHistory(range, btn) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
         currentHistoryRange = range;
@@ -522,32 +548,18 @@
         }); 
     }
 
-    // --- FIXED: Date Filtering Logic (Uses Local Time Match) ---
     function filterReportByDate(){
         const picker = document.getElementById("reportDate");
         if(!picker.value) return;
-        const selectedDate = picker.value; // YYYY-MM-DD from picker
+        const selectedDate = picker.value;
         const tbody = document.getElementById("dailyTableBody");
         tbody.innerHTML = "";
-
-        // Filter: Convert SessionLog time to Local String and compare
         const filtered = sessionLog.filter(e => {
-            const entryDate = e.time.getFullYear() + '-' + 
-                              String(e.time.getMonth() + 1).padStart(2, '0') + '-' + 
-                              String(e.time.getDate()).padStart(2, '0');
+            const entryDate = e.time.getFullYear() + '-' + String(e.time.getMonth() + 1).padStart(2, '0') + '-' + String(e.time.getDate()).padStart(2, '0');
             return entryDate === selectedDate;
         });
-
         filtered.reverse().forEach(e => {
-            let row = `<tr>
-                <td>${e.time.toLocaleTimeString()}</td>
-                <td>${Number(e.v).toFixed(1)}</td>
-                <td>${Number(e.c1).toFixed(1)}</td>
-                <td>${Number(e.c2).toFixed(1)}</td>
-                <td>${Number(e.pf).toFixed(2)}</td>
-                <td>${Number(e.t).toFixed(1)}</td>
-                <td>${Number(e.vib).toFixed(2)}</td>
-            </tr>`;
+            let row = `<tr><td>${e.time.toLocaleTimeString()}</td><td>${Number(e.v).toFixed(1)}</td><td>${Number(e.c1).toFixed(1)}</td><td>${Number(e.c2).toFixed(1)}</td><td>${Number(e.pf).toFixed(2)}</td><td>${Number(e.t).toFixed(1)}</td><td>${Number(e.vib).toFixed(2)}</td></tr>`;
             tbody.insertAdjacentHTML("beforeend", row);
         });
     }
@@ -556,50 +568,33 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const date = document.getElementById('reportDate').value || new Date().toISOString().split('T')[0];
-        
-        // FIXED PDF FILTER AS WELL
         const data = sessionLog.filter(e => {
             const entryDate = e.time.getFullYear() + '-' + String(e.time.getMonth() + 1).padStart(2, '0') + '-' + String(e.time.getDate()).padStart(2, '0');
             return entryDate === date;
         });
-
         if(data.length === 0) { alert("No data available for the selected date."); return; }
-
         const maxV = Math.max(...data.map(d => d.v)).toFixed(1);
         const minV = Math.min(...data.map(d => d.v)).toFixed(1);
         const maxT = Math.max(...data.map(d => d.t)).toFixed(1);
         const maxC = Math.max(...data.map(d => Math.max(d.c1, d.c2))).toFixed(1);
         const avgPF = (data.reduce((a,b) => a + b.pf, 0) / data.length).toFixed(2);
-
         doc.setFontSize(18); doc.text("TxMS PRO | Transformer Analysis Report", 14, 22);
-        doc.setFontSize(11); doc.setTextColor(100);
-        doc.text(`Report Date: ${date}`, 14, 30); doc.text(`Device ID: ${currentDeviceID}`, 14, 35);
-
+        doc.setFontSize(11); doc.setTextColor(100); doc.text(`Report Date: ${date}`, 14, 30); doc.text(`Device ID: ${currentDeviceID}`, 14, 35);
         doc.setDrawColor(139, 92, 246); doc.setLineWidth(1); doc.line(14, 42, 196, 42); 
-        
         doc.setFontSize(12); doc.setTextColor(0); doc.text("Daily Diagnostics Summary", 14, 50);
-        
-        doc.setFontSize(10);
-        doc.text(`• Voltage Stability: ${minV}V - ${maxV}V`, 20, 60);
-        doc.text(`• Peak Load Current: ${maxC} A`, 20, 66);
-        doc.text(`• Max Temperature: ${maxT} °C`, 110, 60);
-        doc.text(`• Average Efficiency (PF): ${avgPF}`, 110, 66);
-
+        doc.setFontSize(10); doc.text(`• Voltage Stability: ${minV}V - ${maxV}V`, 20, 60); doc.text(`• Peak Load Current: ${maxC} A`, 20, 66); doc.text(`• Max Temperature: ${maxT} °C`, 110, 60); doc.text(`• Average Efficiency (PF): ${avgPF}`, 110, 66);
         const rows = data.map(d => [d.time.toLocaleTimeString(), d.v.toFixed(1), d.c1.toFixed(1), d.c2.toFixed(1), d.pf.toFixed(2), d.t.toFixed(1), d.vib.toFixed(2)]);
-
         doc.autoTable({ startY: 75, head: [['Time', 'Volt (V)', 'L1 (A)', 'L2 (A)', 'PF', 'Temp (C)', 'Vib (g)']], body: rows, theme: 'grid', headStyles: { fillColor: [139, 92, 246] }, alternateRowStyles: { fillColor: [240, 240, 240] } });
         doc.save(`TxMS_Report_${date}.pdf`);
     }
 
     function downloadCSV(){
         let e="data:text/csv;charset=utf-8,Time,V,L1,L2,PF,Temp,Vib\n";
-        // FIXED CSV FILTER
         const selectedDate = document.getElementById("reportDate").value;
         const data = sessionLog.filter(e => {
             const entryDate = e.time.getFullYear() + '-' + String(e.time.getMonth() + 1).padStart(2, '0') + '-' + String(e.time.getDate()).padStart(2, '0');
             return entryDate === selectedDate;
         });
-
         data.forEach((t=>{e+=`${t.time.toLocaleString()},${t.v},${t.c1},${t.c2},${t.pf},${t.t},${t.vib}\n`}));
         const t=document.createElement("a");t.href=encodeURI(e),t.download="txms.csv",t.click()
     }
@@ -615,5 +610,6 @@
 </script>
 </body>
 </html>
+
 
 
