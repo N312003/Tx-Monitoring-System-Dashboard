@@ -59,8 +59,12 @@
         .status-test { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; animation: pulse-red 1s infinite; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
+        /* BLINK ANIMATION FOR ALERTS */
+        .blink-red { animation: blink-animation 1s infinite; border: 1px solid #ef4444 !important; background: rgba(239, 68, 68, 0.1) !important; }
+        @keyframes blink-animation { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
         /* DASHBOARD LAYOUT */
-        .card { background-color: var(--bg-card); border-radius: 20px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); }
+        .card { background-color: var(--bg-card); border-radius: 20px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
         
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; align-items: stretch; }
         .stat-card { background: #1a1f2b; border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; height: 100%; }
@@ -142,31 +146,31 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card">
+                <div class="stat-card" id="card_v">
                     <i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i>
                     <div class="stat-value" id="v">--</div>
                     <div class="stat-label">Main Voltage</div>
                     <div class="stat-pill" style="background: #7c3aed;">Real-time</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="card_c">
                     <i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i>
                     <div class="stat-value"><span id="c1">--</span> / <span id="c2">--</span></div>
                     <div class="stat-label">Current (L1 / L2)</div>
                     <div class="stat-pill" style="background: #06b6d4;">Amperage</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="card_pf">
                     <i class="fa-solid fa-wave-square stat-icon" style="color: #d946ef;"></i>
                     <div class="stat-value" id="pf">--</div>
                     <div class="stat-label">Power Factor</div>
                     <div class="stat-pill" style="background: #d946ef;">Efficiency</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="card_t">
                     <i class="fa-solid fa-temperature-half stat-icon" style="color: #ef4444;"></i>
                     <div class="stat-value" id="t">--</div>
                     <div class="stat-label">Transformer Temp</div>
                     <div class="stat-pill" style="background: #ef4444;">Thermal</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" id="card_vib">
                     <i class="fa-solid fa-bell stat-icon" style="color: #fbbf24;"></i>
                     <div class="stat-value" id="vib">--</div>
                     <div class="stat-label">Vibration Level</div>
@@ -310,7 +314,8 @@
     let lastEmailSent = 0; 
     let currentHistoryRange = 'all'; 
 
-    // STATE TRACKERS (For Logging)
+    // --- FAULT STATE TRACKERS (To prevent log spam) ---
+    let faultStates = { voltage: "ok", current: "ok", temp: "ok", vib: "ok", pf: "ok" };
     let lastAlarmState = null;
     let lastTestState = null;
 
@@ -324,30 +329,19 @@
         });
     }
 
-    // --- NEW: DIAGNOSTIC LOGGER FUNCTION ---
     function addDiagnosticLog(message, colorCode) {
         const logBox = document.getElementById("eventLog");
         const time = new Date().toLocaleTimeString();
-        
-        // Clear the initial "Monitoring..." text if it exists
         if(logBox.innerText.includes("Monitoring for anomalies...")) logBox.innerHTML = "";
-
-        const logEntry = `
-            <div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;">
-                <span style="color: #666; font-size: 0.7rem;">[${time}]</span>
-                <span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span>
-            </div>
-        `;
+        const logEntry = `<div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;"><span style="color: #666; font-size: 0.7rem;">[${time}]</span><span style="color: white; font-size: 0.85rem; margin-left: 5px;">${message}</span></div>`;
         logBox.insertAdjacentHTML("afterbegin", logEntry);
     }
 
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
         document.getElementById('netStatus').innerText = "CONNECTING..."; document.getElementById('netStatus').className = "status-badge status-offline";
-        
-        // Reset trackers on device switch
-        lastAlarmState = null;
-        lastTestState = null;
+        lastAlarmState = null; lastTestState = null;
+        faultStates = { voltage: "ok", current: "ok", temp: "ok", vib: "ok", pf: "ok" }; // Reset faults
 
         if (activeListener) { activeListener.off(); db.ref('devices/' + deviceId + '/control').off(); }
 
@@ -394,31 +388,26 @@
             updateDashboard(d); 
         });
 
-        // --- UPDATED ALARM LISTENER WITH LOGGING ---
         db.ref('devices/' + deviceId + '/control/alarmArmed').on('value', s => { 
             const serverState = s.val();
             const toggle = document.getElementById('alarmArmToggle');
-            
             if (toggle.checked !== serverState) toggle.checked = serverState;
             isAlarmArmed = serverState;
 
-            // Log only if state CHANGED (prevents logging on page refresh)
             if (lastAlarmState !== null && lastAlarmState !== serverState) {
-                if (serverState) addDiagnosticLog("SAFETY INTERLOCK ARMED", "#10b981"); // Green
-                else addDiagnosticLog("SAFETY INTERLOCK DISARMED", "#ef4444");          // Red
+                if (serverState) addDiagnosticLog("SAFETY INTERLOCK ARMED", "#10b981");
+                else addDiagnosticLog("SAFETY INTERLOCK DISARMED", "#ef4444");
             }
             lastAlarmState = serverState;
         });
         
-        // --- UPDATED TEST MODE LISTENER WITH LOGGING ---
         db.ref('devices/' + deviceId + '/control/testMode').on('value', s => { 
             const serverState = s.val();
             isTestMode = serverState; 
             updateTestUI(); 
-
             if (lastTestState !== null && lastTestState !== serverState) {
-                if (serverState) addDiagnosticLog("TEST INJECTION MODE STARTED", "#d946ef"); // Purple
-                else addDiagnosticLog("TEST INJECTION MODE ENDED", "#fbbf24");               // Yellow
+                if (serverState) addDiagnosticLog("TEST INJECTION MODE STARTED", "#d946ef");
+                else addDiagnosticLog("TEST INJECTION MODE ENDED", "#fbbf24");
             }
             lastTestState = serverState;
         });
@@ -428,27 +417,13 @@
         document.getElementById('reportDate').value = localDate;
     }
 
-    function toggleSimulation() {
-        if (!currentDeviceID) return;
-        const newState = !isTestMode;
-        db.ref('devices/' + currentDeviceID + '/control/testMode').set(newState);
-    }
+    function toggleSimulation() { if (!currentDeviceID) return; const newState = !isTestMode; db.ref('devices/' + currentDeviceID + '/control/testMode').set(newState); }
 
     function updateTestUI(){
-        const btn=document.getElementById('simBtn');
-        const controls=document.getElementById('simControls');
+        const btn=document.getElementById('simBtn'); const controls=document.getElementById('simControls');
         if(btn&&controls){
-            if(isTestMode){
-                btn.innerText="⛔ STOP INJECTION";
-                btn.style.background="#ef4444";
-                controls.style.opacity="1";
-                controls.style.pointerEvents="all";
-            } else {
-                btn.innerText="ENABLE TEST MODE";
-                btn.style.background="#333";
-                controls.style.opacity="0.5";
-                controls.style.pointerEvents="none";
-            }
+            if(isTestMode){ btn.innerText="⛔ STOP INJECTION"; btn.style.background="#ef4444"; controls.style.opacity="1"; controls.style.pointerEvents="all"; } 
+            else { btn.innerText="ENABLE TEST MODE"; btn.style.background="#333"; controls.style.opacity="0.5"; controls.style.pointerEvents="none"; }
         }
     }
 
@@ -470,17 +445,14 @@
         const sEl = document.getElementById('netStatus'); sEl.innerText = (d.status === "TEST_MODE") ? "TEST MODE" : "ONLINE"; sEl.className = (d.status === "TEST_MODE") ? "status-badge status-test" : "status-badge status-online";
         const v = d.voltage||0; const c1 = d.currentL1||0; const c2 = d.currentL2||0; const t = d.temp||0; const vib = d.vib||0; const pf = d.pf||0;
         
-        document.getElementById('v').innerText = v.toFixed(1)+"V"; document.getElementById('v').style.color = (v > 260) ? "#ef4444" : "white";
-        document.getElementById('pf').innerText = pf.toFixed(2); 
-        document.getElementById('c1').innerText = c1.toFixed(1); 
-        document.getElementById('c2').innerText = c2.toFixed(1);
-        document.getElementById('t').innerText = t.toFixed(1)+"°C"; document.getElementById('t').style.color = (t > 80) ? "#ef4444" : "white";
-        document.getElementById('vib').innerText = vib.toFixed(2)+"g";
+        document.getElementById('v').innerText = v.toFixed(1)+"V"; document.getElementById('pf').innerText = pf.toFixed(2); 
+        document.getElementById('c1').innerText = c1.toFixed(1); document.getElementById('c2').innerText = c2.toFixed(1);
+        document.getElementById('t').innerText = t.toFixed(1)+"°C"; document.getElementById('vib').innerText = vib.toFixed(2)+"g";
         
         updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); cChart.update();
         
-        runAIAnalysis(v, t, vib); checkAndSendEmail(d);
+        checkFaults(v, c1, c2, t, vib, pf); checkAndSendEmail(d);
         
         const now = new Date();
         sessionLog.push({time: now, v:v, c1:c1, c2:c2, pf:pf, t:t, vib:vib});
@@ -488,6 +460,59 @@
 
         if(document.getElementById('historyView').style.display === 'block') updateHistoryChart();
         if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
+    }
+
+    // --- REVISED: COMPREHENSIVE FAULT LOGIC ---
+    function checkFaults(v, c1, c2, t, vib, pf) {
+        const msgEl = document.getElementById("predictMsg");
+        let overallStatus = "System Nominal";
+        let overallColor = "#10b981";
+
+        // Helper to update specific card and log
+        const updateCardState = (cardId, isFault, faultMsg, type) => {
+            const card = document.getElementById(cardId);
+            const varName = cardId.split('_')[1]; // v, c, t...
+
+            if (isFault) {
+                card.classList.add("blink-red");
+                overallStatus = "CRITICAL FAULT DETECTED";
+                overallColor = "#ef4444";
+                if (faultStates[varName] !== "fault") {
+                    addDiagnosticLog((type === 'crit' ? "CRITICAL: " : "WARNING: ") + faultMsg, type === 'crit' ? "#ef4444" : "#fbbf24");
+                    faultStates[varName] = "fault";
+                }
+            } else {
+                card.classList.remove("blink-red");
+                if (faultStates[varName] === "fault") {
+                    addDiagnosticLog(faultMsg + " RESOLVED", "#10b981");
+                    faultStates[varName] = "ok";
+                }
+            }
+        };
+
+        // 1. Voltage Logic
+        if (v < 216 && v > 0) updateCardState("card_v", true, "UNDERVOLTAGE", "crit");
+        else if (v > 250) updateCardState("card_v", true, "HIGH VOLTAGE", "crit");
+        else updateCardState("card_v", false, "VOLTAGE");
+
+        // 2. Current Logic
+        if (c1 > 312 || c2 > 312) updateCardState("card_c", true, "OVERCURRENT", "crit");
+        else updateCardState("card_c", false, "CURRENT");
+
+        // 3. Temperature Logic
+        if (t > 80) updateCardState("card_t", true, "OVERHEATING", "crit");
+        else updateCardState("card_t", false, "TEMP");
+
+        // 4. Vibration Logic
+        if (vib > 0.20) updateCardState("card_vib", true, "ABNORMAL VIBRATION", "crit");
+        else updateCardState("card_vib", false, "VIBRATION");
+
+        // 5. Power Factor Logic
+        if (pf < 0.85 && pf > 0) updateCardState("card_pf", true, "LOW POWER FACTOR", "warn");
+        else updateCardState("card_pf", false, "POWER FACTOR");
+
+        msgEl.innerText = overallStatus;
+        msgEl.style.color = overallColor;
     }
 
     function filterHistory(range, btn) {
@@ -604,12 +629,8 @@
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{display:!1},ticks:{color:"#555",font:{size:9}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
     function checkAndSendEmail(e){if(isAlarmArmed&&!(Date.now()-lastEmailSent<3e5)){let t="";e.voltage>260?t="High Voltage":e.temp>80?t="Overheating":e.vib>.5&&(t="High Vibration"),""!==t&&(lastEmailSent=Date.now(),emailjs.send("service_id","template_id",{device:currentDeviceID,fault_type:t,voltage:e.voltage,temp:e.temp}).then((()=>console.log("Email Sent"))).catch((e=>console.error(e))))}}
-    function runAIAnalysis(e,t,n){const a=document.getElementById("predictMsg");t>60?(a.innerText="Overheat Warning",a.style.color="var(--warning)"):n>.5?(a.innerText="Vibration Alert",a.style.color="var(--danger)"):e>260?(a.innerText="Overvoltage",a.style.color="var(--danger)"):(a.innerText="System Nominal",a.style.color="var(--success)")}
     function clearLog(){document.getElementById("eventLog").innerHTML='<div style="color: #444; text-align: center; padding-top: 40px;">Monitoring...</div>'}
     startWatchdog();
 </script>
 </body>
 </html>
-
-
-
