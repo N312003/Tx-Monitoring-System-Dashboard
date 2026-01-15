@@ -518,7 +518,7 @@
         if (c1 > 312 || c2 > 312) updateCardState("card_c", true, "OVERCURRENT", "crit");
         else updateCardState("card_c", false, "CURRENT");
 
-        if (t > 80) updateCardState("card_t", true, "OVERHEATING", "crit");
+        if (t > 75) updateCardState("card_t", true, "OVERHEATING", "crit");
         else updateCardState("card_t", false, "TEMP");
 
         if (vib > 0.20) updateCardState("card_vib", true, "ABNORMAL VIBRATION", "crit");
@@ -655,7 +655,7 @@
 
         if (d.currentL1 > 312 || d.currentL2 > 312) faults.push("Overcurrent (>312A)");
         
-        if (d.temp > 80) faults.push("Overheating (>80°C)");
+        if (d.temp > 75) faults.push("Overheating (>75°C)");
         
         if (d.vib > 0.20) faults.push("Abnormal Vibration (>0.2g)");
         
@@ -684,3 +684,4 @@
 </script>
 </body>
 </html>
+
