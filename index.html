@@ -22,7 +22,7 @@
         /* SCREENS & OVERLAYS */
         #landingView, #loginView, #authOverlay, #confirmOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #authOverlay, #confirmOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
-        .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 200; padding: 30px; display: none; overflow-y: auto; }
+        .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; }
 
         /* UI COMPONENTS */
         .role-container { display: flex; gap: 30px; margin-top: 30px; }
@@ -375,10 +375,13 @@
         });
         
         db.ref('devices/' + deviceId + '/control/testMode').on('value', s => { isTestMode = s.val(); updateTestUI(); });
-        document.getElementById('reportDate').valueAsDate = new Date();
+        
+        // --- FIXED: Set Default Date Correctly (Local Time) ---
+        const today = new Date();
+        const localDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        document.getElementById('reportDate').value = localDate;
     }
 
-    // --- ADDED: Missing Toggle Function ---
     function toggleSimulation() {
         if (!currentDeviceID) return;
         const newState = !isTestMode;
@@ -445,7 +448,6 @@
         updateHistoryChart();
     }
 
-    // --- FIXED: Updated Toggle Logic ---
     function toggleDataset(index, checkbox) {
         if (!historyChartInstance) return;
         historyChartInstance.data.datasets[index].hidden = !checkbox.checked;
@@ -498,13 +500,47 @@
         }); 
     }
 
-    function filterReportByDate(){const e=document.getElementById("reportDate");if(!e.value)return;const t=e.value,n=document.getElementById("dailyTableBody");n.innerHTML="";sessionLog.filter((e=>e.time.toISOString().split("T")[0]===t)).reverse().forEach((e=>{let t=`<tr><td>${e.time.toLocaleTimeString()}</td><td>${Number(e.v).toFixed(1)}</td><td>${Number(e.c1).toFixed(1)}</td><td>${Number(e.c2).toFixed(1)}</td><td>${Number(e.pf).toFixed(2)}</td><td>${Number(e.t).toFixed(1)}</td><td>${Number(e.vib).toFixed(2)}</td></tr>`;n.insertAdjacentHTML("beforeend",t)}))}
+    // --- FIXED: Date Filtering Logic (Uses Local Time Match) ---
+    function filterReportByDate(){
+        const picker = document.getElementById("reportDate");
+        if(!picker.value) return;
+        const selectedDate = picker.value; // YYYY-MM-DD from picker
+        const tbody = document.getElementById("dailyTableBody");
+        tbody.innerHTML = "";
+
+        // Filter: Convert SessionLog time to Local String and compare
+        const filtered = sessionLog.filter(e => {
+            const entryDate = e.time.getFullYear() + '-' + 
+                              String(e.time.getMonth() + 1).padStart(2, '0') + '-' + 
+                              String(e.time.getDate()).padStart(2, '0');
+            return entryDate === selectedDate;
+        });
+
+        filtered.reverse().forEach(e => {
+            let row = `<tr>
+                <td>${e.time.toLocaleTimeString()}</td>
+                <td>${Number(e.v).toFixed(1)}</td>
+                <td>${Number(e.c1).toFixed(1)}</td>
+                <td>${Number(e.c2).toFixed(1)}</td>
+                <td>${Number(e.pf).toFixed(2)}</td>
+                <td>${Number(e.t).toFixed(1)}</td>
+                <td>${Number(e.vib).toFixed(2)}</td>
+            </tr>`;
+            tbody.insertAdjacentHTML("beforeend", row);
+        });
+    }
     
     function downloadPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const date = document.getElementById('reportDate').value || new Date().toISOString().split('T')[0];
-        const data = sessionLog.filter(e => e.time.toISOString().split("T")[0] === date);
+        
+        // FIXED PDF FILTER AS WELL
+        const data = sessionLog.filter(e => {
+            const entryDate = e.time.getFullYear() + '-' + String(e.time.getMonth() + 1).padStart(2, '0') + '-' + String(e.time.getDate()).padStart(2, '0');
+            return entryDate === date;
+        });
+
         if(data.length === 0) { alert("No data available for the selected date."); return; }
 
         const maxV = Math.max(...data.map(d => d.v)).toFixed(1);
@@ -513,20 +549,13 @@
         const maxC = Math.max(...data.map(d => Math.max(d.c1, d.c2))).toFixed(1);
         const avgPF = (data.reduce((a,b) => a + b.pf, 0) / data.length).toFixed(2);
 
-        doc.setFontSize(18);
-        doc.text("TxMS PRO | Transformer Analysis Report", 14, 22);
-        doc.setFontSize(11);
-        doc.setTextColor(100);
-        doc.text(`Report Date: ${date}`, 14, 30);
-        doc.text(`Device ID: ${currentDeviceID}`, 14, 35);
+        doc.setFontSize(18); doc.text("TxMS PRO | Transformer Analysis Report", 14, 22);
+        doc.setFontSize(11); doc.setTextColor(100);
+        doc.text(`Report Date: ${date}`, 14, 30); doc.text(`Device ID: ${currentDeviceID}`, 14, 35);
 
-        doc.setDrawColor(139, 92, 246); 
-        doc.setLineWidth(1);
-        doc.line(14, 42, 196, 42); 
+        doc.setDrawColor(139, 92, 246); doc.setLineWidth(1); doc.line(14, 42, 196, 42); 
         
-        doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.text("Daily Diagnostics Summary", 14, 50);
+        doc.setFontSize(12); doc.setTextColor(0); doc.text("Daily Diagnostics Summary", 14, 50);
         
         doc.setFontSize(10);
         doc.text(`• Voltage Stability: ${minV}V - ${maxV}V`, 20, 60);
@@ -534,29 +563,25 @@
         doc.text(`• Max Temperature: ${maxT} °C`, 110, 60);
         doc.text(`• Average Efficiency (PF): ${avgPF}`, 110, 66);
 
-        const rows = data.map(d => [
-            d.time.toLocaleTimeString(),
-            d.v.toFixed(1),
-            d.c1.toFixed(1),
-            d.c2.toFixed(1),
-            d.pf.toFixed(2),
-            d.t.toFixed(1),
-            d.vib.toFixed(2)
-        ]);
+        const rows = data.map(d => [d.time.toLocaleTimeString(), d.v.toFixed(1), d.c1.toFixed(1), d.c2.toFixed(1), d.pf.toFixed(2), d.t.toFixed(1), d.vib.toFixed(2)]);
 
-        doc.autoTable({
-            startY: 75,
-            head: [['Time', 'Volt (V)', 'L1 (A)', 'L2 (A)', 'PF', 'Temp (C)', 'Vib (g)']],
-            body: rows,
-            theme: 'grid',
-            headStyles: { fillColor: [139, 92, 246] }, 
-            alternateRowStyles: { fillColor: [240, 240, 240] }
-        });
-
+        doc.autoTable({ startY: 75, head: [['Time', 'Volt (V)', 'L1 (A)', 'L2 (A)', 'PF', 'Temp (C)', 'Vib (g)']], body: rows, theme: 'grid', headStyles: { fillColor: [139, 92, 246] }, alternateRowStyles: { fillColor: [240, 240, 240] } });
         doc.save(`TxMS_Report_${date}.pdf`);
     }
 
-    function downloadCSV(){let e="data:text/csv;charset=utf-8,Time,V,L1,L2,PF,Temp,Vib\n";sessionLog.forEach((t=>{e+=`${t.time.toLocaleString()},${t.v},${t.c1},${t.c2},${t.pf},${t.t},${t.vib}\n`}));const t=document.createElement("a");t.href=encodeURI(e),t.download="txms.csv",t.click()}
+    function downloadCSV(){
+        let e="data:text/csv;charset=utf-8,Time,V,L1,L2,PF,Temp,Vib\n";
+        // FIXED CSV FILTER
+        const selectedDate = document.getElementById("reportDate").value;
+        const data = sessionLog.filter(e => {
+            const entryDate = e.time.getFullYear() + '-' + String(e.time.getMonth() + 1).padStart(2, '0') + '-' + String(e.time.getDate()).padStart(2, '0');
+            return entryDate === selectedDate;
+        });
+
+        data.forEach((t=>{e+=`${t.time.toLocaleString()},${t.v},${t.c1},${t.c2},${t.pf},${t.t},${t.vib}\n`}));
+        const t=document.createElement("a");t.href=encodeURI(e),t.download="txms.csv",t.click()
+    }
+
     function showView(e){["dashboardView","historyView","dailyView","maintenanceView"].forEach((e=>document.getElementById(e).style.display="none")),document.getElementById(e).style.display="block","historyView"===e&&updateHistoryChart(),"dailyView"===e&&filterReportByDate()}
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{display:!1},ticks:{color:"#555",font:{size:9}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{display:!1},ticks:{color:"#555",font:{size:9}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
@@ -568,3 +593,4 @@
 </script>
 </body>
 </html>
+
