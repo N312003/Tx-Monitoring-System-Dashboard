@@ -14,6 +14,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <style>
         :root { --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: #151921; --accent-purple: #8b5cf6; --text-main: #f8fafc; --text-muted: #94a3b8; --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -22,7 +25,7 @@
         /* SCREENS & OVERLAYS */
         #loginView, #authOverlay, #confirmOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #authOverlay, #confirmOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
-        .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; }
+        .history-overlay, .daily-overlay, .maintenance-overlay, .geo-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; }
 
         /* UI COMPONENTS */
         .login-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 400px; max-width: 90%; text-align: center; box-shadow: 0 0 50px rgba(139, 92, 246, 0.2); }
@@ -99,6 +102,12 @@
         .cal-controls { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
         .sim-slider, .cal-slider { width: 100%; margin-top: 10px; cursor: pointer; }
 
+        /* MAP STYLING */
+        #map { width: 100%; height: 500px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .leaflet-container { background: #1a1e29; }
+        .leaflet-popup-content-wrapper { background: #1a1e29; color: white; border: 1px solid var(--accent-purple); border-radius: 10px; }
+        .leaflet-popup-tip { background: var(--accent-purple); }
+
         @media (max-width: 768px) {
             .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; }
             .nav-item { width: 100%; margin: 0; border-radius: 0; }
@@ -110,7 +119,7 @@
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .stat-card { padding: 15px; }
             .stat-value { font-size: 1.4rem; }
-            .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; }
+            .history-overlay, .daily-overlay, .maintenance-overlay, .geo-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; }
             .data-table { display: block; overflow-x: auto; white-space: nowrap; }
         }
     </style>
@@ -127,13 +136,15 @@
         </div>
     </section>
     
-    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
+    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input" onkeypress="if(event.key==='Enter') verifyMaintenanceAccess()"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
+    
     <div id="confirmOverlay"><div class="login-card" style="border-color: #ef4444; width: 350px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">DISARM safety alarm system?</p><div style="display: flex; gap: 15px;"><button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">DISARM</button><button class="login-btn" onclick="cancelDisarm()" style="background: #333; margin:0;">CANCEL</button></div></div></div>
 
     <div id="appContainer">
         <nav class="sidebar">
             <div style="color:var(--accent-purple); font-weight:bold; margin:20px 0;">TxMS</div>
             <div class="nav-item active" id="navDash" onclick="showView('dashboardView')"><i class="fa-solid fa-house"></i></div>
+            <div class="nav-item" id="navGeo" onclick="showView('geoView')"><i class="fa-solid fa-map-location-dot"></i></div>
             <div class="nav-item" id="navHist" onclick="showView('historyView')"><i class="fa-solid fa-chart-area"></i></div>
             <div class="nav-item" id="navDaily" onclick="showView('dailyView')"><i class="fa-solid fa-calendar-days"></i></div>
             <div class="nav-item" id="navMaint" onclick="checkMaintenanceAuth()" style="color: #d946ef; display:none;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
@@ -234,6 +245,16 @@
             </div>
         </main>
 
+        <div class="geo-overlay" id="geoView">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div><h2>GEOSPATIAL LOCATOR</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Device Physical Location</span></div>
+                <div><button class="btn-action" style="background:#333;" onclick="showView('dashboardView')">CLOSE</button></div>
+            </div>
+            <div class="card" style="height: 600px; padding: 0;">
+                <div id="map"></div>
+            </div>
+        </div>
+
         <div class="maintenance-overlay" id="maintenanceView">
             <div style="display:flex; justify-content:space-between; margin-bottom:25px; max-width: 800px; margin: 0 auto 25px auto;">
                 <div><h2 style="color:#d946ef">MAINTENANCE CONSOLE</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Remote Injection & Calibration</span></div><button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
@@ -322,6 +343,10 @@
     let lastAlarmState = null;
     let lastTestState = null;
 
+    // --- MAP VARS ---
+    let map = null;
+    let mapMarker = null;
+
     // --- AUDIO SYSTEM START ---
     let audioCtx;
     let alarmInterval;
@@ -402,11 +427,55 @@
         while (logBox.children.length > 100) logBox.removeChild(logBox.lastChild);
     }
 
+    // --- MAP INITIALIZATION ---
+    function initMap() {
+        if (map) return;
+        // Default to Philippines view
+        map = L.map('map').setView([14.5995, 120.9842], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+    }
+
+    function updateMapLocation(deviceId) {
+        if (!map) initMap();
+        
+        // SIMULATED GPS COORDINATES FOR DEMO
+        // In a real app, these would come from the Firebase DB per device
+        // Generating pseudo-random coords based on device ID length to keep them consistent
+        const baseLat = 14.5995; 
+        const baseLng = 120.9842;
+        const offset = deviceId.length * 0.005; 
+        
+        const deviceLat = baseLat + offset;
+        const deviceLng = baseLng + (offset * 1.5);
+
+        if (mapMarker) map.removeLayer(mapMarker);
+        
+        const customIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: "<div style='background-color:#8b5cf6; width:15px; height:15px; border-radius:50%; box-shadow:0 0 10px #8b5cf6; border:2px solid white;'></div>",
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+
+        mapMarker = L.marker([deviceLat, deviceLng], {icon: customIcon}).addTo(map)
+            .bindPopup(`<b>${deviceId}</b><br>Status: Monitoring<br>Lat: ${deviceLat.toFixed(4)}<br>Lng: ${deviceLng.toFixed(4)}`)
+            .openPopup();
+
+        map.setView([deviceLat, deviceLng], 14);
+    }
+
     function switchDevice(deviceId) {
         currentDeviceID = deviceId;
         document.getElementById('netStatus').innerText = "CONNECTING..."; document.getElementById('netStatus').className = "status-badge status-offline";
         lastAlarmState = null; lastTestState = null;
         faultStates = { voltage: "ok", current: "ok", temp: "ok", vib: "ok", pf: "ok" }; 
+
+        // Update Map Location
+        updateMapLocation(deviceId);
 
         if (activeListener) { activeListener.off(); db.ref('devices/' + deviceId + '/control').off(); }
 
@@ -730,7 +799,14 @@
         const t=document.createElement("a");t.href=encodeURI(e),t.download="txms.csv",t.click()
     }
 
-    function showView(e){["dashboardView","historyView","dailyView","maintenanceView"].forEach((e=>document.getElementById(e).style.display="none")),document.getElementById(e).style.display="block","historyView"===e&&updateHistoryChart(),"dailyView"===e&&filterReportByDate()}
+    function showView(e){
+        ["dashboardView","historyView","dailyView","maintenanceView", "geoView"].forEach((e=>document.getElementById(e).style.display="none"));
+        document.getElementById(e).style.display="block";
+        if(e === "historyView") updateHistoryChart();
+        if(e === "dailyView") filterReportByDate();
+        if(e === "geoView" && map) map.invalidateSize(); // Fixes leaflet rendering when hidden
+    }
+
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
