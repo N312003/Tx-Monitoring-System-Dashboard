@@ -120,8 +120,8 @@
     <section id="loginView" style="display: flex;">
         <div class="login-card">
             <h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2>
-            <input type="email" id="email" placeholder="Email" class="login-input">
-            <input type="password" id="password" placeholder="Password" class="login-input">
+            <input type="email" id="email" placeholder="Email" class="login-input" onkeypress="if(event.key==='Enter') login()">
+            <input type="password" id="password" placeholder="Password" class="login-input" onkeypress="if(event.key==='Enter') login()">
             <button class="login-btn" onclick="login()">AUTHENTICATE</button>
             <p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p>
         </div>
@@ -310,7 +310,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database(); const auth = firebase.auth(); emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    // UPDATED: User role no longer defaults to Observer, logic simplified
     let userRole = ''; let savedPassword = ""; let activeListener = null; let currentDeviceID = null; 
     let isTestMode = false; let lastHeartbeat = Date.now(); 
     let sessionLog = []; 
@@ -500,7 +499,6 @@
         }
     }
 
-    // UPDATED: Login function now handles audio init and role assignment directly
     function login(){
         initAudio();
         
@@ -525,7 +523,6 @@
 
     function updateRoleUI(){
         const t=document.getElementById("navMaint"),n=document.getElementById("roleDisplay");
-        // Only admin role exists now
         t.style.display="flex";
         n.innerText="System Operator";
         n.style.color="var(--success)";
@@ -558,30 +555,22 @@
         if(document.getElementById('dailyView').style.display === 'block') filterReportByDate();
     }
 
-    // --- REVISED FAULT LOGIC (STRICT: ONLY SHOW WHEN ARMED) ---
     function checkFaults(v, c1, c2, t, vib, pf) {
         const msgEl = document.getElementById("predictMsg");
         
-        // If Disarmed, clear all alarms and exit
         if (!isAlarmArmed) {
             msgEl.innerText = "Safety Systems Disarmed"; 
             msgEl.style.color = "#64748b";
-            
-            // STOP SOUND
             stopAlarmSound();
-
-            // Clear blinking red from all cards
             ["card_v", "card_c", "card_pf", "card_t", "card_vib"].forEach(id => { 
                 document.getElementById(id).classList.remove("blink-red"); 
             });
-            
-            // Reset internal fault states so they re-trigger when armed
             faultStates = { voltage: "ok", current: "ok", temp: "ok", vib: "ok", pf: "ok" };
             return; 
         }
 
         let overallStatus = "System Nominal"; let overallColor = "#10b981";
-        let criticalFaultActive = false; // TRACKER FOR SOUND
+        let criticalFaultActive = false; 
 
         const updateCardState = (cardId, isFault, faultMsg, type) => {
             const card = document.getElementById(cardId);
@@ -591,7 +580,7 @@
                 card.classList.add("blink-red");
                 overallStatus = "CRITICAL FAULT DETECTED";
                 overallColor = "#ef4444";
-                criticalFaultActive = true; // TRIGGER SOUND
+                criticalFaultActive = true; 
 
                 if (faultStates[varName] !== "fault") {
                     addDiagnosticLog((type === 'crit' ? "CRITICAL: " : "WARNING: ") + faultMsg, type === 'crit' ? "#ef4444" : "#fbbf24");
@@ -625,7 +614,6 @@
         msgEl.innerText = overallStatus;
         msgEl.style.color = overallColor;
 
-        // HANDLE AUDIO
         if (criticalFaultActive) {
             startAlarmSound();
         } else {
@@ -747,7 +735,6 @@
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
     
-    // --- EMAIL LOGIC ---
     function checkAndSendEmail(d){
         if(!isAlarmArmed || (Date.now() - lastEmailSent < 300000)) return; // 5 min cooldown
 
