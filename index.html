@@ -103,14 +103,18 @@
         .sim-slider, .cal-slider { width: 100%; margin-top: 10px; cursor: pointer; }
 
         /* --- UPDATED MAP & MARKER STYLING --- */
-        #map { width: 100%; height: 350px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; }
+        #map { width: 100%; height: 500px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; }
         .leaflet-container { background: #1a1e29; }
         .leaflet-popup-content-wrapper { background: #1a1e29; color: white; border: 1px solid var(--accent-purple); border-radius: 10px; }
         .leaflet-popup-tip { background: var(--accent-purple); }
-        .manual-geo-controls { background: #1a1e29; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        .geo-input { background: #111; border: 1px solid #444; padding: 8px; color: white; border-radius: 6px; outline: none; width: 140px; }
-        .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        /* Updated Controls Layout */
+        .manual-geo-controls { background: #1a1e29; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .geo-input { background: #111; border: 1px solid #444; padding: 10px; color: white; border-radius: 6px; outline: none; width: 140px; }
+        .geo-input:focus { border-color: var(--accent-purple); }
+        .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .geo-btn:hover { opacity: 0.9; }
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; margin-top: 8px; width: 100%; }
 
         /* MARKER ANIMATIONS */
         .marker-normal { background-color: #8b5cf6; width: 15px; height: 15px; border-radius: 50%; box-shadow: 0 0 10px #8b5cf6; border: 2px solid white; transition: 0.3s; }
@@ -136,6 +140,7 @@
             .data-table { display: block; overflow-x: auto; white-space: nowrap; }
             .manual-geo-controls { flex-direction: column; align-items: stretch; }
             .geo-input { width: 100%; }
+            #map { height: 400px; }
         }
     </style>
 </head>
@@ -181,14 +186,19 @@
             <div class="card" style="padding: 0; margin-bottom: 25px; position: relative;">
                 <div style="background: rgba(139, 92, 246, 0.1); padding: 12px 20px; border-bottom: 1px solid #2d3748; display: flex; justify-content: space-between;">
                     <span style="font-size: 0.85rem; font-weight: bold; color: var(--accent-purple);">GEOSPATIAL FLEET MONITOR</span>
-                    <button onclick="toggleGeoControls()" style="background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;">CONFIG LOCATION</button>
+                    <button onclick="toggleGeoControls()" style="background: none; border: none; color: #555; cursor: pointer; font-size: 0.7rem;">MANAGE LOCATIONS</button>
                 </div>
                 
                 <div id="geoControlsPanel" class="manual-geo-controls" style="display: none; border-bottom: 1px solid #333; margin: 0; border-radius: 0;">
-                    <span style="color: #aaa; font-size: 0.9rem; margin-right: 10px;"><i class="fa-solid fa-pen-to-square"></i> Manual Config:</span>
-                    <input type="number" id="inputLat" class="geo-input" placeholder="Latitude (e.g. 14.59)" step="0.000001">
-                    <input type="number" id="inputLng" class="geo-input" placeholder="Longitude (e.g. 120.98)" step="0.000001">
-                    <button class="geo-btn" onclick="saveManualLocation()">UPDATE & SAVE</button>
+                    <div style="flex-grow: 1;">
+                        <div style="color: #aaa; font-size: 0.8rem; margin-bottom: 5px; font-weight: bold;">ADD / UPDATE MONITORING NODE</div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <input type="text" id="inputDeviceId" class="geo-input" placeholder="Device ID (e.g. Tx_01)">
+                            <input type="number" id="inputLat" class="geo-input" placeholder="Latitude (e.g. 14.59)" step="0.000001">
+                            <input type="number" id="inputLng" class="geo-input" placeholder="Longitude (e.g. 120.98)" step="0.000001">
+                            <button class="geo-btn" onclick="saveManualLocation()"><i class="fa-solid fa-plus"></i> ADD NODE</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="map" style="border: none; margin: 0; border-radius: 0 0 20px 20px;"></div>
@@ -501,21 +511,47 @@
         const panel = document.getElementById('geoControlsPanel');
         panel.style.display = (panel.style.display === 'none') ? 'flex' : 'none';
         if(map) map.invalidateSize();
+        
+        // Pre-fill input with current device ID if available
+        if(currentDeviceID) document.getElementById('inputDeviceId').value = currentDeviceID;
     }
 
     function saveManualLocation() {
-        if(!currentDeviceID) return;
+        const devId = document.getElementById('inputDeviceId').value || currentDeviceID;
         const lat = parseFloat(document.getElementById('inputLat').value);
         const lng = parseFloat(document.getElementById('inputLng').value);
         
+        if(!devId) { alert("Please enter a Device ID"); return; }
         if(isNaN(lat) || isNaN(lng)) { alert("Please enter valid Latitude and Longitude"); return; }
         
-        db.ref('devices/' + currentDeviceID + '/config/location').set({ lat: lat, lng: lng })
+        db.ref('devices/' + devId + '/config/location').set({ lat: lat, lng: lng })
           .then(() => {
-              addDiagnosticLog("LOCATION UPDATED MANUALLY", "#8b5cf6");
-              updateDeviceMarkerPosition(currentDeviceID, lat, lng);
+              addDiagnosticLog(`NODE ${devId} ADDED/UPDATED`, "#8b5cf6");
+              
+              // If it's a new device not in the list, we might need to manually trigger marker add if not reactive
+              // But since we listen to 'value' on 'devices' in startFleetMonitoring, it should auto-update or we can force it:
+              if(!deviceMarkers[devId]) {
+                  // create mock data object to add marker immediately
+                  addMarkerForDevice(devId, { config: { location: {lat: lat, lng: lng} } }); 
+              } else {
+                  updateDeviceMarkerPosition(devId, lat, lng);
+              }
           })
           .catch(err => alert("Error saving location: " + err.message));
+    }
+    
+    function deleteLocation(deviceId) {
+        if(confirm(`Are you sure you want to remove the location for ${deviceId}?`)) {
+            db.ref('devices/' + deviceId + '/config/location').remove()
+            .then(() => {
+                if(deviceMarkers[deviceId]) {
+                    map.removeLayer(deviceMarkers[deviceId]);
+                    delete deviceMarkers[deviceId];
+                }
+                addDiagnosticLog(`NODE ${deviceId} LOCATION REMOVED`, "#ef4444");
+            })
+            .catch(err => alert("Error removing location: " + err.message));
+        }
     }
 
     function addMarkerForDevice(deviceId, deviceData) {
@@ -526,15 +562,30 @@
             lat = deviceData.config.location.lat;
             lng = deviceData.config.location.lng;
         } else {
+            // If no config location, don't map it by default or use pseudo random?
+            // Let's use pseudo random ONLY if we haven't manually deleted it before
+            // For now, to keep it clean, we map everything found in DB
             const offset = deviceId.length * 0.005; 
             lat += offset;
             lng += (offset * 1.5);
         }
 
+        if(deviceMarkers[deviceId]) return; // Don't duplicate
+
         const icon = createMarkerIcon("normal");
 
-        const marker = L.marker([lat, lng], {icon: icon}).addTo(map)
-            .bindPopup(`<b>${deviceId}</b>`);
+        const marker = L.marker([lat, lng], {icon: icon}).addTo(map);
+        
+        // Custom Popup with DELETE button
+        const popupContent = `
+            <div style="text-align:center;">
+                <b>${deviceId}</b><br>
+                <span style="font-size:0.8rem; color:#aaa;">${lat.toFixed(4)}, ${lng.toFixed(4)}</span><br>
+                <button class="btn-delete" onclick="deleteLocation('${deviceId}')">DELETE LOCATION</button>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
 
         marker.on('click', () => {
             document.getElementById('deviceSelect').value = deviceId;
@@ -548,6 +599,15 @@
         if (deviceMarkers[deviceId]) {
             deviceMarkers[deviceId].setLatLng([lat, lng]);
             map.setView([lat, lng], 14);
+            // Update popup content with new coords
+             const popupContent = `
+                <div style="text-align:center;">
+                    <b>${deviceId}</b><br>
+                    <span style="font-size:0.8rem; color:#aaa;">${lat.toFixed(4)}, ${lng.toFixed(4)}</span><br>
+                    <button class="btn-delete" onclick="deleteLocation('${deviceId}')">DELETE LOCATION</button>
+                </div>
+            `;
+            deviceMarkers[deviceId].setPopupContent(popupContent);
         }
     }
 
@@ -574,6 +634,10 @@
 
             Object.keys(allDevices).forEach(deviceId => {
                 const d = allDevices[deviceId];
+                
+                // Ensure marker exists (in case it came online after load)
+                if(!deviceMarkers[deviceId]) addMarkerForDevice(deviceId, d);
+                
                 const marker = deviceMarkers[deviceId];
                 
                 if (marker) {
@@ -631,6 +695,9 @@
 
         db.ref('devices/' + deviceId + '/config/location').once('value', snap => {
             const loc = snap.val();
+            // Pre-fill manual controls
+            document.getElementById('inputDeviceId').value = deviceId;
+            
             if(loc) {
                 document.getElementById('inputLat').value = loc.lat;
                 document.getElementById('inputLng').value = loc.lng;
