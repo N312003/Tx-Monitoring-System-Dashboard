@@ -47,7 +47,6 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; border-radius: 15px; border: 1px solid transparent; transition: 0.5s; }
         .device-selector { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 15px; border-radius: 10px; font-size: 0.9rem; margin-left: 15px; cursor: pointer; outline: none; }
         
-        /* MUTE BUTTON */
         .mute-btn { background: none; border: 1px solid #444; color: #888; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 10px; }
         .mute-btn.active { border-color: #ef4444; color: #ef4444; }
         .mute-btn:hover { color: white; border-color: white; }
@@ -108,7 +107,6 @@
         .leaflet-popup-content-wrapper { background: #1a1e29; color: white; border: 1px solid var(--accent-purple); border-radius: 10px; }
         .leaflet-popup-tip { background: var(--accent-purple); }
         
-        /* Updated Controls Layout */
         .manual-geo-controls { background: #1a1e29; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .geo-input { background: #111; border: 1px solid #444; padding: 10px; color: white; border-radius: 6px; outline: none; width: 140px; }
         .geo-input:focus { border-color: var(--accent-purple); }
@@ -156,7 +154,7 @@
         </div>
     </section>
     
-    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input" onkeypress="if(event.key==='Enter') verifyMaintenanceAccess()"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
+    <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 id="authTitle" style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input" onkeypress="if(event.key==='Enter') verifyAction()"><button class="login-btn" onclick="verifyAction()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
     
     <div id="confirmOverlay"><div class="login-card" style="border-color: #ef4444; width: 350px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">DISARM safety alarm system?</p><div style="display: flex; gap: 15px;"><button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">DISARM</button><button class="login-btn" onclick="cancelDisarm()" style="background: #333; margin:0;">CANCEL</button></div></div></div>
 
@@ -166,7 +164,7 @@
             <div class="nav-item active" id="navDash" onclick="showView('dashboardView')"><i class="fa-solid fa-house"></i></div>
             <div class="nav-item" id="navHist" onclick="showView('historyView')"><i class="fa-solid fa-chart-area"></i></div>
             <div class="nav-item" id="navDaily" onclick="showView('dailyView')"><i class="fa-solid fa-calendar-days"></i></div>
-            <div class="nav-item" id="navMaint" onclick="checkMaintenanceAuth()" style="color: #d946ef; display:none;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <div class="nav-item" id="navMaint" onclick="triggerAuth(() => showView('maintenanceView'))" style="color: #d946ef; display:none;"><i class="fa-solid fa-screwdriver-wrench"></i></div>
             <div class="nav-item logout-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i></div>
         </nav>
 
@@ -196,7 +194,7 @@
                             <input type="text" id="inputDeviceId" class="geo-input" placeholder="Device ID (e.g. Tx_01)">
                             <input type="number" id="inputLat" class="geo-input" placeholder="Latitude (e.g. 14.59)" step="0.000001">
                             <input type="number" id="inputLng" class="geo-input" placeholder="Longitude (e.g. 120.98)" step="0.000001">
-                            <button class="geo-btn" onclick="saveManualLocation()"><i class="fa-solid fa-plus"></i> ADD NODE</button>
+                            <button class="geo-btn" onclick="triggerAuth(saveManualLocation)"><i class="fa-solid fa-plus"></i> ADD NODE</button>
                         </div>
                     </div>
                 </div>
@@ -369,12 +367,13 @@
     // --- MAP VARS ---
     let map = null;
     let deviceMarkers = {}; 
+    let pendingAuthAction = null; // Store function to run after auth
 
-    // --- AUDIO SYSTEM (REVISED FOR PATTERNS) ---
+    // --- AUDIO SYSTEM ---
     let audioCtx;
     let alarmInterval;
     let isMuted = false;
-    let currentAlarmType = "none"; // 'none', 'warning', 'critical'
+    let currentAlarmType = "none";
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -412,36 +411,27 @@
         osc.stop(audioCtx.currentTime + duration);
     }
 
-    // UPDATED: ALARM SOUND LOGIC
     function startAlarmSound(type) {
         if (isMuted) return;
         initAudio();
-
-        // Priority Logic: Don't downgrade Critical to Warning
         if (currentAlarmType === 'critical' && type === 'warning') return;
-        
-        // If already playing the requested type, do nothing
         if (currentAlarmType === type) return;
-
-        // Reset any existing alarm before starting new one
         stopAlarmSound(); 
         currentAlarmType = type;
 
         if (type === 'critical') {
-            // CRITICAL: Fast Alternating Siren (800Hz / 1200Hz)
             let toggle = false;
             alarmInterval = setInterval(() => {
                 if(isMuted) { stopAlarmSound(); return; }
                 playTone(toggle ? 1200 : 800, 'triangle', 0.2);
                 toggle = !toggle;
-            }, 300); // Fast speed
+            }, 300); 
         } 
         else if (type === 'warning') {
-            // WARNING: Slow Intermittent Beep (600Hz)
             alarmInterval = setInterval(() => {
                 if(isMuted) { stopAlarmSound(); return; }
                 playTone(600, 'sine', 0.2);
-            }, 1000); // Slow speed (1 sec interval)
+            }, 1000); 
         }
     }
 
@@ -470,19 +460,14 @@
                     option.value = key; 
                     option.text = key.replace(/_/g, " "); 
                     selector.appendChild(option); 
-                    
                     addMarkerForDevice(key, data[key]);
                 }); 
-                
                 if(selector.options.length > 0) { 
                     selector.selectedIndex = 0; 
                     switchDevice(selector.value); 
                 } 
-                
-                // START GLOBAL MONITORING
                 startFleetMonitoring();
-            } 
-            else { 
+            } else { 
                 selector.innerHTML = "<option>No Devices Found</option>"; 
             }
         });
@@ -495,6 +480,32 @@
         const logEntry = `<div style="border-left: 3px solid ${colorCode}; padding-left: 10px; margin-bottom: 8px;"><span style="color: #666; font-size: 0.7rem;">[${time}]</span><span style="color: white; font-size: 1.0rem; margin-left: 5px;">${message}</span></div>`;
         logBox.insertAdjacentHTML("afterbegin", logEntry);
         while (logBox.children.length > 100) logBox.removeChild(logBox.lastChild);
+    }
+
+    // --- SECURITY VERIFICATION SYSTEM ---
+    function triggerAuth(actionCallback) {
+        pendingAuthAction = actionCallback;
+        document.getElementById('authOverlay').style.display = 'flex';
+        document.getElementById('reAuthPass').value = '';
+        document.getElementById('reAuthPass').focus();
+    }
+
+    function verifyAction() {
+        const inputPass = document.getElementById('reAuthPass').value;
+        if (inputPass === savedPassword) {
+            document.getElementById('authOverlay').style.display = 'none';
+            if (pendingAuthAction) {
+                pendingAuthAction();
+                pendingAuthAction = null;
+            }
+        } else {
+            alert("Access Denied: Incorrect Password");
+        }
+    }
+
+    function closeAuthOverlay() {
+        document.getElementById('authOverlay').style.display = 'none';
+        pendingAuthAction = null;
     }
 
     // --- MAP FUNCTIONS ---
@@ -511,11 +522,10 @@
         const panel = document.getElementById('geoControlsPanel');
         panel.style.display = (panel.style.display === 'none') ? 'flex' : 'none';
         if(map) map.invalidateSize();
-        
-        // Pre-fill input with current device ID if available
         if(currentDeviceID) document.getElementById('inputDeviceId').value = currentDeviceID;
     }
 
+    // Protected Action: Save
     function saveManualLocation() {
         const devId = document.getElementById('inputDeviceId').value || currentDeviceID;
         const lat = parseFloat(document.getElementById('inputLat').value);
@@ -526,12 +536,8 @@
         
         db.ref('devices/' + devId + '/config/location').set({ lat: lat, lng: lng })
           .then(() => {
-              addDiagnosticLog(`NODE ${devId} ADDED/UPDATED`, "#8b5cf6");
-              
-              // If it's a new device not in the list, we might need to manually trigger marker add if not reactive
-              // But since we listen to 'value' on 'devices' in startFleetMonitoring, it should auto-update or we can force it:
+              addDiagnosticLog(`NODE ${devId} LOCATION UPDATED`, "#8b5cf6");
               if(!deviceMarkers[devId]) {
-                  // create mock data object to add marker immediately
                   addMarkerForDevice(devId, { config: { location: {lat: lat, lng: lng} } }); 
               } else {
                   updateDeviceMarkerPosition(devId, lat, lng);
@@ -540,9 +546,13 @@
           .catch(err => alert("Error saving location: " + err.message));
     }
     
+    // Protected Action: Delete
     function deleteLocation(deviceId) {
-        if(confirm(`Are you sure you want to remove the location for ${deviceId}?`)) {
-            db.ref('devices/' + deviceId + '/config/location').remove()
+        // Triggered inside popup, so we need to wrap this in triggerAuth too
+        // But since HTML string binding makes it tricky to pass callback directly, 
+        // we use a helper that calls triggerAuth
+        triggerAuth(() => {
+             db.ref('devices/' + deviceId + '/config/location').remove()
             .then(() => {
                 if(deviceMarkers[deviceId]) {
                     map.removeLayer(deviceMarkers[deviceId]);
@@ -551,7 +561,7 @@
                 addDiagnosticLog(`NODE ${deviceId} LOCATION REMOVED`, "#ef4444");
             })
             .catch(err => alert("Error removing location: " + err.message));
-        }
+        });
     }
 
     function addMarkerForDevice(deviceId, deviceData) {
@@ -562,21 +572,16 @@
             lat = deviceData.config.location.lat;
             lng = deviceData.config.location.lng;
         } else {
-            // If no config location, don't map it by default or use pseudo random?
-            // Let's use pseudo random ONLY if we haven't manually deleted it before
-            // For now, to keep it clean, we map everything found in DB
             const offset = deviceId.length * 0.005; 
             lat += offset;
             lng += (offset * 1.5);
         }
 
-        if(deviceMarkers[deviceId]) return; // Don't duplicate
+        if(deviceMarkers[deviceId]) return;
 
         const icon = createMarkerIcon("normal");
-
         const marker = L.marker([lat, lng], {icon: icon}).addTo(map);
         
-        // Custom Popup with DELETE button
         const popupContent = `
             <div style="text-align:center;">
                 <b>${deviceId}</b><br>
@@ -586,7 +591,6 @@
         `;
         
         marker.bindPopup(popupContent);
-
         marker.on('click', () => {
             document.getElementById('deviceSelect').value = deviceId;
             switchDevice(deviceId);
@@ -599,7 +603,6 @@
         if (deviceMarkers[deviceId]) {
             deviceMarkers[deviceId].setLatLng([lat, lng]);
             map.setView([lat, lng], 14);
-            // Update popup content with new coords
              const popupContent = `
                 <div style="text-align:center;">
                     <b>${deviceId}</b><br>
@@ -624,37 +627,28 @@
         });
     }
 
-    // --- UPDATED FLEET MONITORING (VISUAL + AUDIO + PATTERNS) ---
     function startFleetMonitoring() {
         db.ref('devices').on('value', (snapshot) => {
             const allDevices = snapshot.val();
             if (!allDevices) return;
 
-            let maxSeverity = 0; // 0=Normal, 1=Warning, 2=Critical
+            let maxSeverity = 0; 
 
             Object.keys(allDevices).forEach(deviceId => {
                 const d = allDevices[deviceId];
-                
-                // Ensure marker exists (in case it came online after load)
                 if(!deviceMarkers[deviceId]) addMarkerForDevice(deviceId, d);
-                
                 const marker = deviceMarkers[deviceId];
-                
                 if (marker) {
-                    const status = analyzeDeviceHealth(d); // 'normal', 'warning', 'critical'
+                    const status = analyzeDeviceHealth(d); 
                     const newIcon = createMarkerIcon(status);
                     marker.setIcon(newIcon);
-
-                    // Track highest severity
                     if (status === 'critical') maxSeverity = 2;
                     else if (status === 'warning' && maxSeverity < 2) maxSeverity = 1;
                 }
             });
 
-            // HANDLE GLOBAL ALARM
             if (isAlarmArmed) {
                 const msgEl = document.getElementById('predictMsg');
-                
                 if (maxSeverity === 2) {
                     startAlarmSound('critical');
                     msgEl.innerText = "CRITICAL FLEET FAULT";
@@ -695,7 +689,6 @@
 
         db.ref('devices/' + deviceId + '/config/location').once('value', snap => {
             const loc = snap.val();
-            // Pre-fill manual controls
             document.getElementById('inputDeviceId').value = deviceId;
             
             if(loc) {
@@ -818,9 +811,15 @@
         }))
     }
     
-    function checkMaintenanceAuth(){"admin"===userRole&&(document.getElementById("authOverlay").style.display="flex",document.getElementById("reAuthPass").value="")}
-    function verifyMaintenanceAccess(){document.getElementById("reAuthPass").value===savedPassword?(document.getElementById("authOverlay").style.display="none",showView("maintenanceView")):alert("Incorrect Access Key")}
-    function closeAuthOverlay(){document.getElementById("authOverlay").style.display="none"}
+    function checkMaintenanceAuth(){
+        triggerAuth(() => showView('maintenanceView'));
+    }
+    
+    function verifyMaintenanceAccess(){verifyAction()}
+    function closeAuthOverlay(){
+        document.getElementById('authOverlay').style.display = 'none';
+        pendingAuthAction = null;
+    }
     function logout(){auth.signOut(),window.location.reload()}
 
     function updateRoleUI(){
@@ -847,7 +846,6 @@
         updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); cChart.update();
         
-        // Removed checkFaults call here because startFleetMonitoring handles the alarm logic globally now
         checkAndSendEmail(d);
         
         const now = new Date();
