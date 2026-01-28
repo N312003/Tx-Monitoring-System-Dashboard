@@ -20,14 +20,11 @@
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
 
         /* SCREENS & OVERLAYS */
-        #landingView, #loginView, #authOverlay, #confirmOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #loginView, #authOverlay, #confirmOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1e29 0%, #05070a 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #authOverlay, #confirmOverlay { background: rgba(5, 7, 10, 0.95); backdrop-filter: blur(15px); display: none; }
         .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; }
 
         /* UI COMPONENTS */
-        .role-container { display: flex; gap: 30px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
-        .role-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; width: 280px; text-align: center; cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px); }
-        .role-card:hover { transform: translateY(-10px); border-color: var(--accent-purple); box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.1); }
         .login-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 400px; max-width: 90%; text-align: center; box-shadow: 0 0 50px rgba(139, 92, 246, 0.2); }
         .login-input { width: 100%; padding: 12px; margin: 10px 0; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 8px; color: white; outline: none; transition: 0.3s; }
         .login-btn { width: 100%; padding: 12px; background: var(--accent-purple); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
@@ -120,8 +117,15 @@
 </head>
 <body>
 
-    <section id="landingView"><h1 style="color:white; font-size: 2.5rem; letter-spacing: 2px; margin-bottom: 10px;">TxMS PRO</h1><p style="color:var(--text-muted); margin-bottom: 40px;">Select Access Level</p><div class="role-container"><div class="role-card" onclick="selectRole('observer')"><div class="role-icon"><i class="fa-solid fa-eye"></i></div><div class="role-title">Observer Mode</div></div><div class="role-card" onclick="selectRole('admin')"><div class="role-icon"><i class="fa-solid fa-user-shield"></i></div><div class="role-title">System Operator</div></div></div></section>
-    <section id="loginView" style="display: none;"><div class="login-card"><h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2><input type="email" id="email" placeholder="Email" class="login-input"><input type="password" id="password" placeholder="Password" class="login-input"><button class="login-btn" onclick="login()">AUTHENTICATE</button><p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p><div class="back-link" onclick="goBackToLanding()" style="margin-top:15px; cursor:pointer;">Return</div></div></section>
+    <section id="loginView" style="display: flex;">
+        <div class="login-card">
+            <h2 style="color:var(--accent-purple); margin-bottom: 10px;">Operator Verification</h2>
+            <input type="email" id="email" placeholder="Email" class="login-input">
+            <input type="password" id="password" placeholder="Password" class="login-input">
+            <button class="login-btn" onclick="login()">AUTHENTICATE</button>
+            <p id="loginError" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px; display: none;">Invalid credentials.</p>
+        </div>
+    </section>
     
     <div id="authOverlay"><div class="login-card" style="border-color: #d946ef;"><i class="fa-solid fa-lock" style="font-size: 3rem; color: #d946ef; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Restricted Area</h2><input type="password" id="reAuthPass" placeholder="Confirm Password" class="login-input"><button class="login-btn" onclick="verifyMaintenanceAccess()" style="background: #d946ef;">UNLOCK</button><div onclick="closeAuthOverlay()" style="margin-top:15px; cursor:pointer;">Cancel</div></div></div>
     <div id="confirmOverlay"><div class="login-card" style="border-color: #ef4444; width: 350px;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; color: #ef4444; margin-bottom: 20px;"></i><h2 style="color:white; margin-bottom: 10px;">Safety Interlock</h2><p style="color:#aaa; font-size: 0.9rem; margin-bottom: 25px;">DISARM safety alarm system?</p><div style="display: flex; gap: 15px;"><button class="login-btn" onclick="confirmDisarm()" style="background: #ef4444; margin:0;">DISARM</button><button class="login-btn" onclick="cancelDisarm()" style="background: #333; margin:0;">CANCEL</button></div></div></div>
@@ -138,7 +142,7 @@
 
         <main class="main-content" id="dashboardView">
             <div class="header">
-                <div><h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">Observer Mode</span><select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)"><option value="" disabled selected>Searching Network...</option></select></div>
+                <div><h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">System Operator</span><select id="deviceSelect" class="device-selector" onchange="switchDevice(this.value)"><option value="" disabled selected>Searching Network...</option></select></div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="Mute Alarms"><i class="fa-solid fa-volume-high"></i></button>
                     <div style="text-align: right;">
@@ -306,7 +310,8 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database(); const auth = firebase.auth(); emailjs.init("2wsEDwcqVrLmPDV7e");
 
-    let userRole = 'observer'; let savedPassword = ""; let activeListener = null; let currentDeviceID = null; 
+    // UPDATED: User role no longer defaults to Observer, logic simplified
+    let userRole = ''; let savedPassword = ""; let activeListener = null; let currentDeviceID = null; 
     let isTestMode = false; let lastHeartbeat = Date.now(); 
     let sessionLog = []; 
     let historyChartInstance = null;
@@ -341,7 +346,6 @@
             btn.classList.remove('active');
             icon.classList.remove('fa-volume-xmark');
             icon.classList.add('fa-volume-high');
-            // Resume context if needed
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         }
     }
@@ -496,29 +500,37 @@
         }
     }
 
-    function selectRole(e){
-        // ACTIVATE AUDIO CONTEXT ON USER CLICK
-        initAudio(); 
-        
-        userRole="admin"===e?"admin":"observer","observer"===e?(document.getElementById("landingView").style.display="none",document.getElementById("appContainer").style.display="block",updateRoleUI(),loadDeviceList()):(document.getElementById("landingView").style.display="none",document.getElementById("loginView").style.display="flex")
-    }
-    
+    // UPDATED: Login function now handles audio init and role assignment directly
     function login(){
-        // ACTIVATE AUDIO CONTEXT ON LOGIN CLICK
         initAudio();
         
-        auth.signInWithEmailAndPassword(document.getElementById("email").value,document.getElementById("password").value).then((()=>{userRole="admin",savedPassword=document.getElementById("password").value,document.getElementById("loginView").style.display="none",document.getElementById("appContainer").style.display="block",updateRoleUI(),loadDeviceList()})).catch((e=>alert(e.message)))
+        auth.signInWithEmailAndPassword(document.getElementById("email").value,document.getElementById("password").value).then((()=>{
+            userRole="admin";
+            savedPassword=document.getElementById("password").value;
+            document.getElementById("loginView").style.display="none";
+            document.getElementById("appContainer").style.display="block";
+            updateRoleUI();
+            loadDeviceList();
+        })).catch((e=> {
+            const err = document.getElementById("loginError");
+            err.style.display="block";
+            err.innerText = e.message;
+        }))
     }
     
     function checkMaintenanceAuth(){"admin"===userRole&&(document.getElementById("authOverlay").style.display="flex",document.getElementById("reAuthPass").value="")}
     function verifyMaintenanceAccess(){document.getElementById("reAuthPass").value===savedPassword?(document.getElementById("authOverlay").style.display="none",showView("maintenanceView")):alert("Incorrect Access Key")}
     function closeAuthOverlay(){document.getElementById("authOverlay").style.display="none"}
     function logout(){auth.signOut(),window.location.reload()}
-    function goBackToLanding(){document.getElementById("loginView").style.display="none",document.getElementById("landingView").style.display="flex"}
+
     function updateRoleUI(){
         const t=document.getElementById("navMaint"),n=document.getElementById("roleDisplay");
-        "observer"===userRole?(t.style.display="none",n.innerText="Observer Mode",n.style.color="var(--text-muted)"):(t.style.display="flex",n.innerText="System Operator",n.style.color="var(--success)")
+        // Only admin role exists now
+        t.style.display="flex";
+        n.innerText="System Operator";
+        n.style.color="var(--success)";
     }
+
     function toggleAlarm(e){"admin"===userRole?e.checked||(e.checked=!0,document.getElementById("confirmOverlay").style.display="flex"):e.checked=!e.checked,currentDeviceID&&db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(!0)}
     function confirmDisarm(){document.getElementById("confirmOverlay").style.display="none",document.getElementById("alarmArmToggle").checked=!1,currentDeviceID&&db.ref("devices/"+currentDeviceID+"/control/alarmArmed").set(!1)}
     function cancelDisarm(){document.getElementById("confirmOverlay").style.display="none",document.getElementById("alarmArmToggle").checked=!0}
