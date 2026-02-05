@@ -15,7 +15,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* [SAME STYLES AS BEFORE - KEPT FOR CONSISTENCY] */
         :root { --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: #151921; --accent-purple: #8b5cf6; --text-main: #f8fafc; --text-muted: #94a3b8; --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
@@ -113,6 +112,7 @@
             <div class="nav-item active" id="navDash" onclick="showView('dashboardView')"><i class="fa-solid fa-house"></i></div>
             <div class="nav-item" id="navHist" onclick="showView('historyView')"><i class="fa-solid fa-chart-area"></i></div>
             <div class="nav-item" id="navDaily" onclick="showView('dailyView')"><i class="fa-solid fa-calendar-days"></i></div>
+            <div class="nav-item" id="navMaint" onclick="showView('maintenanceView')"><i class="fa-solid fa-screwdriver-wrench"></i></div>
             <div class="nav-item logout-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i></div>
         </nav>
 
@@ -187,6 +187,28 @@
             </div>
             <div class="card" style="min-height: 500px;"><table class="data-table"><thead><tr><th>TIME</th><th>VOLT</th><th>L1</th><th>L2</th><th>TEMP</th><th>VIB</th></tr></thead><tbody id="dailyTableBody"></tbody></table></div>
         </div>
+
+        <div class="maintenance-overlay" id="maintenanceView">
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <div><h2>SYSTEM MAINTENANCE</h2><span style="color:var(--text-muted)">Admin Controls</span></div>
+                <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
+            </div>
+
+             <div class="card" style="margin-bottom: 25px; border-color: #d946ef;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="color: white; font-size: 1rem;">Safety Interlock</h3>
+                        <span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span>
+                    </div>
+                    
+                    <label class="switch">
+                        <input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="armStatusText" style="margin-top: 10px; font-weight: bold; color: #ef4444; text-align: right;">DISARMED</div>
+            </div>
+        </div>
     </div>
 
 <script>
@@ -206,7 +228,7 @@
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     function toggleMute() { isMuted = !isMuted; document.getElementById('muteBtn').classList.toggle('active', isMuted); }
 
-    // --- LOGIN SYSTEM (Simple Client-Side Check for Prototype) ---
+    // --- LOGIN SYSTEM ---
     function login(){
         const email = document.getElementById("email").value;
         const pass = document.getElementById("password").value;
@@ -223,9 +245,7 @@
 
     // --- DATA FETCHING (POLLING RENDER) ---
     function startPolling() {
-        // Initial Fetch
         fetchData();
-        // Poll every 2 seconds
         pollInterval = setInterval(fetchData, 2000);
     }
 
@@ -257,7 +277,6 @@
         const vib = d.vib || 0;
         const pf = d.pf || 0;
 
-        // Update Text
         document.getElementById('v').innerText = v.toFixed(1)+"V";
         document.getElementById('pf').innerText = pf.toFixed(2); 
         document.getElementById('c1').innerText = c1.toFixed(1);
@@ -265,7 +284,6 @@
         document.getElementById('t').innerText = t.toFixed(1)+"°C";
         document.getElementById('vib').innerText = vib.toFixed(2)+"g";
 
-        // Update Charts
         updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
         updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
         
@@ -273,7 +291,6 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
 
-        // Update Map Marker if location exists
         if(d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
@@ -285,12 +302,62 @@
             }
         }
 
-        // Log History
+        // --- SYNC ALARM SWITCH FROM DATABASE ---
+        if (d.alarmArmed !== undefined) {
+            const toggle = document.getElementById('alarmToggle');
+            const statusText = document.getElementById('armStatusText');
+            
+            if (toggle.checked !== d.alarmArmed) {
+                toggle.checked = d.alarmArmed;
+                if (d.alarmArmed) {
+                    statusText.innerText = "SYSTEM ARMED";
+                    statusText.style.color = "#ef4444";
+                } else {
+                    statusText.innerText = "SYSTEM DISARMED";
+                    statusText.style.color = "#10b981";
+                }
+            }
+        }
+
         const now = new Date();
         sessionLog.push({time: now, v, c1, c2, pf, t, vib});
         if (sessionLog.length > 2000) sessionLog.shift();
         
         updateHistoryTable();
+    }
+
+    // --- TOGGLE ALARM FUNCTION ---
+    async function toggleAlarm(checkbox) {
+        const newState = checkbox.checked;
+        const statusText = document.getElementById('armStatusText');
+
+        if (newState) {
+            statusText.innerText = "ARMING...";
+            statusText.style.color = "#ef4444";
+        } else {
+            statusText.innerText = "DISARMING...";
+            statusText.style.color = "#10b981";
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/control`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    device_id: DEVICE_ID, 
+                    alarm_armed: newState 
+                })
+            });
+
+            if (!response.ok) {
+                alert("Failed to update alarm status!");
+                checkbox.checked = !newState;
+            }
+        } catch (error) {
+            console.error("Control Error:", error);
+            alert("Network Error: Could not talk to server.");
+            checkbox.checked = !newState; 
+        }
     }
 
     // --- MAP FUNCTIONS ---
@@ -334,15 +401,22 @@
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
     function showView(e){
-        ["dashboardView","historyView","dailyView"].forEach(id => document.getElementById(id).style.display="none");
-        document.getElementById(e).style.display="block";
+        // Hide all views first
+        ["dashboardView","historyView","dailyView","maintenanceView"].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.style.display="none";
+        });
+        // Show the requested view
+        const target = document.getElementById(e);
+        if(target) target.style.display="block";
+        
+        // Map resize fix
         if(e === 'dashboardView' && map) setTimeout(()=>map.invalidateSize(), 200);
     }
 
     function updateHistoryTable() {
         const tbody = document.getElementById("dailyTableBody");
         tbody.innerHTML = "";
-        // Show last 20 entries
         const recent = sessionLog.slice(-20).reverse();
         recent.forEach(d => {
             let row = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${d.v.toFixed(1)}</td><td>${d.c1.toFixed(1)}</td><td>${d.c2.toFixed(1)}</td><td>${d.t.toFixed(1)}</td><td>${d.vib.toFixed(2)}</td></tr>`;
