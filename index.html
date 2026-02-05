@@ -52,6 +52,7 @@
         .stat-icon { font-size: 1.4rem; margin-bottom: 10px; }
         .stat-value { font-size: 1.8rem; font-weight: bold; margin: 5px 0; color: white; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; }
+        .stat-pill { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; width: 90%; }
         
         /* Dashboard Layout */
         .dashboard-split { display: grid; grid-template-columns: 2fr 1.5fr; gap: 25px; margin-bottom: 25px; align-items: stretch; }
@@ -84,14 +85,14 @@
         .geo-input:focus { border-color: var(--accent-purple); }
         .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .geo-btn:hover { opacity: 0.9; }
-
-        /* Sliders */
-        .cal-slider { width: 100%; margin: 10px 0; cursor: pointer; }
-        .cal-group { margin-bottom: 20px; }
-        .cal-label { font-size: 0.8rem; color: #aaa; display: flex; justify-content: space-between; }
         
         /* Markers */
         .marker-normal { background-color: #8b5cf6; width: 15px; height: 15px; border-radius: 50%; box-shadow: 0 0 10px #8b5cf6; border: 2px solid white; transition: 0.3s; }
+
+        /* Sliders (Restored) */
+        .cal-slider { width: 100%; margin: 10px 0; cursor: pointer; }
+        .cal-group { margin-bottom: 20px; }
+        .cal-label { font-size: 0.8rem; color: #aaa; display: flex; justify-content: space-between; }
         
         /* Mobile */
         @media (max-width: 768px) { .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; } .nav-item { width: 100%; margin: 0; border-radius: 0; } .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; } .header { flex-direction: column; align-items: flex-start; gap: 15px; } .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; } .dashboard-split { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .manual-geo-controls { flex-direction: column; align-items: stretch; } .geo-input { width: 100%; } #map { height: 400px; } }
@@ -139,11 +140,11 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div></div>
-                <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value"><span id="c1">--</span> / <span id="c2">--</span></div><div class="stat-label">Current (L1 / L2)</div></div>
-                <div class="stat-card" id="card_pf"><i class="fa-solid fa-wave-square stat-icon" style="color: #d946ef;"></i><div class="stat-value" id="pf">--</div><div class="stat-label">Power Factor</div></div>
-                <div class="stat-card" id="card_t"><i class="fa-solid fa-temperature-half stat-icon" style="color: #ef4444;"></i><div class="stat-value" id="t">--</div><div class="stat-label">Transformer Temp</div></div>
-                <div class="stat-card" id="card_vib"><i class="fa-solid fa-bell stat-icon" style="color: #fbbf24;"></i><div class="stat-value" id="vib">--</div><div class="stat-label">Vibration Level</div></div>
+                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Real-time</div></div>
+                <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value"><span id="c1">--</span> / <span id="c2">--</span></div><div class="stat-label">Current (L1 / L2)</div><div class="stat-pill" style="background: #06b6d4;">Amperage</div></div>
+                <div class="stat-card" id="card_pf"><i class="fa-solid fa-wave-square stat-icon" style="color: #d946ef;"></i><div class="stat-value" id="pf">--</div><div class="stat-label">Power Factor</div><div class="stat-pill" style="background: #d946ef;">Efficiency</div></div>
+                <div class="stat-card" id="card_t"><i class="fa-solid fa-temperature-half stat-icon" style="color: #ef4444;"></i><div class="stat-value" id="t">--</div><div class="stat-label">Transformer Temp</div><div class="stat-pill" style="background: #ef4444;">Thermal</div></div>
+                <div class="stat-card" id="card_vib"><i class="fa-solid fa-bell stat-icon" style="color: #fbbf24;"></i><div class="stat-value" id="vib">--</div><div class="stat-label">Vibration Level</div><div class="stat-pill" style="background: #fbbf24;">Physical</div></div>
             </div>
 
             <div class="dashboard-split">
@@ -188,16 +189,28 @@
 
              <div class="card" style="margin-bottom: 25px; border-color: #d946ef;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div><h3 style="color: white; font-size: 1rem;">Safety Interlock</h3><span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span></div>
-                    <label class="switch"><input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
+                    <div>
+                        <h3 style="color: white; font-size: 1rem;">Safety Interlock</h3>
+                        <span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)">
+                        <span class="slider"></span>
+                    </label>
                 </div>
                 <div id="armStatusText" style="margin-top: 10px; font-weight: bold; color: #ef4444; text-align: right;">DISARMED</div>
             </div>
 
             <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div><h3 style="color: white; font-size: 1rem;">Simulation Mode</h3><span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span></div>
-                    <label class="switch"><input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)"><span class="slider"></span></label>
+                    <div>
+                        <h3 style="color: white; font-size: 1rem;">Simulation Mode</h3>
+                        <span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)">
+                        <span class="slider"></span>
+                    </label>
                 </div>
                 <div id="testStatusText" style="margin-top: 10px; font-weight: bold; color: #aaa; text-align: right;">NORMAL OPERATION</div>
             </div>
@@ -225,6 +238,7 @@
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
 
+    // --- STATE VARIABLES ---
     let sessionLog = []; 
     let map = null;
     let deviceMarker = null;
@@ -232,6 +246,7 @@
     let pollInterval = null;
     let histChartInstance = null; // Store chart instance
 
+    // --- INIT ---
     window.onload = function() {
         initMap();
         startPolling();
@@ -239,10 +254,12 @@
         initHistoryChart(); // Initialize the historian chart
     };
 
+    // --- INIT AUDIO ---
     let audioCtx;
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     function toggleMute() { isMuted = !isMuted; document.getElementById('muteBtn').classList.toggle('active', isMuted); }
 
+    // --- DATA FETCHING (POLLING RENDER) ---
     function startPolling() {
         if(pollInterval) clearInterval(pollInterval);
         fetchData();
@@ -253,11 +270,14 @@
         try {
             const response = await fetch(`${API_URL}/status/${DEVICE_ID}`);
             const data = await response.json();
+
             if(data.message === "No data") return;
 
             document.getElementById('netStatus').innerText = "ONLINE";
             document.getElementById('netStatus').className = "status-badge status-online";
+            
             updateDashboard(data);
+
         } catch (error) {
             console.error("Fetch Error:", error);
             document.getElementById('netStatus').innerText = "OFFLINE";
@@ -265,6 +285,7 @@
         }
     }
 
+    // --- DASHBOARD UPDATES ---
     function updateDashboard(d) {
         const v = d.voltage || 0;
         const c1 = d.currentL1 || 0;
@@ -298,14 +319,20 @@
             }
         }
 
-        // SYNC ALARM
+        // --- SYNC ALARM SWITCH FROM DATABASE ---
         if (d.alarmArmed !== undefined) {
             const toggle = document.getElementById('alarmToggle');
             const statusText = document.getElementById('armStatusText');
+            
             if (toggle.checked !== d.alarmArmed) {
                 toggle.checked = d.alarmArmed;
-                statusText.innerText = d.alarmArmed ? "SYSTEM ARMED" : "SYSTEM DISARMED";
-                statusText.style.color = d.alarmArmed ? "#ef4444" : "#10b981";
+                if (d.alarmArmed) {
+                    statusText.innerText = "SYSTEM ARMED";
+                    statusText.style.color = "#ef4444";
+                } else {
+                    statusText.innerText = "SYSTEM DISARMED";
+                    statusText.style.color = "#10b981";
+                }
             }
         }
 
@@ -320,15 +347,34 @@
     // --- ALARM LOGIC ---
     async function toggleAlarm(checkbox) {
         const newState = checkbox.checked;
-        document.getElementById('armStatusText').innerText = newState ? "ARMING..." : "DISARMING...";
+        const statusText = document.getElementById('armStatusText');
+
+        if (newState) {
+            statusText.innerText = "ARMING...";
+            statusText.style.color = "#ef4444";
+        } else {
+            statusText.innerText = "DISARMING...";
+            statusText.style.color = "#10b981";
+        }
+
         try {
-            await fetch(`${API_URL}/control`, {
+            const response = await fetch(`${API_URL}/control`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ device_id: DEVICE_ID, alarm_armed: newState })
+                body: JSON.stringify({ 
+                    device_id: DEVICE_ID, 
+                    alarm_armed: newState 
+                })
             });
+
+            if (!response.ok) {
+                alert("Failed to update alarm status!");
+                checkbox.checked = !newState;
+            }
         } catch (error) {
-            alert("Network Error"); checkbox.checked = !newState; 
+            console.error("Control Error:", error);
+            alert("Network Error: Could not talk to server.");
+            checkbox.checked = !newState; 
         }
     }
 
@@ -345,23 +391,33 @@
         }
     }
 
-    // --- MAP LOGIC ---
+    // --- MAP FUNCTIONS ---
     function initMap() {
         if(map) return;
         map = L.map('map').setView([14.5995, 120.9842], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
         const icon = L.divIcon({ className: 'custom-div-icon', html: `<div class='marker-normal'></div>` });
         deviceMarker = L.marker([14.5995, 120.9842], {icon: icon}).addTo(map);
+        deviceMarker.bindPopup("Tx01 (Main Transformer)");
     }
+
     function toggleGeoControls() {
         const p = document.getElementById('geoControlsPanel');
         p.style.display = p.style.display === 'none' ? 'flex' : 'none';
         if(map) map.invalidateSize();
     }
+
     async function saveManualLocation() {
         const lat = parseFloat(document.getElementById('inputLat').value);
         const lng = parseFloat(document.getElementById('inputLng').value);
+        
         if(!lat || !lng) return alert("Invalid Coords");
+
         await fetch(`${API_URL}/location`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -370,7 +426,7 @@
         alert("Location Updated!");
     }
 
-    // --- CHARTS & VISUALS ---
+    // --- CHARTS & UI ---
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
@@ -412,9 +468,11 @@
 
     function showView(e){
         ["dashboardView","historyView","dailyView","maintenanceView"].forEach(id => {
-            const el = document.getElementById(id); if(el) el.style.display="none";
+            const el = document.getElementById(id);
+            if(el) el.style.display="none";
         });
-        const target = document.getElementById(e); if(target) target.style.display="block";
+        const target = document.getElementById(e);
+        if(target) target.style.display="block";
         if(e === 'dashboardView' && map) setTimeout(()=>map.invalidateSize(), 200);
     }
 
@@ -427,6 +485,7 @@
             tbody.insertAdjacentHTML("beforeend", row);
         });
     }
+
 </script>
 </body>
 </html>
