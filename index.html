@@ -52,7 +52,6 @@
         .stat-icon { font-size: 1.4rem; margin-bottom: 10px; }
         .stat-value { font-size: 1.8rem; font-weight: bold; margin: 5px 0; color: white; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; }
-        .stat-pill { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; width: 90%; }
         
         /* Dashboard Layout */
         .dashboard-split { display: grid; grid-template-columns: 2fr 1.5fr; gap: 25px; margin-bottom: 25px; align-items: stretch; }
@@ -85,6 +84,11 @@
         .geo-input:focus { border-color: var(--accent-purple); }
         .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .geo-btn:hover { opacity: 0.9; }
+
+        /* Sliders */
+        .cal-slider { width: 100%; margin: 10px 0; cursor: pointer; }
+        .cal-group { margin-bottom: 20px; }
+        .cal-label { font-size: 0.8rem; color: #aaa; display: flex; justify-content: space-between; }
         
         /* Markers */
         .marker-normal { background-color: #8b5cf6; width: 15px; height: 15px; border-radius: 50%; box-shadow: 0 0 10px #8b5cf6; border: 2px solid white; transition: 0.3s; }
@@ -135,11 +139,11 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Real-time</div></div>
-                <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value"><span id="c1">--</span> / <span id="c2">--</span></div><div class="stat-label">Current (L1 / L2)</div><div class="stat-pill" style="background: #06b6d4;">Amperage</div></div>
-                <div class="stat-card" id="card_pf"><i class="fa-solid fa-wave-square stat-icon" style="color: #d946ef;"></i><div class="stat-value" id="pf">--</div><div class="stat-label">Power Factor</div><div class="stat-pill" style="background: #d946ef;">Efficiency</div></div>
-                <div class="stat-card" id="card_t"><i class="fa-solid fa-temperature-half stat-icon" style="color: #ef4444;"></i><div class="stat-value" id="t">--</div><div class="stat-label">Transformer Temp</div><div class="stat-pill" style="background: #ef4444;">Thermal</div></div>
-                <div class="stat-card" id="card_vib"><i class="fa-solid fa-bell stat-icon" style="color: #fbbf24;"></i><div class="stat-value" id="vib">--</div><div class="stat-label">Vibration Level</div><div class="stat-pill" style="background: #fbbf24;">Physical</div></div>
+                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div></div>
+                <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value"><span id="c1">--</span> / <span id="c2">--</span></div><div class="stat-label">Current (L1 / L2)</div></div>
+                <div class="stat-card" id="card_pf"><i class="fa-solid fa-wave-square stat-icon" style="color: #d946ef;"></i><div class="stat-value" id="pf">--</div><div class="stat-label">Power Factor</div></div>
+                <div class="stat-card" id="card_t"><i class="fa-solid fa-temperature-half stat-icon" style="color: #ef4444;"></i><div class="stat-value" id="t">--</div><div class="stat-label">Transformer Temp</div></div>
+                <div class="stat-card" id="card_vib"><i class="fa-solid fa-bell stat-icon" style="color: #fbbf24;"></i><div class="stat-value" id="vib">--</div><div class="stat-label">Vibration Level</div></div>
             </div>
 
             <div class="dashboard-split">
@@ -165,7 +169,7 @@
                 <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Session Log</span></div>
                 <div><button class="btn-action" style="background:#333;" onclick="showView('dashboardView')">CLOSE</button></div>
             </div>
-            <div class="card" style="height:500px; padding:20px;"><canvas id="historyChart"></canvas></div>
+            <div class="card" style="height:500px; padding:20px; position:relative;"><canvas id="historyChart"></canvas></div>
         </div>
         
         <div class="daily-overlay" id="dailyView">
@@ -184,17 +188,35 @@
 
              <div class="card" style="margin-bottom: 25px; border-color: #d946ef;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h3 style="color: white; font-size: 1rem;">Safety Interlock</h3>
-                        <span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span>
-                    </div>
-                    
-                    <label class="switch">
-                        <input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)">
-                        <span class="slider"></span>
-                    </label>
+                    <div><h3 style="color: white; font-size: 1rem;">Safety Interlock</h3><span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span></div>
+                    <label class="switch"><input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
                 </div>
                 <div id="armStatusText" style="margin-top: 10px; font-weight: bold; color: #ef4444; text-align: right;">DISARMED</div>
+            </div>
+
+            <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><h3 style="color: white; font-size: 1rem;">Simulation Mode</h3><span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span></div>
+                    <label class="switch"><input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)"><span class="slider"></span></label>
+                </div>
+                <div id="testStatusText" style="margin-top: 10px; font-weight: bold; color: #aaa; text-align: right;">NORMAL OPERATION</div>
+            </div>
+
+            <div class="card">
+                <h3 style="color:white; margin-bottom: 20px;">Sensor Calibration</h3>
+                <div class="cal-group">
+                    <div class="cal-label"><span>Voltage Offset</span><span id="val_v">0.0V</span></div>
+                    <input type="range" min="-10" max="10" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_v').innerText=this.value+'V'">
+                </div>
+                <div class="cal-group">
+                    <div class="cal-label"><span>Current L1 Offset</span><span id="val_c1">0.0A</span></div>
+                    <input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c1').innerText=this.value+'A'">
+                </div>
+                <div class="cal-group">
+                    <div class="cal-label"><span>Current L2 Offset</span><span id="val_c2">0.0A</span></div>
+                    <input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c2').innerText=this.value+'A'">
+                </div>
+                <button class="btn-action" style="width:100%">SAVE CALIBRATION</button>
             </div>
         </div>
     </div>
@@ -203,27 +225,24 @@
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
 
-    // --- STATE VARIABLES ---
     let sessionLog = []; 
     let map = null;
     let deviceMarker = null;
     let isMuted = false;
     let pollInterval = null;
+    let histChartInstance = null; // Store chart instance
 
-    // --- INIT ---
-    // Runs automatically when page loads
     window.onload = function() {
         initMap();
         startPolling();
         initAudio();
+        initHistoryChart(); // Initialize the historian chart
     };
 
-    // --- INIT AUDIO ---
     let audioCtx;
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     function toggleMute() { isMuted = !isMuted; document.getElementById('muteBtn').classList.toggle('active', isMuted); }
 
-    // --- DATA FETCHING (POLLING RENDER) ---
     function startPolling() {
         if(pollInterval) clearInterval(pollInterval);
         fetchData();
@@ -234,14 +253,11 @@
         try {
             const response = await fetch(`${API_URL}/status/${DEVICE_ID}`);
             const data = await response.json();
-
             if(data.message === "No data") return;
 
             document.getElementById('netStatus').innerText = "ONLINE";
             document.getElementById('netStatus').className = "status-badge status-online";
-            
             updateDashboard(data);
-
         } catch (error) {
             console.error("Fetch Error:", error);
             document.getElementById('netStatus').innerText = "OFFLINE";
@@ -249,7 +265,6 @@
         }
     }
 
-    // --- DASHBOARD UPDATES ---
     function updateDashboard(d) {
         const v = d.voltage || 0;
         const c1 = d.currentL1 || 0;
@@ -283,20 +298,14 @@
             }
         }
 
-        // --- SYNC ALARM SWITCH FROM DATABASE ---
+        // SYNC ALARM
         if (d.alarmArmed !== undefined) {
             const toggle = document.getElementById('alarmToggle');
             const statusText = document.getElementById('armStatusText');
-            
             if (toggle.checked !== d.alarmArmed) {
                 toggle.checked = d.alarmArmed;
-                if (d.alarmArmed) {
-                    statusText.innerText = "SYSTEM ARMED";
-                    statusText.style.color = "#ef4444";
-                } else {
-                    statusText.innerText = "SYSTEM DISARMED";
-                    statusText.style.color = "#10b981";
-                }
+                statusText.innerText = d.alarmArmed ? "SYSTEM ARMED" : "SYSTEM DISARMED";
+                statusText.style.color = d.alarmArmed ? "#ef4444" : "#10b981";
             }
         }
 
@@ -305,69 +314,54 @@
         if (sessionLog.length > 2000) sessionLog.shift();
         
         updateHistoryTable();
+        updateHistoryChartData(); // Update the big chart
     }
 
-    // --- TOGGLE ALARM FUNCTION ---
+    // --- ALARM LOGIC ---
     async function toggleAlarm(checkbox) {
         const newState = checkbox.checked;
-        const statusText = document.getElementById('armStatusText');
-
-        if (newState) {
-            statusText.innerText = "ARMING...";
-            statusText.style.color = "#ef4444";
-        } else {
-            statusText.innerText = "DISARMING...";
-            statusText.style.color = "#10b981";
-        }
-
+        document.getElementById('armStatusText').innerText = newState ? "ARMING..." : "DISARMING...";
         try {
-            const response = await fetch(`${API_URL}/control`, {
+            await fetch(`${API_URL}/control`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    device_id: DEVICE_ID, 
-                    alarm_armed: newState 
-                })
+                body: JSON.stringify({ device_id: DEVICE_ID, alarm_armed: newState })
             });
-
-            if (!response.ok) {
-                alert("Failed to update alarm status!");
-                checkbox.checked = !newState;
-            }
         } catch (error) {
-            console.error("Control Error:", error);
-            alert("Network Error: Could not talk to server.");
-            checkbox.checked = !newState; 
+            alert("Network Error"); checkbox.checked = !newState; 
         }
     }
 
-    // --- MAP FUNCTIONS ---
+    // --- TEST MODE LOGIC (Simulation) ---
+    function toggleTestMode(checkbox) {
+        const status = document.getElementById('testStatusText');
+        if(checkbox.checked) {
+            status.innerText = "SIMULATION ACTIVE";
+            status.style.color = "#fbbf24";
+            // Logic to send test mode command to backend can go here
+        } else {
+            status.innerText = "NORMAL OPERATION";
+            status.style.color = "#aaa";
+        }
+    }
+
+    // --- MAP LOGIC ---
     function initMap() {
         if(map) return;
         map = L.map('map').setView([14.5995, 120.9842], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(map);
-
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
         const icon = L.divIcon({ className: 'custom-div-icon', html: `<div class='marker-normal'></div>` });
         deviceMarker = L.marker([14.5995, 120.9842], {icon: icon}).addTo(map);
-        deviceMarker.bindPopup("Tx01 (Main Transformer)");
     }
-
     function toggleGeoControls() {
         const p = document.getElementById('geoControlsPanel');
         p.style.display = p.style.display === 'none' ? 'flex' : 'none';
         if(map) map.invalidateSize();
     }
-
     async function saveManualLocation() {
         const lat = parseFloat(document.getElementById('inputLat').value);
         const lng = parseFloat(document.getElementById('inputLng').value);
-        
         if(!lat || !lng) return alert("Invalid Coords");
-
         await fetch(`${API_URL}/location`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -376,18 +370,51 @@
         alert("Location Updated!");
     }
 
-    // --- CHARTS & UI ---
+    // --- CHARTS & VISUALS ---
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
+    // --- ANALYTICAL HISTORIAN CHART LOGIC ---
+    function initHistoryChart() {
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        histChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },
+                    { label: 'Current L1', data: [], borderColor: '#10b981', tension: 0.4 },
+                    { label: 'Temp', data: [], borderColor: '#ef4444', tension: 0.4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
+                    y: { ticks: { color: '#888' }, grid: { color: '#333' } }
+                },
+                plugins: { legend: { labels: { color: '#fff' } } }
+            }
+        });
+    }
+
+    function updateHistoryChartData() {
+        if (!histChartInstance) return;
+        const recent = sessionLog.slice(-50); // Show last 50 points
+        histChartInstance.data.labels = recent.map(d => d.time.toLocaleTimeString());
+        histChartInstance.data.datasets[0].data = recent.map(d => d.v);
+        histChartInstance.data.datasets[1].data = recent.map(d => d.c1);
+        histChartInstance.data.datasets[2].data = recent.map(d => d.t);
+        histChartInstance.update('none'); // Update without animation for performance
+    }
+
     function showView(e){
         ["dashboardView","historyView","dailyView","maintenanceView"].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.style.display="none";
+            const el = document.getElementById(id); if(el) el.style.display="none";
         });
-        const target = document.getElementById(e);
-        if(target) target.style.display="block";
+        const target = document.getElementById(e); if(target) target.style.display="block";
         if(e === 'dashboardView' && map) setTimeout(()=>map.invalidateSize(), 200);
     }
 
@@ -400,7 +427,6 @@
             tbody.insertAdjacentHTML("beforeend", row);
         });
     }
-
 </script>
 </body>
 </html>
