@@ -94,6 +94,24 @@
         .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .geo-btn:hover { opacity: 0.9; }
 
+        /* === MAP MARKER STYLES (RESTORED) === */
+        .marker-normal {
+            width: 20px; height: 20px; background: var(--accent-purple);
+            border-radius: 50%; border: 3px solid rgba(255,255,255,0.5);
+            box-shadow: 0 0 15px var(--accent-purple);
+        }
+        .marker-alarm {
+            width: 20px; height: 20px; background: #ef4444;
+            border-radius: 50%; border: 3px solid rgba(255,255,255,0.5);
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
         /* Sliders */
         .cal-slider { width: 100%; margin: 10px 0; cursor: pointer; }
         .cal-group { margin-bottom: 15px; }
@@ -481,15 +499,41 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
 
-        if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
+        // --- MAP MARKER LOGIC RESTORED ---
+        // 1. Get Current Status (Normal/Alarm)
+        const currentDataPoint = { v, c1, c2, t, vib, pf };
+        const status = detectAbnormality(currentDataPoint);
+        const isAlarm = status !== "Normal Operation";
+
+        // 2. Update Map Marker
+        if (map && deviceMarker && !isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
-            if(map && deviceMarker) {
-                deviceMarker.setLatLng([lat, lng]);
-                map.setView([lat, lng], 14);
-                document.getElementById('inputLat').value = lat;
-                document.getElementById('inputLng').value = lng;
-            }
+            
+            // Move Marker
+            deviceMarker.setLatLng([lat, lng]);
+            
+            // Change Icon based on Status
+            const newIconClass = isAlarm ? 'marker-alarm' : 'marker-normal';
+            const iconHtml = `<div class='${newIconClass}'></div>`;
+            const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
+            deviceMarker.setIcon(newIcon);
+
+            // Update Popup Content
+            const popupContent = `
+                <div style="font-weight:bold; margin-bottom:5px;">${DEVICE_ID}</div>
+                <div>Status: <span style="color:${isAlarm ? '#ef4444' : '#10b981'}">${status}</span></div>
+                <div style="font-size:0.8rem; color:#aaa; margin-top:5px;">
+                    V: ${v.toFixed(1)}V | T: ${t.toFixed(1)}°C
+                </div>
+            `;
+            deviceMarker.bindPopup(popupContent);
+            if(isAlarm && !deviceMarker.isPopupOpen()) deviceMarker.openPopup();
+        }
+
+        if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
+             document.getElementById('inputLat').value = d.config.location.lat;
+             document.getElementById('inputLng').value = d.config.location.lng;
         }
 
         if (d.alarmArmed !== undefined) {
@@ -749,14 +793,15 @@
         });
     }
 
+    // --- UPDATED THRESHOLDS TO MATCH HARDWARE ---
     function detectAbnormality(d) {
         let issues = [];
-        if (d.v > 264) issues.push("Overvoltage Voltage");
-        if (d.v < 216) issues.push("Undervoltage Voltage");
+        if (d.v > 264) issues.push("Overvoltage");
+        if (d.v < 216) issues.push("Undervoltage");
         if (d.c1 > 312 || d.c2 > 312) issues.push("Overcurrent");
         if (d.t > 75) issues.push("Overheating");
-        if (d.vib > 0.20) issues.push("High Vibration");
-        if (d.pf < 0.85) issues.push("Poor Power Factor");
+        if (d.vib > 0.02) issues.push("High Vibration");
+        if (d.pf < 0.85) issues.push("Low Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -908,6 +953,3 @@
 </script>
 </body>
 </html>
-
-
-
