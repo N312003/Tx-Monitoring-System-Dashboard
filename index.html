@@ -102,20 +102,36 @@
         /* Date Picker */
         .date-input { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 12px; border-radius: 8px; outline: none; cursor: pointer; }
         
-        /* Chart Containers */
+        /* Historian Layout (Split) */
+        .historian-container { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; }
         .chart-stack { display: flex; flex-direction: column; gap: 20px; }
         .chart-container-single { height: 250px; width: 100%; position: relative; }
         
+        /* Summary Panel on Right */
+        .summary-panel { position: sticky; top: 20px; }
+        .summary-item { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+        .summary-label { color: #94a3b8; font-size: 0.9rem; }
+        .summary-val { color: white; font-weight: bold; font-family: monospace; font-size: 1rem; }
+
         /* Control Panel */
         .control-panel { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between; }
         .checkbox-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .checkbox-item { display: flex; align-items: center; gap: 5px; color: #ccc; font-size: 0.9rem; cursor: pointer; }
 
+        /* Custom Unified Tooltip (Hover) */
+        #unified-tooltip { opacity: 0; position: absolute; background: rgba(15, 23, 42, 0.95); border: 1px solid var(--accent-purple); border-radius: 8px; pointer-events: none; color: white; padding: 10px; font-size: 0.85rem; z-index: 1000; transition: all 0.1s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.3); min-width: 150px; }
+        .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .tooltip-label { color: #94a3b8; }
+        .tooltip-value { font-weight: bold; }
+
         /* Mobile */
+        @media (max-width: 1000px) { .historian-container { grid-template-columns: 1fr; } .summary-panel { position: static; margin-bottom: 20px; } }
         @media (max-width: 768px) { .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; } .nav-item { width: 100%; margin: 0; border-radius: 0; } .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; } .header { flex-direction: column; align-items: flex-start; gap: 15px; } .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; } .dashboard-split { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .manual-geo-controls { flex-direction: column; align-items: stretch; } .geo-input { width: 100%; } #map { height: 400px; } .control-panel { flex-direction: column; align-items: flex-start; } .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } }
     </style>
 </head>
 <body>
+
+    <div id="unified-tooltip"></div>
 
     <div id="appContainer">
         <nav class="sidebar">
@@ -208,27 +224,73 @@
                 </div>
 
                 <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(0)"> Voltage</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(1)"> L1</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(2)"> L2</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(3)"> PF</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(4)"> Temp</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(5)"> Vib</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_v" checked onchange="toggleChartDataset(0)"> Voltage</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_c1" checked onchange="toggleChartDataset(1)"> L1</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_c2" checked onchange="toggleChartDataset(2)"> L2</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_pf" checked onchange="toggleChartDataset(3)"> PF</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_t" checked onchange="toggleChartDataset(4)"> Temp</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_vib" checked onchange="toggleChartDataset(5)"> Vib</label>
                 </div>
             </div>
 
-            <div class="chart-stack">
-                <div class="card" style="padding:15px;">
-                    <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">ELECTRICAL (Voltage / Current)</h4>
-                    <div class="chart-container-single"><canvas id="histChartElec"></canvas></div>
+            <div class="historian-container">
+                <div class="chart-stack">
+                    <div class="card" style="padding:15px;">
+                        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">ELECTRICAL (Voltage / Current)</h4>
+                        <div class="chart-container-single"><canvas id="histChartElec"></canvas></div>
+                    </div>
+                    <div class="card" style="padding:15px;">
+                        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">EFFICIENCY (Power Factor)</h4>
+                        <div class="chart-container-single"><canvas id="histChartPF"></canvas></div>
+                    </div>
+                    <div class="card" style="padding:15px;">
+                        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">PHYSICAL HEALTH (Temp / Vibration)</h4>
+                        <div class="chart-container-single"><canvas id="histChartPhys"></canvas></div>
+                    </div>
                 </div>
-                <div class="card" style="padding:15px;">
-                    <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">EFFICIENCY (Power Factor)</h4>
-                    <div class="chart-container-single"><canvas id="histChartPF"></canvas></div>
-                </div>
-                <div class="card" style="padding:15px;">
-                    <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">PHYSICAL HEALTH (Temp / Vibration)</h4>
-                    <div class="chart-container-single"><canvas id="histChartPhys"></canvas></div>
+
+                <div class="summary-panel">
+                    <div class="card" style="height: 100%; border-color: var(--accent-purple);">
+                        <h3 style="color:white; margin-bottom: 20px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px;">Data Point Summary</h3>
+                        
+                        <div id="summary-content" style="opacity: 0.5;">
+                            <div style="text-align:center; color:#666; margin-top:50px;">
+                                <i class="fa-solid fa-arrow-pointer" style="font-size: 2rem; margin-bottom: 15px;"></i><br>
+                                Click on any graph point<br>to view details here.
+                            </div>
+                        </div>
+
+                        <div id="summary-data" style="display: none;">
+                            <div class="summary-item">
+                                <span class="summary-label">Timestamp</span>
+                                <span class="summary-val" id="sum_time" style="font-size: 0.85rem; color: #ccc;">--:--:--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Voltage</span>
+                                <span class="summary-val" style="color: #7c3aed;" id="sum_v">-- V</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Current L1</span>
+                                <span class="summary-val" style="color: #10b981;" id="sum_c1">-- A</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Current L2</span>
+                                <span class="summary-val" style="color: #06b6d4;" id="sum_c2">-- A</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Power Factor</span>
+                                <span class="summary-val" style="color: #d946ef;" id="sum_pf">--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Temperature</span>
+                                <span class="summary-val" style="color: #ef4444;" id="sum_t">-- °C</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Vibration</span>
+                                <span class="summary-val" style="color: #fbbf24;" id="sum_vib">-- g</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -304,7 +366,6 @@
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
 
-    // --- STATE VARIABLES ---
     let sessionLog = []; 
     let map = null;
     let deviceMarker = null;
@@ -314,6 +375,7 @@
     let chartTimeWindow = 0; // 0=Live
     let isSimulationMode = false;
     let simValues = { v: 220, c1: 5, c2: 5, pf: 0.9, t: 30, vib: 0 };
+    let currentChartData = []; 
 
     window.onload = function() {
         initMap();
@@ -506,17 +568,50 @@
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
-    // --- SEPARATED HISTORIAN CHARTS ---
+    // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
     function initHistorianCharts() {
+        const tooltipHandler = (context) => {
+            const { chart, tooltip } = context;
+            const tooltipEl = document.getElementById('unified-tooltip');
+            if (tooltip.opacity === 0) { tooltipEl.style.opacity = 0; return; }
+            if (tooltip.dataPoints.length > 0) {
+                const index = tooltip.dataPoints[0].dataIndex;
+                const data = currentChartData[index];
+                if (data) {
+                    let html = `<div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:5px;">${data.time.toLocaleTimeString()}</div>`;
+                    if(document.getElementById('cb_v').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Voltage:</span> <span class="tooltip-value" style="color:#7c3aed">${data.v.toFixed(1)} V</span></div>`;
+                    if(document.getElementById('cb_c1').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Cur L1:</span> <span class="tooltip-value" style="color:#10b981">${data.c1.toFixed(1)} A</span></div>`;
+                    if(document.getElementById('cb_c2').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Cur L2:</span> <span class="tooltip-value" style="color:#06b6d4">${data.c2.toFixed(1)} A</span></div>`;
+                    if(document.getElementById('cb_pf').checked) html += `<div class="tooltip-row"><span class="tooltip-label">PF:</span> <span class="tooltip-value" style="color:#d946ef">${data.pf.toFixed(2)}</span></div>`;
+                    if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#ef4444">${data.t.toFixed(1)} °C</span></div>`;
+                    if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
+                    tooltipEl.innerHTML = html;
+                    const position = context.chart.canvas.getBoundingClientRect();
+                    tooltipEl.style.opacity = 1;
+                    tooltipEl.style.left = position.left + window.pageXOffset + tooltip.caretX + 15 + 'px';
+                    tooltipEl.style.top = position.top + window.pageYOffset + tooltip.caretY + 'px';
+                }
+            }
+        };
+
+        const clickHandler = (e, elements) => {
+            if (elements.length > 0) {
+                const index = elements[0].index;
+                const data = currentChartData[index];
+                if(data) updateSummaryPanel(data);
+            }
+        };
+
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false }, // Hover for all points
+            interaction: { mode: 'index', intersect: false }, 
             scales: { x: { ticks: { color: '#888' }, grid: { color: '#333' } }, y: { ticks: { color: '#888' }, grid: { color: '#333' } } },
             plugins: { 
                 legend: { labels: { color: '#fff' } },
-                tooltip: { mode: 'index', intersect: false } 
-            }
+                tooltip: { enabled: false, external: tooltipHandler }
+            },
+            onClick: clickHandler
         };
 
         chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
@@ -543,9 +638,19 @@
         });
     }
 
-    // Toggle specific line across the 3 separate charts
+    function updateSummaryPanel(data) {
+        document.getElementById('summary-content').style.display = 'none';
+        document.getElementById('summary-data').style.display = 'block';
+        document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
+        document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
+        document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
+        document.getElementById('sum_c2').innerText = data.c2.toFixed(1) + " A";
+        document.getElementById('sum_pf').innerText = data.pf.toFixed(2);
+        document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
+        document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
+    }
+
     function toggleChartDataset(idx) {
-        // Map 0-5 index to Chart and DatasetIndex
         let targetChart, dsIndex;
         if(idx <= 2) { targetChart = chartElec; dsIndex = idx; }
         else if(idx === 3) { targetChart = chartPF; dsIndex = 0; }
@@ -582,6 +687,8 @@
                 filteredData = filteredData.filter((_, i) => i % step === 0);
             }
         }
+
+        currentChartData = filteredData; 
 
         const labels = filteredData.map(d => d.time.toLocaleTimeString());
 
