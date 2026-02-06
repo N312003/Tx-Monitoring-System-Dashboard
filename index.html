@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -22,8 +23,15 @@
         /* Overlays */
         .history-overlay, .daily-overlay, .maintenance-overlay { position: fixed; top: 0; left: 80px; width: calc(100% - 80px); height: 100%; background: var(--bg-body); z-index: 500; padding: 30px; display: none; overflow-y: auto; }
         
-        /* Standard UI Components */
+        /* Components */
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 8px 16px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.85rem; }
+        
+        /* Time Filter Buttons */
+        .time-filters { display: flex; background: #1c212c; border-radius: 10px; padding: 4px; gap: 5px; }
+        .time-btn { background: transparent; border: none; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
+        .time-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        .time-btn.active { background: var(--accent-purple); color: white; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+
         #appContainer { display: block; width: 100%; } 
         
         /* Sidebar */
@@ -88,14 +96,16 @@
 
         /* Sliders */
         .cal-slider { width: 100%; margin: 10px 0; cursor: pointer; }
-        .cal-group { margin-bottom: 20px; }
+        .cal-group { margin-bottom: 15px; }
         .cal-label { font-size: 0.8rem; color: #aaa; display: flex; justify-content: space-between; }
         
-        /* Markers */
-        .marker-normal { background-color: #8b5cf6; width: 15px; height: 15px; border-radius: 50%; box-shadow: 0 0 10px #8b5cf6; border: 2px solid white; transition: 0.3s; }
+        /* Control Panel */
+        .control-panel { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between; }
+        .checkbox-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; color: #ccc; font-size: 0.9rem; cursor: pointer; }
         
         /* Mobile */
-        @media (max-width: 768px) { .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; } .nav-item { width: 100%; margin: 0; border-radius: 0; } .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; } .header { flex-direction: column; align-items: flex-start; gap: 15px; } .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; } .dashboard-split { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .manual-geo-controls { flex-direction: column; align-items: stretch; } .geo-input { width: 100%; } #map { height: 400px; } }
+        @media (max-width: 768px) { .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; } .nav-item { width: 100%; margin: 0; border-radius: 0; } .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; } .header { flex-direction: column; align-items: flex-start; gap: 15px; } .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; } .dashboard-split { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .manual-geo-controls { flex-direction: column; align-items: stretch; } .geo-input { width: 100%; } #map { height: 400px; } .control-panel { flex-direction: column; align-items: flex-start; } .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } }
     </style>
 </head>
 <body>
@@ -163,17 +173,8 @@
                     <div class="card small-chart-card"><div class="chart-header"><span>Vibration</span></div><div class="chart-box"><canvas id="chartVib"></canvas></div></div>
                 </div>
             </div>
-        </main>
 
-        <div class="history-overlay" id="historyView">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Visual Trend Analysis</span></div>
-                <div><button class="btn-action" style="background:#333;" onclick="showView('dashboardView')">CLOSE</button></div>
-            </div>
-            
-            <div class="card" style="height:400px; padding:20px; position:relative; margin-bottom: 25px;"><canvas id="historyChart"></canvas></div>
-            
-            <div class="card" style="height: 300px; overflow-y: hidden; display: flex; flex-direction: column;">
+            <div class="card" style="height: 400px; overflow-y: hidden; display: flex; flex-direction: column;">
                 <h3 style="color:white; margin-bottom: 15px;">System Event Logs</h3>
                 <div style="overflow-y: auto; flex-grow: 1;">
                     <table class="data-table">
@@ -182,6 +183,39 @@
                     </table>
                 </div>
             </div>
+        </main>
+
+        <div class="history-overlay" id="historyView">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div><h2>ANALYTICAL HISTORIAN</h2><span style="color:var(--text-muted); font-size: 0.8rem;">Visual Trend Analysis</span></div>
+                <div><button class="btn-action" style="background:#333;" onclick="showView('dashboardView')">CLOSE</button></div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="time-filters">
+                    <button class="time-btn active" id="btnLive" onclick="setChartRange(0, this)">LIVE</button>
+                    <button class="time-btn" onclick="setChartRange(1, this)">1H</button>
+                    <button class="time-btn" onclick="setChartRange(6, this)">6H</button>
+                    <button class="time-btn" onclick="setChartRange(12, this)">12H</button>
+                    <button class="time-btn" onclick="setChartRange(24, this)">24H</button>
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(0)"> Voltage</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(1)"> Cur L1</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(2)"> Cur L2</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(3)"> PF</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(4)"> Temp</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(5)"> Vib</label>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-action" style="background: #10b981;" onclick="downloadExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                    <button class="btn-action" style="background: #ef4444;" onclick="downloadPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                </div>
+            </div>
+
+            <div class="card" style="height:500px; padding:20px; position:relative;"><canvas id="historyChart"></canvas></div>
         </div>
         
         <div class="daily-overlay" id="dailyView">
@@ -213,7 +247,7 @@
             </div>
 
             <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
                         <h3 style="color: white; font-size: 1rem;">Simulation Mode</h3>
                         <span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span>
@@ -223,7 +257,33 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-                <div id="testStatusText" style="margin-top: 10px; font-weight: bold; color: #aaa; text-align: right;">NORMAL OPERATION</div>
+                
+                <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
+                    <div class="cal-group">
+                        <div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div>
+                        <input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)">
+                    </div>
+                    <div class="cal-group">
+                        <div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div>
+                        <input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)">
+                    </div>
+                    <div class="cal-group">
+                        <div class="cal-label"><span>Sim Current L2</span><span id="sim_c2_val">5A</span></div>
+                        <input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c2', this.value)">
+                    </div>
+                    <div class="cal-group">
+                        <div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div>
+                        <input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)">
+                    </div>
+                    <div class="cal-group">
+                        <div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div>
+                        <input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)">
+                    </div>
+                    <div class="cal-group">
+                        <div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div>
+                        <input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)">
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -249,12 +309,18 @@
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
 
+    // --- STATE VARIABLES ---
     let sessionLog = []; 
     let map = null;
     let deviceMarker = null;
     let isMuted = false;
     let pollInterval = null;
     let histChartInstance = null;
+    let chartTimeWindow = 0; // 0=Live
+    
+    // Simulation State
+    let isSimulationMode = false;
+    let simValues = { v: 220, c1: 5, c2: 5, pf: 0.9, t: 30, vib: 0 };
 
     window.onload = function() {
         initMap();
@@ -285,7 +351,6 @@
 
             if(data.message === "No data") return;
 
-            // Log connection recovery if previously offline
             const statusBadge = document.getElementById('netStatus');
             if(statusBadge.innerText === "OFFLINE") logEvent("Connection Restored", "SUCCESS");
 
@@ -305,12 +370,26 @@
     }
 
     function updateDashboard(d) {
-        const v = d.voltage || 0;
-        const c1 = d.currentL1 || 0;
-        const c2 = d.currentL2 || 0;
-        const t = d.temp || 0;
-        const vib = d.vib || 0;
-        const pf = d.pf || 0;
+        // --- SIMULATION OVERRIDE ---
+        let v, c1, c2, t, vib, pf;
+
+        if (isSimulationMode) {
+            // Use Simulation Values
+            v = parseFloat(simValues.v);
+            c1 = parseFloat(simValues.c1);
+            c2 = parseFloat(simValues.c2);
+            t = parseFloat(simValues.t);
+            vib = parseFloat(simValues.vib);
+            pf = parseFloat(simValues.pf);
+        } else {
+            // Use Real API Values
+            v = d.voltage || 0;
+            c1 = d.currentL1 || 0;
+            c2 = d.currentL2 || 0;
+            t = d.temp || 0;
+            vib = d.vib || 0;
+            pf = d.pf || 0;
+        }
 
         document.getElementById('v').innerText = v.toFixed(1)+"V";
         document.getElementById('pf').innerText = pf.toFixed(2); 
@@ -326,7 +405,8 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
 
-        if(d.config && d.config.location && d.config.location.lat !== 0) {
+        // Only update map from real data, not simulation
+        if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
             if(map && deviceMarker) {
@@ -357,17 +437,21 @@
         }
 
         const now = new Date();
+        // Always log, even simulation data, to the session history so charts update
         sessionLog.push({time: now, v, c1, c2, pf, t, vib});
-        if (sessionLog.length > 2000) sessionLog.shift();
+        
+        // Keep session log manageable (optional: keep larger for history)
+        // If 24h * 60m * 2 samples = ~3000 points. 
+        if (sessionLog.length > 5000) sessionLog.shift();
         
         updateHistoryTable();
         updateHistoryChartData();
     }
 
-    // --- LOGGING FUNCTION (NEW) ---
+    // --- LOGGING FUNCTION ---
     function logEvent(msg, type) {
         const tbody = document.getElementById("eventLogBody");
-        const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : '#3b82f6');
+        const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : (type === 'MAINT' ? '#fbbf24' : '#3b82f6'));
         const row = `<tr>
             <td style="color:#888; font-size:0.85rem;">${new Date().toLocaleTimeString()}</td>
             <td style="color:white; font-weight:500;">${msg}</td>
@@ -409,17 +493,29 @@
         }
     }
 
-    // --- TEST MODE ---
+    // --- SIMULATION LOGIC ---
     function toggleTestMode(checkbox) {
-        const status = document.getElementById('testStatusText');
-        if(checkbox.checked) {
-            status.innerText = "SIMULATION ACTIVE";
-            status.style.color = "#fbbf24";
-            logEvent("Simulation Mode Started", "ALERT");
+        isSimulationMode = checkbox.checked;
+        const controls = document.getElementById('simulationControls');
+        
+        if(isSimulationMode) {
+            controls.style.opacity = "1";
+            controls.style.pointerEvents = "auto";
+            logEvent("Simulation Mode STARTED", "MAINT");
         } else {
-            status.innerText = "NORMAL OPERATION";
-            status.style.color = "#aaa";
-            logEvent("Simulation Mode Ended", "INFO");
+            controls.style.opacity = "0.3";
+            controls.style.pointerEvents = "none";
+            logEvent("Simulation Mode ENDED", "INFO");
+        }
+    }
+
+    function updateSimulation(param, value) {
+        simValues[param] = value;
+        const unit = (param === 'v') ? 'V' : (param === 'vib' ? 'g' : (param === 'pf' ? '' : (param === 't' ? '°C' : 'A')));
+        document.getElementById(`sim_${param}_val`).innerText = value + unit;
+        
+        if(isSimulationMode) {
+            updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
         }
     }
 
@@ -462,9 +558,12 @@
             data: {
                 labels: [],
                 datasets: [
-                    { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },
-                    { label: 'Current L1', data: [], borderColor: '#10b981', tension: 0.4 },
-                    { label: 'Temp', data: [], borderColor: '#ef4444', tension: 0.4 }
+                    { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },     // 0
+                    { label: 'Current L1', data: [], borderColor: '#10b981', tension: 0.4 },  // 1
+                    { label: 'Current L2', data: [], borderColor: '#06b6d4', tension: 0.4 },  // 2
+                    { label: 'PF', data: [], borderColor: '#d946ef', tension: 0.4 },          // 3
+                    { label: 'Temp', data: [], borderColor: '#ef4444', tension: 0.4 },        // 4
+                    { label: 'Vibration', data: [], borderColor: '#fbbf24', tension: 0.4 }    // 5
                 ]
             },
             options: {
@@ -479,14 +578,97 @@
         });
     }
 
+    function toggleChartDataset(index) {
+        if(histChartInstance) {
+            const meta = histChartInstance.getDatasetMeta(index);
+            meta.hidden = meta.hidden === null ? !histChartInstance.data.datasets[index].hidden : null;
+            histChartInstance.update();
+        }
+    }
+
+    function setChartRange(hours, btn) {
+        chartTimeWindow = hours;
+        // Update Buttons UI
+        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateHistoryChartData();
+    }
+
     function updateHistoryChartData() {
         if (!histChartInstance) return;
-        const recent = sessionLog.slice(-50); 
-        histChartInstance.data.labels = recent.map(d => d.time.toLocaleTimeString());
-        histChartInstance.data.datasets[0].data = recent.map(d => d.v);
-        histChartInstance.data.datasets[1].data = recent.map(d => d.c1);
-        histChartInstance.data.datasets[2].data = recent.map(d => d.t);
+        
+        let filteredData;
+        const now = new Date();
+
+        if (chartTimeWindow === 0) {
+            // Live Mode (Last 50 points)
+            filteredData = sessionLog.slice(-50);
+        } else {
+            // Time Window Filter
+            const cutoff = new Date(now.getTime() - (chartTimeWindow * 60 * 60 * 1000));
+            filteredData = sessionLog.filter(d => d.time >= cutoff);
+            
+            // Downsampling for performance if too many points (e.g. > 1000)
+            if(filteredData.length > 1000) {
+                const step = Math.ceil(filteredData.length / 1000);
+                filteredData = filteredData.filter((_, i) => i % step === 0);
+            }
+        }
+
+        histChartInstance.data.labels = filteredData.map(d => d.time.toLocaleTimeString());
+        histChartInstance.data.datasets[0].data = filteredData.map(d => d.v);
+        histChartInstance.data.datasets[1].data = filteredData.map(d => d.c1);
+        histChartInstance.data.datasets[2].data = filteredData.map(d => d.c2);
+        histChartInstance.data.datasets[3].data = filteredData.map(d => d.pf);
+        histChartInstance.data.datasets[4].data = filteredData.map(d => d.t);
+        histChartInstance.data.datasets[5].data = filteredData.map(d => d.vib);
         histChartInstance.update('none'); 
+    }
+
+    // --- EXPORT FUNCTIONS ---
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("TxMS PRO - Session History", 14, 15);
+        
+        const tableColumn = ["Time", "Voltage", "Cur L1", "Cur L2", "PF", "Temp", "Vib"];
+        const tableRows = [];
+
+        sessionLog.forEach(log => {
+            const logData = [
+                log.time.toLocaleTimeString(),
+                log.v.toFixed(1),
+                log.c1.toFixed(1),
+                log.c2.toFixed(1),
+                log.pf.toFixed(2),
+                log.t.toFixed(1),
+                log.vib.toFixed(2)
+            ];
+            tableRows.push(logData);
+        });
+
+        doc.autoTable(tableColumn, tableRows, { startY: 20 });
+        doc.save("TxMS_Session_Report.pdf");
+    }
+
+    function downloadExcel() {
+        if(sessionLog.length === 0) return alert("No data to export");
+        
+        // Prepare data for Excel
+        const data = sessionLog.map(log => ({
+            Time: log.time.toLocaleTimeString(),
+            Voltage: log.v,
+            Current_L1: log.c1,
+            Current_L2: log.c2,
+            Power_Factor: log.pf,
+            Temperature: log.t,
+            Vibration: log.vib
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Session Data");
+        XLSX.writeFile(wb, "TxMS_Session_Data.xlsx");
     }
 
     function showView(e){
