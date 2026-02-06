@@ -265,6 +265,11 @@
                                 <span class="summary-label">Timestamp</span>
                                 <span class="summary-val" id="sum_time" style="font-size: 0.85rem; color: #ccc;">--:--:--</span>
                             </div>
+
+                            <div class="summary-item">
+                                <span class="summary-label">Data Source</span>
+                                <span class="summary-val" id="sum_source" style="font-size: 0.85rem;">--</span>
+                            </div>
                             
                             <div class="summary-item">
                                 <span class="summary-label">System Status</span>
@@ -358,12 +363,18 @@
                 </div>
             </div>
 
-            <div class="card">
-                <h3 style="color:white; margin-bottom: 20px;">Sensor Calibration</h3>
-                <div class="cal-group"><div class="cal-label"><span>Voltage Cal Factor</span><span id="val_v">0.328381</span></div><input type="range" min="0" max="1.0" step="0.000001" value="0.328381" class="cal-slider" oninput="updateCalibration('v', this.value)"></div>
-                <div class="cal-group"><div class="cal-label"><span>Current L1 Cal Factor</span><span id="val_c1">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c1', this.value)"></div>
-                <div class="cal-group"><div class="cal-label"><span>Current L2 Cal Factor</span><span id="val_c2">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c2', this.value)"></div>
-                <button class="btn-action" style="width:100%" onclick="saveCalibration()">SAVE CALIBRATION</button>
+             <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div><h3 style="color: white; margin:0; font-size: 1rem;">Sensor Calibration</h3><span style="color: #aaa; font-size: 0.8rem;">Fine Tune Readings</span></div>
+                    <label class="switch"><input type="checkbox" id="calibToggle" onchange="toggleCalibrationMode(this)"><span class="slider"></span></label>
+                </div>
+
+                <div id="calibrationControls" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
+                    <div class="cal-group"><div class="cal-label"><span>Voltage Cal Factor</span><span id="val_v">0.328381</span></div><input type="range" min="0" max="1.0" step="0.000001" value="0.328381" class="cal-slider" oninput="updateCalibration('v', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Current L1 Cal Factor</span><span id="val_c1">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c1', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Current L2 Cal Factor</span><span id="val_c2">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c2', this.value)"></div>
+                    <button class="btn-action" style="width:100%" onclick="saveCalibration()">SAVE & LOCK CALIBRATION</button>
+                </div>
             </div>
         </div>
     </div>
@@ -381,11 +392,12 @@
     let chartElec = null, chartPF = null, chartPhys = null;
     let chartTimeWindow = 0; // 0=Live
     let isSimulationMode = false;
+    let isCalibrationMode = false;
     let simValues = { v: 220, c1: 5, c2: 5, pf: 0.9, t: 30, vib: 0 };
-    let calValues = { v: 0.328381, c1: 0.066, c2: 0.066 }; // Calibration State
+    let calValues = { v: 0.328381, c1: 0.066, c2: 0.066 }; 
     let currentChartData = []; 
-    let simUploadTimer = null; // Debounce Timer
-    let calUploadTimer = null; // Debounce Timer
+    let simUploadTimer = null; 
+    let calUploadTimer = null;
 
     window.onload = function() {
         initMap();
@@ -436,6 +448,7 @@
 
     function updateDashboard(d) {
         let v, c1, c2, t, vib, pf;
+        let sourceTag = "LIVE"; // Default Source
 
         if (isSimulationMode) {
             v = parseFloat(simValues.v);
@@ -444,6 +457,7 @@
             t = parseFloat(simValues.t);
             vib = parseFloat(simValues.vib);
             pf = parseFloat(simValues.pf);
+            sourceTag = "SIMULATION";
         } else {
             v = d.voltage || 0;
             c1 = d.currentL1 || 0;
@@ -496,7 +510,9 @@
         }
 
         const now = new Date();
-        sessionLog.push({time: now, v, c1, c2, pf, t, vib});
+        // LOG DATA WITH SOURCE TAG
+        sessionLog.push({time: now, v, c1, c2, pf, t, vib, source: sourceTag});
+        
         if (sessionLog.length > 5000) sessionLog.shift();
         
         filterReportDate(); 
@@ -536,7 +552,6 @@
         isSimulationMode = checkbox.checked;
         const controls = document.getElementById('simulationControls');
         
-        // Notify Server of Mode Change
         fetch(`${API_URL}/simulation`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -561,7 +576,6 @@
             updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
         }
 
-        // Debounced Upload to Server
         clearTimeout(simUploadTimer);
         simUploadTimer = setTimeout(sendSimulationData, 500); 
     }
@@ -587,13 +601,24 @@
         } catch (e) { console.error("Sim Upload Fail", e); }
     }
 
-    // --- CALIBRATION LOGIC (LIVE UPDATE) ---
+    // --- CALIBRATION LOGIC ---
+    function toggleCalibrationMode(checkbox) {
+        isCalibrationMode = checkbox.checked;
+        const controls = document.getElementById('calibrationControls');
+        if(isCalibrationMode) {
+            controls.style.opacity = "1";
+            controls.style.pointerEvents = "auto";
+            logEvent("Calibration Mode UNLOCKED", "MAINT");
+        } else {
+            controls.style.opacity = "0.5";
+            controls.style.pointerEvents = "none";
+            logEvent("Calibration Mode LOCKED", "INFO");
+        }
+    }
+
     function updateCalibration(param, value) {
-        // 1. Update Local Visuals
         calValues[param] = value;
         document.getElementById(`val_${param}`).innerText = value;
-
-        // 2. Debounced Upload to Server (Live Calibration)
         clearTimeout(calUploadTimer);
         calUploadTimer = setTimeout(uploadCalibrationData, 500); 
     }
@@ -614,12 +639,14 @@
         } catch (e) { console.error("Cal Upload Fail", e); }
     }
 
-    // Save Button - Visual Confirmation
     function saveCalibration() {
-        // Trigger one final guaranteed upload
         uploadCalibrationData().then(() => {
             logEvent("Calibration Settings Saved", "SUCCESS");
-            alert("Calibration Saved!");
+            alert("Calibration Saved & Locked!");
+            
+            // Auto-Lock
+            document.getElementById('calibToggle').checked = false;
+            toggleCalibrationMode({checked: false});
         });
     }
 
@@ -653,7 +680,6 @@
 
     // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
     function initHistorianCharts() {
-        // --- CUSTOM TOOLTIP HOVER ---
         const tooltipHandler = (context) => {
             const { chart, tooltip } = context;
             const tooltipEl = document.getElementById('unified-tooltip');
@@ -678,7 +704,6 @@
             }
         };
 
-        // --- CLICK HANDLER TO UPDATE SIDEBAR ---
         const clickHandler = (e, elements) => {
             if (elements.length > 0) {
                 const index = elements[0].index;
@@ -692,7 +717,7 @@
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false }, 
             scales: { x: { ticks: { color: '#888' }, grid: { color: '#333' } }, y: { ticks: { color: '#888' }, grid: { color: '#333' } } },
-            elements: { point: { radius: 0 } }, // Remove points
+            elements: { point: { radius: 0 } }, 
             plugins: { 
                 legend: { labels: { color: '#fff' } },
                 tooltip: { enabled: false, external: tooltipHandler }
@@ -747,6 +772,12 @@
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
 
+        // Update Source
+        const sourceEl = document.getElementById('sum_source');
+        sourceEl.innerText = data.source || "UNKNOWN";
+        sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : "#3b82f6";
+
+        // Update Status
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
         statusEl.innerText = statusText;
