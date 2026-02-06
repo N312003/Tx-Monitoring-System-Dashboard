@@ -385,6 +385,7 @@
     let calValues = { v: 0.328381, c1: 0.066, c2: 0.066 }; // Calibration State
     let currentChartData = []; 
     let simUploadTimer = null; // Debounce Timer
+    let calUploadTimer = null; // Debounce Timer
 
     window.onload = function() {
         initMap();
@@ -586,15 +587,19 @@
         } catch (e) { console.error("Sim Upload Fail", e); }
     }
 
-    // --- CALIBRATION LOGIC (NEW) ---
+    // --- CALIBRATION LOGIC (LIVE UPDATE) ---
     function updateCalibration(param, value) {
+        // 1. Update Local Visuals
         calValues[param] = value;
         document.getElementById(`val_${param}`).innerText = value;
+
+        // 2. Debounced Upload to Server (Live Calibration)
+        clearTimeout(calUploadTimer);
+        calUploadTimer = setTimeout(uploadCalibrationData, 500); 
     }
 
-    async function saveCalibration() {
+    async function uploadCalibrationData() {
         try {
-            // Note: Server MUST support /api/calibration endpoint
             await fetch(`${API_URL}/calibration`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -605,13 +610,17 @@
                     cal_c2: parseFloat(calValues.c2)
                 })
             });
+            console.log("Calibration Uploaded");
+        } catch (e) { console.error("Cal Upload Fail", e); }
+    }
+
+    // Save Button - Visual Confirmation
+    function saveCalibration() {
+        // Trigger one final guaranteed upload
+        uploadCalibrationData().then(() => {
             logEvent("Calibration Settings Saved", "SUCCESS");
             alert("Calibration Saved!");
-        } catch (e) {
-            console.error("Cal Save Fail", e);
-            logEvent("Calibration Save Failed", "ALERT");
-            alert("Failed to save calibration. Check server connection.");
-        }
+        });
     }
 
     function initMap() {
