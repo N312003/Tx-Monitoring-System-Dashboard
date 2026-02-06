@@ -751,12 +751,12 @@
 
     function detectAbnormality(d) {
         let issues = [];
-        if (d.v > 250) issues.push("High Voltage");
+        if (d.v > 264) issues.push("High Voltage");
         if (d.v < 216) issues.push("Low Voltage");
-        if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
-        if (d.t > 60) issues.push("Overheating");
-        if (d.vib > 2.0) issues.push("High Vibration");
-        if (d.pf < 0.8) issues.push("Poor Power Factor");
+        if (d.c1 > 312 || d.c2 > 312) issues.push("Overcurrent");
+        if (d.t > 75) issues.push("Overheating");
+        if (d.vib > 0.20) issues.push("High Vibration");
+        if (d.pf < 0.85) issues.push("Poor Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -908,4 +908,5 @@
 </script>
 </body>
 </html>
+
 
