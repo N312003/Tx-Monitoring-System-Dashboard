@@ -751,8 +751,8 @@
 
     function detectAbnormality(d) {
         let issues = [];
-        if (d.v > 264) issues.push("High Voltage");
-        if (d.v < 216) issues.push("Low Voltage");
+        if (d.v > 264) issues.push("Overvoltage Voltage");
+        if (d.v < 216) issues.push("Undervoltage Voltage");
         if (d.c1 > 312 || d.c2 > 312) issues.push("Overcurrent");
         if (d.t > 75) issues.push("Overheating");
         if (d.vib > 0.20) issues.push("High Vibration");
@@ -908,5 +908,6 @@
 </script>
 </body>
 </html>
+
 
 
