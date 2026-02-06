@@ -265,6 +265,12 @@
                                 <span class="summary-label">Timestamp</span>
                                 <span class="summary-val" id="sum_time" style="font-size: 0.85rem; color: #ccc;">--:--:--</span>
                             </div>
+                            
+                            <div class="summary-item">
+                                <span class="summary-label">System Status</span>
+                                <span class="summary-val" id="sum_status" style="font-size: 0.85rem;">--</span>
+                            </div>
+
                             <div class="summary-item">
                                 <span class="summary-label">Voltage</span>
                                 <span class="summary-val" style="color: #7c3aed;" id="sum_v">-- V</span>
@@ -570,6 +576,7 @@
 
     // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
     function initHistorianCharts() {
+        // --- CUSTOM TOOLTIP HOVER ---
         const tooltipHandler = (context) => {
             const { chart, tooltip } = context;
             const tooltipEl = document.getElementById('unified-tooltip');
@@ -594,6 +601,7 @@
             }
         };
 
+        // --- CLICK HANDLER TO UPDATE SIDEBAR ---
         const clickHandler = (e, elements) => {
             if (elements.length > 0) {
                 const index = elements[0].index;
@@ -607,11 +615,12 @@
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false }, 
             scales: { x: { ticks: { color: '#888' }, grid: { color: '#333' } }, y: { ticks: { color: '#888' }, grid: { color: '#333' } } },
+            elements: { point: { radius: 0 } }, // Remove points
             plugins: { 
                 legend: { labels: { color: '#fff' } },
                 tooltip: { enabled: false, external: tooltipHandler }
             },
-            onClick: clickHandler
+            onClick: clickHandler // Attach Click Logic
         };
 
         chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
@@ -638,9 +647,24 @@
         });
     }
 
+    function detectAbnormality(d) {
+        let issues = [];
+        // THRESHOLDS
+        if (d.v > 250) issues.push("High Voltage");
+        if (d.v < 190) issues.push("Low Voltage");
+        if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
+        if (d.t > 60) issues.push("Overheating");
+        if (d.vib > 2.0) issues.push("High Vibration");
+        if (d.pf < 0.8) issues.push("Poor Power Factor");
+
+        return issues.length > 0 ? issues.join(", ") : "Normal Operation";
+    }
+
     function updateSummaryPanel(data) {
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
+        
+        // Update Values
         document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
         document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
         document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
@@ -648,6 +672,17 @@
         document.getElementById('sum_pf').innerText = data.pf.toFixed(2);
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
+
+        // Update Status with Abnormality Check
+        const statusEl = document.getElementById('sum_status');
+        const statusText = detectAbnormality(data);
+        
+        statusEl.innerText = statusText;
+        if(statusText === "Normal Operation") {
+            statusEl.style.color = "#10b981"; // Green
+        } else {
+            statusEl.style.color = "#ef4444"; // Red
+        }
     }
 
     function toggleChartDataset(idx) {
