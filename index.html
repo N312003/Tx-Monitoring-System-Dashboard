@@ -27,7 +27,7 @@
         .btn-action { background: var(--accent-purple); color: white; border: none; padding: 8px 16px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.85rem; }
         
         /* Time Filter Buttons */
-        .time-filters { display: flex; background: #1c212c; border-radius: 10px; padding: 4px; gap: 5px; }
+        .time-filters { display: flex; background: #1c212c; border-radius: 10px; padding: 4px; gap: 5px; margin-bottom: 20px; }
         .time-btn { background: transparent; border: none; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
         .time-btn:hover { color: white; background: rgba(255,255,255,0.05); }
         .time-btn.active { background: var(--accent-purple); color: white; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
@@ -99,11 +99,18 @@
         .cal-group { margin-bottom: 15px; }
         .cal-label { font-size: 0.8rem; color: #aaa; display: flex; justify-content: space-between; }
         
+        /* Date Picker */
+        .date-input { background: #1c212c; color: white; border: 1px solid #444; padding: 8px 12px; border-radius: 8px; outline: none; cursor: pointer; }
+        
+        /* Chart Containers */
+        .chart-stack { display: flex; flex-direction: column; gap: 20px; }
+        .chart-container-single { height: 250px; width: 100%; position: relative; }
+        
         /* Control Panel */
         .control-panel { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between; }
         .checkbox-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .checkbox-item { display: flex; align-items: center; gap: 5px; color: #ccc; font-size: 0.9rem; cursor: pointer; }
-        
+
         /* Mobile */
         @media (max-width: 768px) { .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; } .nav-item { width: 100%; margin: 0; border-radius: 0; } .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; } .header { flex-direction: column; align-items: flex-start; gap: 15px; } .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; } .dashboard-split { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .manual-geo-controls { flex-direction: column; align-items: stretch; } .geo-input { width: 100%; } #map { height: 400px; } .control-panel { flex-direction: column; align-items: flex-start; } .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } }
     </style>
@@ -192,7 +199,7 @@
             </div>
             
             <div class="control-panel">
-                <div class="time-filters">
+                <div class="time-filters" style="margin-bottom:0;">
                     <button class="time-btn active" id="btnLive" onclick="setChartRange(0, this)">LIVE</button>
                     <button class="time-btn" onclick="setChartRange(1, this)">1H</button>
                     <button class="time-btn" onclick="setChartRange(6, this)">6H</button>
@@ -202,20 +209,28 @@
 
                 <div class="checkbox-group">
                     <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(0)"> Voltage</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(1)"> Cur L1</label>
-                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(2)"> Cur L2</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(1)"> L1</label>
+                    <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(2)"> L2</label>
                     <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(3)"> PF</label>
                     <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(4)"> Temp</label>
                     <label class="checkbox-item"><input type="checkbox" checked onchange="toggleChartDataset(5)"> Vib</label>
                 </div>
-
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-action" style="background: #10b981;" onclick="downloadExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
-                    <button class="btn-action" style="background: #ef4444;" onclick="downloadPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                </div>
             </div>
 
-            <div class="card" style="height:500px; padding:20px; position:relative;"><canvas id="historyChart"></canvas></div>
+            <div class="chart-stack">
+                <div class="card" style="padding:15px;">
+                    <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">ELECTRICAL (Voltage / Current)</h4>
+                    <div class="chart-container-single"><canvas id="histChartElec"></canvas></div>
+                </div>
+                <div class="card" style="padding:15px;">
+                    <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">EFFICIENCY (Power Factor)</h4>
+                    <div class="chart-container-single"><canvas id="histChartPF"></canvas></div>
+                </div>
+                <div class="card" style="padding:15px;">
+                    <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">PHYSICAL HEALTH (Temp / Vibration)</h4>
+                    <div class="chart-container-single"><canvas id="histChartPhys"></canvas></div>
+                </div>
+            </div>
         </div>
         
         <div class="daily-overlay" id="dailyView">
@@ -223,7 +238,26 @@
                 <div><h2>DAILY REPORT</h2></div>
                 <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
             </div>
-            <div class="card" style="min-height: 500px;"><table class="data-table"><thead><tr><th>TIME</th><th>VOLT</th><th>L1</th><th>L2</th><th>TEMP</th><th>VIB</th></tr></thead><tbody id="dailyTableBody"></tbody></table></div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:15px;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span style="color:#aaa; font-size:0.9rem;">Filter by Date:</span>
+                    <input type="date" id="reportDate" class="date-input" onchange="filterReportDate()">
+                    <button class="btn-action" style="background:#333; padding: 6px 12px;" onclick="document.getElementById('reportDate').value=''; filterReportDate()">CLEAR</button>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-action" style="background: #10b981;" onclick="downloadExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+                    <button class="btn-action" style="background: #ef4444;" onclick="downloadPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                </div>
+            </div>
+
+            <div class="card" style="min-height: 500px; overflow-y:auto; max-height:70vh;">
+                <table class="data-table">
+                    <thead><tr><th>TIME</th><th>VOLT</th><th>L1</th><th>L2</th><th>TEMP</th><th>VIB</th><th>PF</th></tr></thead>
+                    <tbody id="dailyTableBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <div class="maintenance-overlay" id="maintenanceView">
@@ -234,72 +268,33 @@
 
              <div class="card" style="margin-bottom: 25px; border-color: #d946ef;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h3 style="color: white; font-size: 1rem;">Safety Interlock</h3>
-                        <span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)">
-                        <span class="slider"></span>
-                    </label>
+                    <div><h3 style="color: white; font-size: 1rem;">Safety Interlock</h3><span style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span></div>
+                    <label class="switch"><input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)"><span class="slider"></span></label>
                 </div>
                 <div id="armStatusText" style="margin-top: 10px; font-weight: bold; color: #ef4444; text-align: right;">DISARMED</div>
             </div>
 
-            <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
+             <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h3 style="color: white; font-size: 1rem;">Simulation Mode</h3>
-                        <span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)">
-                        <span class="slider"></span>
-                    </label>
+                    <div><h3 style="color: white; font-size: 1rem;">Simulation Mode</h3><span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span></div>
+                    <label class="switch"><input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)"><span class="slider"></span></label>
                 </div>
                 
                 <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div>
-                        <input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div>
-                        <input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Current L2</span><span id="sim_c2_val">5A</span></div>
-                        <input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c2', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div>
-                        <input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div>
-                        <input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div>
-                        <input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)">
-                    </div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div><input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Current L2</span><span id="sim_c2_val">5A</span></div><input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c2', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div><input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div><input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)"></div>
                 </div>
             </div>
 
             <div class="card">
                 <h3 style="color:white; margin-bottom: 20px;">Sensor Calibration</h3>
-                <div class="cal-group">
-                    <div class="cal-label"><span>Voltage Offset</span><span id="val_v">0.0V</span></div>
-                    <input type="range" min="-10" max="10" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_v').innerText=this.value+'V'; logEvent('Calibration Updated: Voltage', 'MAINT')">
-                </div>
-                <div class="cal-group">
-                    <div class="cal-label"><span>Current L1 Offset</span><span id="val_c1">0.0A</span></div>
-                    <input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c1').innerText=this.value+'A'; logEvent('Calibration Updated: Current L1', 'MAINT')">
-                </div>
-                <div class="cal-group">
-                    <div class="cal-label"><span>Current L2 Offset</span><span id="val_c2">0.0A</span></div>
-                    <input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c2').innerText=this.value+'A'; logEvent('Calibration Updated: Current L2', 'MAINT')">
-                </div>
+                <div class="cal-group"><div class="cal-label"><span>Voltage Offset</span><span id="val_v">0.0V</span></div><input type="range" min="-10" max="10" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_v').innerText=this.value+'V'; logEvent('Calibration Updated: Voltage', 'MAINT')"></div>
+                <div class="cal-group"><div class="cal-label"><span>Current L1 Offset</span><span id="val_c1">0.0A</span></div><input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c1').innerText=this.value+'A'; logEvent('Calibration Updated: Current L1', 'MAINT')"></div>
+                <div class="cal-group"><div class="cal-label"><span>Current L2 Offset</span><span id="val_c2">0.0A</span></div><input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c2').innerText=this.value+'A'; logEvent('Calibration Updated: Current L2', 'MAINT')"></div>
                 <button class="btn-action" style="width:100%" onclick="logEvent('Calibration Settings Saved', 'SUCCESS')">SAVE CALIBRATION</button>
             </div>
         </div>
@@ -315,10 +310,8 @@
     let deviceMarker = null;
     let isMuted = false;
     let pollInterval = null;
-    let histChartInstance = null;
+    let chartElec = null, chartPF = null, chartPhys = null;
     let chartTimeWindow = 0; // 0=Live
-    
-    // Simulation State
     let isSimulationMode = false;
     let simValues = { v: 220, c1: 5, c2: 5, pf: 0.9, t: 30, vib: 0 };
 
@@ -326,7 +319,7 @@
         initMap();
         startPolling();
         initAudio();
-        initHistoryChart(); 
+        initHistorianCharts(); 
         logEvent("System Initialized", "INFO");
     };
 
@@ -370,11 +363,9 @@
     }
 
     function updateDashboard(d) {
-        // --- SIMULATION OVERRIDE ---
         let v, c1, c2, t, vib, pf;
 
         if (isSimulationMode) {
-            // Use Simulation Values
             v = parseFloat(simValues.v);
             c1 = parseFloat(simValues.c1);
             c2 = parseFloat(simValues.c2);
@@ -382,7 +373,6 @@
             vib = parseFloat(simValues.vib);
             pf = parseFloat(simValues.pf);
         } else {
-            // Use Real API Values
             v = d.voltage || 0;
             c1 = d.currentL1 || 0;
             c2 = d.currentL2 || 0;
@@ -405,7 +395,6 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
 
-        // Only update map from real data, not simulation
         if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
@@ -417,11 +406,9 @@
             }
         }
 
-        // --- SYNC ALARM ---
         if (d.alarmArmed !== undefined) {
             const toggle = document.getElementById('alarmToggle');
             const statusText = document.getElementById('armStatusText');
-            
             if (toggle.checked !== d.alarmArmed) {
                 toggle.checked = d.alarmArmed;
                 if (d.alarmArmed) {
@@ -437,18 +424,13 @@
         }
 
         const now = new Date();
-        // Always log, even simulation data, to the session history so charts update
         sessionLog.push({time: now, v, c1, c2, pf, t, vib});
-        
-        // Keep session log manageable (optional: keep larger for history)
-        // If 24h * 60m * 2 samples = ~3000 points. 
         if (sessionLog.length > 5000) sessionLog.shift();
         
-        updateHistoryTable();
+        filterReportDate(); 
         updateHistoryChartData();
     }
 
-    // --- LOGGING FUNCTION ---
     function logEvent(msg, type) {
         const tbody = document.getElementById("eventLogBody");
         const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : (type === 'MAINT' ? '#fbbf24' : '#3b82f6'));
@@ -460,18 +442,11 @@
         tbody.insertAdjacentHTML("afterbegin", row);
     }
 
-    // --- ALARM LOGIC ---
     async function toggleAlarm(checkbox) {
         const newState = checkbox.checked;
         const statusText = document.getElementById('armStatusText');
-
-        if (newState) {
-            statusText.innerText = "ARMING...";
-            statusText.style.color = "#ef4444";
-        } else {
-            statusText.innerText = "DISARMING...";
-            statusText.style.color = "#10b981";
-        }
+        if (newState) { statusText.innerText = "ARMING..."; statusText.style.color = "#ef4444"; } 
+        else { statusText.innerText = "DISARMING..."; statusText.style.color = "#10b981"; }
 
         try {
             const response = await fetch(`${API_URL}/control`, {
@@ -479,32 +454,19 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ device_id: DEVICE_ID, alarm_armed: newState })
             });
-
-            if (!response.ok) {
-                alert("Failed to update alarm status!");
-                checkbox.checked = !newState;
-            } else {
-                logEvent(newState ? "User Armed System" : "User Disarmed System", "ALERT");
-            }
-        } catch (error) {
-            console.error("Control Error:", error);
-            alert("Network Error");
-            checkbox.checked = !newState; 
-        }
+            if (!response.ok) { alert("Failed!"); checkbox.checked = !newState; } 
+            else { logEvent(newState ? "User Armed System" : "User Disarmed System", "ALERT"); }
+        } catch (error) { alert("Network Error"); checkbox.checked = !newState; }
     }
 
-    // --- SIMULATION LOGIC ---
     function toggleTestMode(checkbox) {
         isSimulationMode = checkbox.checked;
         const controls = document.getElementById('simulationControls');
-        
         if(isSimulationMode) {
-            controls.style.opacity = "1";
-            controls.style.pointerEvents = "auto";
+            controls.style.opacity = "1"; controls.style.pointerEvents = "auto";
             logEvent("Simulation Mode STARTED", "MAINT");
         } else {
-            controls.style.opacity = "0.3";
-            controls.style.pointerEvents = "none";
+            controls.style.opacity = "0.3"; controls.style.pointerEvents = "none";
             logEvent("Simulation Mode ENDED", "INFO");
         }
     }
@@ -513,13 +475,9 @@
         simValues[param] = value;
         const unit = (param === 'v') ? 'V' : (param === 'vib' ? 'g' : (param === 'pf' ? '' : (param === 't' ? '°C' : 'A')));
         document.getElementById(`sim_${param}_val`).innerText = value + unit;
-        
-        if(isSimulationMode) {
-            updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
-        }
+        if(isSimulationMode) updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
     }
 
-    // --- MAP & LOCATION ---
     function initMap() {
         if(map) return;
         map = L.map('map').setView([14.5995, 120.9842], 12);
@@ -541,134 +499,160 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ device_id: DEVICE_ID, lat, lng })
         });
-        alert("Location Updated!");
-        logEvent("Location Updated Manually", "SUCCESS");
+        alert("Location Updated!"); logEvent("Location Updated Manually", "SUCCESS");
     }
 
-    // --- CHARTS & UI ---
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
-    // --- ANALYTICAL HISTORIAN CHART ---
-    function initHistoryChart() {
-        const ctx = document.getElementById('historyChart').getContext('2d');
-        histChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },     // 0
-                    { label: 'Current L1', data: [], borderColor: '#10b981', tension: 0.4 },  // 1
-                    { label: 'Current L2', data: [], borderColor: '#06b6d4', tension: 0.4 },  // 2
-                    { label: 'PF', data: [], borderColor: '#d946ef', tension: 0.4 },          // 3
-                    { label: 'Temp', data: [], borderColor: '#ef4444', tension: 0.4 },        // 4
-                    { label: 'Vibration', data: [], borderColor: '#fbbf24', tension: 0.4 }    // 5
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { ticks: { color: '#888' }, grid: { color: '#333' } },
-                    y: { ticks: { color: '#888' }, grid: { color: '#333' } }
-                },
-                plugins: { legend: { labels: { color: '#fff' } } }
+    // --- SEPARATED HISTORIAN CHARTS ---
+    function initHistorianCharts() {
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false }, // Hover for all points
+            scales: { x: { ticks: { color: '#888' }, grid: { color: '#333' } }, y: { ticks: { color: '#888' }, grid: { color: '#333' } } },
+            plugins: { 
+                legend: { labels: { color: '#fff' } },
+                tooltip: { mode: 'index', intersect: false } 
             }
+        };
+
+        chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },
+                { label: 'L1', data: [], borderColor: '#10b981', tension: 0.4 },
+                { label: 'L2', data: [], borderColor: '#06b6d4', tension: 0.4 }
+            ]}, options: commonOptions
+        });
+
+        chartPF = new Chart(document.getElementById('histChartPF').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Power Factor', data: [], borderColor: '#d946ef', tension: 0.4 }]}, 
+            options: commonOptions
+        });
+
+        chartPhys = new Chart(document.getElementById('histChartPhys').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Temp', data: [], borderColor: '#ef4444', tension: 0.4 },
+                { label: 'Vibration', data: [], borderColor: '#fbbf24', tension: 0.4 }
+            ]}, options: commonOptions
         });
     }
 
-    function toggleChartDataset(index) {
-        if(histChartInstance) {
-            const meta = histChartInstance.getDatasetMeta(index);
-            meta.hidden = meta.hidden === null ? !histChartInstance.data.datasets[index].hidden : null;
-            histChartInstance.update();
+    // Toggle specific line across the 3 separate charts
+    function toggleChartDataset(idx) {
+        // Map 0-5 index to Chart and DatasetIndex
+        let targetChart, dsIndex;
+        if(idx <= 2) { targetChart = chartElec; dsIndex = idx; }
+        else if(idx === 3) { targetChart = chartPF; dsIndex = 0; }
+        else { targetChart = chartPhys; dsIndex = idx - 4; }
+
+        if(targetChart) {
+            const meta = targetChart.getDatasetMeta(dsIndex);
+            meta.hidden = meta.hidden === null ? !targetChart.data.datasets[dsIndex].hidden : null;
+            targetChart.update();
         }
     }
 
     function setChartRange(hours, btn) {
         chartTimeWindow = hours;
-        // Update Buttons UI
         document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         updateHistoryChartData();
     }
 
     function updateHistoryChartData() {
-        if (!histChartInstance) return;
+        if (!chartElec) return;
         
         let filteredData;
         const now = new Date();
 
         if (chartTimeWindow === 0) {
-            // Live Mode (Last 50 points)
             filteredData = sessionLog.slice(-50);
         } else {
-            // Time Window Filter
             const cutoff = new Date(now.getTime() - (chartTimeWindow * 60 * 60 * 1000));
             filteredData = sessionLog.filter(d => d.time >= cutoff);
             
-            // Downsampling for performance if too many points (e.g. > 1000)
             if(filteredData.length > 1000) {
                 const step = Math.ceil(filteredData.length / 1000);
                 filteredData = filteredData.filter((_, i) => i % step === 0);
             }
         }
 
-        histChartInstance.data.labels = filteredData.map(d => d.time.toLocaleTimeString());
-        histChartInstance.data.datasets[0].data = filteredData.map(d => d.v);
-        histChartInstance.data.datasets[1].data = filteredData.map(d => d.c1);
-        histChartInstance.data.datasets[2].data = filteredData.map(d => d.c2);
-        histChartInstance.data.datasets[3].data = filteredData.map(d => d.pf);
-        histChartInstance.data.datasets[4].data = filteredData.map(d => d.t);
-        histChartInstance.data.datasets[5].data = filteredData.map(d => d.vib);
-        histChartInstance.update('none'); 
+        const labels = filteredData.map(d => d.time.toLocaleTimeString());
+
+        chartElec.data.labels = labels;
+        chartElec.data.datasets[0].data = filteredData.map(d => d.v);
+        chartElec.data.datasets[1].data = filteredData.map(d => d.c1);
+        chartElec.data.datasets[2].data = filteredData.map(d => d.c2);
+        chartElec.update('none');
+
+        chartPF.data.labels = labels;
+        chartPF.data.datasets[0].data = filteredData.map(d => d.pf);
+        chartPF.update('none');
+
+        chartPhys.data.labels = labels;
+        chartPhys.data.datasets[0].data = filteredData.map(d => d.t);
+        chartPhys.data.datasets[1].data = filteredData.map(d => d.vib);
+        chartPhys.update('none');
     }
 
-    // --- EXPORT FUNCTIONS ---
+    function filterReportDate() {
+        const dateInput = document.getElementById('reportDate').value;
+        const tbody = document.getElementById("dailyTableBody");
+        tbody.innerHTML = "";
+
+        let displayData = sessionLog.slice().reverse(); 
+
+        if (dateInput) {
+            const selectedDate = new Date(dateInput).toDateString();
+            displayData = displayData.filter(log => log.time.toDateString() === selectedDate);
+        } else {
+            displayData = displayData.slice(0, 50); 
+        }
+
+        displayData.forEach(d => {
+            let row = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${d.v.toFixed(1)}</td><td>${d.c1.toFixed(1)}</td><td>${d.c2.toFixed(1)}</td><td>${d.t.toFixed(1)}</td><td>${d.vib.toFixed(2)}</td><td>${d.pf.toFixed(2)}</td></tr>`;
+            tbody.insertAdjacentHTML("beforeend", row);
+        });
+        
+        window.filteredExportData = displayData;
+    }
+
     function downloadPDF() {
+        const dataToExport = window.filteredExportData || sessionLog;
+        if(dataToExport.length === 0) return alert("No data to export");
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.text("TxMS PRO - Session History", 14, 15);
+        doc.text("TxMS PRO - Report Log", 14, 15);
         
-        const tableColumn = ["Time", "Voltage", "Cur L1", "Cur L2", "PF", "Temp", "Vib"];
-        const tableRows = [];
-
-        sessionLog.forEach(log => {
-            const logData = [
-                log.time.toLocaleTimeString(),
-                log.v.toFixed(1),
-                log.c1.toFixed(1),
-                log.c2.toFixed(1),
-                log.pf.toFixed(2),
-                log.t.toFixed(1),
-                log.vib.toFixed(2)
-            ];
-            tableRows.push(logData);
-        });
+        const tableColumn = ["Time", "Volt", "L1", "L2", "PF", "Temp", "Vib"];
+        const tableRows = dataToExport.map(log => [
+            log.time.toLocaleTimeString(), log.v.toFixed(1), log.c1.toFixed(1), log.c2.toFixed(1), log.pf.toFixed(2), log.t.toFixed(1), log.vib.toFixed(2)
+        ]);
 
         doc.autoTable(tableColumn, tableRows, { startY: 20 });
-        doc.save("TxMS_Session_Report.pdf");
+        doc.save("TxMS_Report.pdf");
     }
 
     function downloadExcel() {
-        if(sessionLog.length === 0) return alert("No data to export");
+        const dataToExport = window.filteredExportData || sessionLog;
+        if(dataToExport.length === 0) return alert("No data to export");
         
-        // Prepare data for Excel
-        const data = sessionLog.map(log => ({
-            Time: log.time.toLocaleTimeString(),
-            Voltage: log.v,
-            Current_L1: log.c1,
-            Current_L2: log.c2,
-            Power_Factor: log.pf,
-            Temperature: log.t,
-            Vibration: log.vib
+        const data = dataToExport.map(log => ({
+            Date: log.time.toLocaleDateString(), Time: log.time.toLocaleTimeString(),
+            Voltage: log.v, Current_L1: log.c1, Current_L2: log.c2, Power_Factor: log.pf, Temperature: log.t, Vibration: log.vib
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Session Data");
-        XLSX.writeFile(wb, "TxMS_Session_Data.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "TxMS Data");
+        XLSX.writeFile(wb, "TxMS_Data_Export.xlsx");
     }
 
     function showView(e){
@@ -677,16 +661,6 @@
         });
         const target = document.getElementById(e); if(target) target.style.display="block";
         if(e === 'dashboardView' && map) setTimeout(()=>map.invalidateSize(), 200);
-    }
-
-    function updateHistoryTable() {
-        const tbody = document.getElementById("dailyTableBody");
-        tbody.innerHTML = "";
-        const recent = sessionLog.slice(-20).reverse();
-        recent.forEach(d => {
-            let row = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${d.v.toFixed(1)}</td><td>${d.c1.toFixed(1)}</td><td>${d.c2.toFixed(1)}</td><td>${d.t.toFixed(1)}</td><td>${d.vib.toFixed(2)}</td></tr>`;
-            tbody.insertAdjacentHTML("beforeend", row);
-        });
     }
 </script>
 </body>
