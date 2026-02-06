@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: #151921; --accent-purple: #8b5cf6; --text-main: #f8fafc; --text-muted: #94a3b8; --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; }
+        :root { --bg-body: #05070a; --bg-sidebar: #0f121a; --bg-card: #151921; --accent-purple: #8b5cf6; --text-main: #f8fafc; --text-muted: #94a3b8; --success: #10b981; --cyan: #06b6d4; --warning: #fbbf24; --danger: #ef4444; --temp-color: #f97316; /* Orange for Temp */ }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; }
         
@@ -94,7 +94,7 @@
         .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .geo-btn:hover { opacity: 0.9; }
 
-        /* === MAP MARKER STYLES === */
+        /* === MAP MARKER STYLES (RESTORED) === */
         .marker-normal {
             width: 20px; height: 20px; background: var(--accent-purple);
             border-radius: 50%; border: 3px solid rgba(255,255,255,0.5);
@@ -127,9 +127,12 @@
         
         /* Summary Panel on Right */
         .summary-panel { position: sticky; top: 20px; }
-        .summary-item { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+        .summary-item { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; }
         .summary-label { color: #94a3b8; font-size: 0.9rem; }
         .summary-val { color: white; font-weight: bold; font-family: monospace; font-size: 1rem; }
+        
+        /* Highlighted Row for Abnormalities */
+        .abnormal-row { background-color: rgba(239, 68, 68, 0.2); border-left: 3px solid #ef4444; }
 
         /* Control Panel */
         .control-panel { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between; }
@@ -194,7 +197,7 @@
                 <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Real-time</div></div>
                 <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value"><span id="c1">--</span> / <span id="c2">--</span></div><div class="stat-label">Current (L1 / L2)</div><div class="stat-pill" style="background: #06b6d4;">Amperage</div></div>
                 <div class="stat-card" id="card_pf"><i class="fa-solid fa-wave-square stat-icon" style="color: #d946ef;"></i><div class="stat-value" id="pf">--</div><div class="stat-label">Power Factor</div><div class="stat-pill" style="background: #d946ef;">Efficiency</div></div>
-                <div class="stat-card" id="card_t"><i class="fa-solid fa-temperature-half stat-icon" style="color: #ef4444;"></i><div class="stat-value" id="t">--</div><div class="stat-label">Transformer Temp</div><div class="stat-pill" style="background: #ef4444;">Thermal</div></div>
+                <div class="stat-card" id="card_t"><i class="fa-solid fa-temperature-half stat-icon" style="color: var(--temp-color);"></i><div class="stat-value" id="t">--</div><div class="stat-label">Transformer Temp</div><div class="stat-pill" style="background: var(--temp-color);">Thermal</div></div>
                 <div class="stat-card" id="card_vib"><i class="fa-solid fa-bell stat-icon" style="color: #fbbf24;"></i><div class="stat-value" id="vib">--</div><div class="stat-label">Vibration Level</div><div class="stat-pill" style="background: #fbbf24;">Physical</div></div>
             </div>
 
@@ -294,27 +297,27 @@
                                 <span class="summary-val" id="sum_status" style="font-size: 0.85rem;">--</span>
                             </div>
 
-                            <div class="summary-item">
+                            <div class="summary-item" id="row_v">
                                 <span class="summary-label">Voltage</span>
                                 <span class="summary-val" style="color: #7c3aed;" id="sum_v">-- V</span>
                             </div>
-                            <div class="summary-item">
+                            <div class="summary-item" id="row_c1">
                                 <span class="summary-label">Current L1</span>
                                 <span class="summary-val" style="color: #10b981;" id="sum_c1">-- A</span>
                             </div>
-                            <div class="summary-item">
+                            <div class="summary-item" id="row_c2">
                                 <span class="summary-label">Current L2</span>
                                 <span class="summary-val" style="color: #06b6d4;" id="sum_c2">-- A</span>
                             </div>
-                            <div class="summary-item">
+                            <div class="summary-item" id="row_pf">
                                 <span class="summary-label">Power Factor</span>
                                 <span class="summary-val" style="color: #d946ef;" id="sum_pf">--</span>
                             </div>
-                            <div class="summary-item">
+                            <div class="summary-item" id="row_t">
                                 <span class="summary-label">Temperature</span>
-                                <span class="summary-val" style="color: #ef4444;" id="sum_t">-- °C</span>
+                                <span class="summary-val" style="color: var(--temp-color);" id="sum_t">-- °C</span>
                             </div>
-                            <div class="summary-item">
+                            <div class="summary-item" id="row_vib">
                                 <span class="summary-label">Vibration</span>
                                 <span class="summary-val" style="color: #fbbf24;" id="sum_vib">-- g</span>
                             </div>
@@ -466,7 +469,7 @@
 
     function updateDashboard(d) {
         let v, c1, c2, t, vib, pf;
-        let sourceTag = "LIVE"; // Default Source
+        let sourceTag = "LIVE"; 
 
         if (isSimulationMode) {
             v = parseFloat(simValues.v);
@@ -499,15 +502,48 @@
         cChart.data.datasets[1].data.push(c2); cChart.data.datasets[1].data.shift(); 
         cChart.update();
 
-        if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
+        // --- MAP MARKER LOGIC (FIXED) ---
+        // Check for ANY alarm condition
+        const currentDataPoint = { v, c1, c2, t, vib, pf };
+        const status = detectAbnormality(currentDataPoint);
+        const isAlarm = status !== "Normal Operation";
+
+        if (map && deviceMarker && !isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
-            if(map && deviceMarker) {
-                deviceMarker.setLatLng([lat, lng]);
-                map.setView([lat, lng], 14);
-                document.getElementById('inputLat').value = lat;
-                document.getElementById('inputLng').value = lng;
-            }
+            
+            // Move Marker
+            deviceMarker.setLatLng([lat, lng]);
+            
+            // Change Icon based on Status (Purple or Flashing Red)
+            const newIconClass = isAlarm ? 'marker-alarm' : 'marker-normal';
+            const iconHtml = `<div class='${newIconClass}'></div>`;
+            const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
+            deviceMarker.setIcon(newIcon);
+
+            // Update Popup Content
+            const popupContent = `
+                <div style="min-width: 200px;">
+                    <div style="background: ${isAlarm ? '#ef4444' : '#10b981'}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                        ${status}
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9rem; color: #ccc;">
+                        <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">${v.toFixed(1)} V</span>
+                        <span>Current L1:</span> <span style="color: #fff; font-weight: bold;">${c1.toFixed(1)} A</span>
+                        <span>Current L2:</span> <span style="color: #fff; font-weight: bold;">${c2.toFixed(1)} A</span>
+                        <span>PF:</span> <span style="color: #fff; font-weight: bold;">${pf.toFixed(2)}</span>
+                        <span>Temp:</span> <span style="color: #fff; font-weight: bold;">${t.toFixed(1)} °C</span>
+                        <span>Vib:</span> <span style="color: #fff; font-weight: bold;">${vib.toFixed(2)} g</span>
+                    </div>
+                </div>
+            `;
+            deviceMarker.bindPopup(popupContent);
+            if(isAlarm && !deviceMarker.isPopupOpen()) deviceMarker.openPopup();
+        }
+
+        if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
+             document.getElementById('inputLat').value = d.config.location.lat;
+             document.getElementById('inputLng').value = d.config.location.lng;
         }
 
         if (d.alarmArmed !== undefined) {
@@ -528,7 +564,6 @@
         }
 
         const now = new Date();
-        // LOG DATA WITH SOURCE TAG
         sessionLog.push({time: now, v, c1, c2, pf, t, vib, source: sourceTag});
         
         if (sessionLog.length > 5000) sessionLog.shift();
@@ -693,7 +728,7 @@
     }
 
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
-    const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#ef4444"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
+    const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#f97316"),vibChart=createMiniChart("chartVib","#fbbf24"),cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"L1",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4},{label:"L2",data:Array(20).fill(0),borderColor:"#06b6d4",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}});
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
     // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
@@ -711,7 +746,7 @@
                     if(document.getElementById('cb_c1').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Cur L1:</span> <span class="tooltip-value" style="color:#10b981">${data.c1.toFixed(1)} A</span></div>`;
                     if(document.getElementById('cb_c2').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Cur L2:</span> <span class="tooltip-value" style="color:#06b6d4">${data.c2.toFixed(1)} A</span></div>`;
                     if(document.getElementById('cb_pf').checked) html += `<div class="tooltip-row"><span class="tooltip-label">PF:</span> <span class="tooltip-value" style="color:#d946ef">${data.pf.toFixed(2)}</span></div>`;
-                    if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#ef4444">${data.t.toFixed(1)} °C</span></div>`;
+                    if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
                     if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
                     
                     // ADD DATA SOURCE TO TOOLTIP
@@ -766,7 +801,7 @@
         chartPhys = new Chart(document.getElementById('histChartPhys').getContext('2d'), {
             type: 'line',
             data: { labels: [], datasets: [
-                { label: 'Temp', data: [], borderColor: '#ef4444', tension: 0.4 },
+                { label: 'Temp', data: [], borderColor: '#f97316', tension: 0.4 },
                 { label: 'Vibration', data: [], borderColor: '#fbbf24', tension: 0.4 }
             ]}, options: commonOptions
         });
@@ -795,58 +830,27 @@
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
 
-        // Update Source
         const sourceEl = document.getElementById('sum_source');
         sourceEl.innerText = data.source || "UNKNOWN";
         sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : "#3b82f6";
 
-        // Update Status
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
         statusEl.innerText = statusText;
         statusEl.style.color = statusText === "Normal Operation" ? "#10b981" : "#ef4444";
 
-        // --- NEW: HIGHLIGHT ABNORMAL VALUES ---
-        
-        // Voltage Check
-        const vColor = (data.v > 264 || data.v < 216) ? '#ef4444' : '#7c3aed';
-        document.getElementById('sum_v').style.color = vColor;
+        // ROW HIGHLIGHTING LOGIC
+        // Helper to reset styles
+        ['row_v', 'row_c1', 'row_c2', 'row_pf', 'row_t', 'row_vib'].forEach(id => {
+            document.getElementById(id).classList.remove('abnormal-row');
+        });
 
-        // Current Check (L1)
-        const c1Color = (data.c1 > 312) ? '#ef4444' : '#10b981';
-        document.getElementById('sum_c1').style.color = c1Color;
-
-        // Current Check (L2)
-        const c2Color = (data.c2 > 312) ? '#ef4444' : '#06b6d4';
-        document.getElementById('sum_c2').style.color = c2Color;
-
-        // Power Factor Check
-        const pfColor = (data.pf < 0.85) ? '#ef4444' : '#d946ef';
-        document.getElementById('sum_pf').style.color = pfColor;
-
-        // Temp Check
-        const tColor = (data.t > 75) ? '#ef4444' : '#ef4444'; // Base is already red, keep red
-        // Wait, base is red (#ef4444). If abnormal, still red. If normal? Also red?
-        // Let's make normal look "calm red" or maybe standard text color if normal?
-        // Actually, just keep it consistent. If abnormal, force bright red.
-        // Or if normal, use the theme color.
-        
-        // Let's stick to the convention: Theme Color if Normal, Bright Red if Alarm.
-        // Since Temp theme color IS Red, it's subtle.
-        // Let's use white for normal values in the summary list if you prefer, or stick to theme colors.
-        // The user asked to "highlight in red".
-        // The theme color for Temp IS Red (#ef4444).
-        // Let's use WHITE as "Normal" for values in the summary list so Red pops out.
-        // WAIT: The CSS sets theme colors by default.
-        // I will override the color to RED if abnormal, and THEME COLOR if normal.
-        
-        // Re-applying Logic:
-        document.getElementById('sum_v').style.color = (data.v > 264 || data.v < 216) ? '#ef4444' : '#7c3aed';
-        document.getElementById('sum_c1').style.color = (data.c1 > 312) ? '#ef4444' : '#10b981';
-        document.getElementById('sum_c2').style.color = (data.c2 > 312) ? '#ef4444' : '#06b6d4';
-        document.getElementById('sum_pf').style.color = (data.pf < 0.85) ? '#ef4444' : '#d946ef';
-        document.getElementById('sum_t').style.color = (data.t > 75) ? '#ef4444' : '#ef4444'; // Temp is always red in theme
-        document.getElementById('sum_vib').style.color = (data.vib > 0.20) ? '#ef4444' : '#fbbf24';
+        if (data.v > 264 || data.v < 216) document.getElementById('row_v').classList.add('abnormal-row');
+        if (data.c1 > 312) document.getElementById('row_c1').classList.add('abnormal-row');
+        if (data.c2 > 312) document.getElementById('row_c2').classList.add('abnormal-row');
+        if (data.pf < 0.85) document.getElementById('row_pf').classList.add('abnormal-row');
+        if (data.t > 75) document.getElementById('row_t').classList.add('abnormal-row');
+        if (data.vib > 0.20) document.getElementById('row_vib').classList.add('abnormal-row');
     }
 
     function toggleChartDataset(idx) {
