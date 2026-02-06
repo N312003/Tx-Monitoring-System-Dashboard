@@ -360,10 +360,10 @@
 
             <div class="card">
                 <h3 style="color:white; margin-bottom: 20px;">Sensor Calibration</h3>
-                <div class="cal-group"><div class="cal-label"><span>Voltage Cal Factor</span><span id="val_v">0.328381</span></div><input type="range" min="0" max="1.0" step="0.000001" value="0.328381" class="cal-slider" oninput="document.getElementById('val_v').innerText=this.value; logEvent('Calibration Updated: Voltage', 'MAINT')"></div>
-                <div class="cal-group"><div class="cal-label"><span>Current L1 Cal Factor</span><span id="val_c1">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="document.getElementById('val_c1').innerText=this.value; logEvent('Calibration Updated: Current L1', 'MAINT')"></div>
-                <div class="cal-group"><div class="cal-label"><span>Current L2 Cal Factor</span><span id="val_c2">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="document.getElementById('val_c2').innerText=this.value; logEvent('Calibration Updated: Current L2', 'MAINT')"></div>
-                <button class="btn-action" style="width:100%" onclick="logEvent('Calibration Settings Saved', 'SUCCESS')">SAVE CALIBRATION</button>
+                <div class="cal-group"><div class="cal-label"><span>Voltage Cal Factor</span><span id="val_v">0.328381</span></div><input type="range" min="0" max="1.0" step="0.000001" value="0.328381" class="cal-slider" oninput="updateCalibration('v', this.value)"></div>
+                <div class="cal-group"><div class="cal-label"><span>Current L1 Cal Factor</span><span id="val_c1">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c1', this.value)"></div>
+                <div class="cal-group"><div class="cal-label"><span>Current L2 Cal Factor</span><span id="val_c2">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c2', this.value)"></div>
+                <button class="btn-action" style="width:100%" onclick="saveCalibration()">SAVE CALIBRATION</button>
             </div>
         </div>
     </div>
@@ -382,6 +382,7 @@
     let chartTimeWindow = 0; // 0=Live
     let isSimulationMode = false;
     let simValues = { v: 220, c1: 5, c2: 5, pf: 0.9, t: 30, vib: 0 };
+    let calValues = { v: 0.328381, c1: 0.066, c2: 0.066 }; // Calibration State
     let currentChartData = []; 
     let simUploadTimer = null; // Debounce Timer
 
@@ -529,7 +530,7 @@
         } catch (error) { alert("Network Error"); checkbox.checked = !newState; }
     }
 
-    // --- SIMULATION LOGIC (WITH UPLOAD) ---
+    // --- SIMULATION LOGIC ---
     function toggleTestMode(checkbox) {
         isSimulationMode = checkbox.checked;
         const controls = document.getElementById('simulationControls');
@@ -583,6 +584,34 @@
             });
             console.log("Sim Uploaded");
         } catch (e) { console.error("Sim Upload Fail", e); }
+    }
+
+    // --- CALIBRATION LOGIC (NEW) ---
+    function updateCalibration(param, value) {
+        calValues[param] = value;
+        document.getElementById(`val_${param}`).innerText = value;
+    }
+
+    async function saveCalibration() {
+        try {
+            // Note: Server MUST support /api/calibration endpoint
+            await fetch(`${API_URL}/calibration`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    device_id: DEVICE_ID,
+                    cal_v: parseFloat(calValues.v),
+                    cal_c1: parseFloat(calValues.c1),
+                    cal_c2: parseFloat(calValues.c2)
+                })
+            });
+            logEvent("Calibration Settings Saved", "SUCCESS");
+            alert("Calibration Saved!");
+        } catch (e) {
+            console.error("Cal Save Fail", e);
+            logEvent("Calibration Save Failed", "ALERT");
+            alert("Failed to save calibration. Check server connection.");
+        }
     }
 
     function initMap() {
@@ -688,12 +717,12 @@
 
     function detectAbnormality(d) {
         let issues = [];
-        if (d.v > 264) issues.push("High Voltage");
-        if (d.v < 216) issues.push("Low Voltage");
-        if (d.c1 > 312 || d.c2 > 312) issues.push("Overcurrent");
-        if (d.t > 75) issues.push("Overheating");
-        if (d.vib > 0.20) issues.push("High Vibration");
-        if (d.pf < 0.85) issues.push("Poor Power Factor");
+        if (d.v > 250) issues.push("High Voltage");
+        if (d.v < 190) issues.push("Low Voltage");
+        if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
+        if (d.t > 60) issues.push("Overheating");
+        if (d.vib > 2.0) issues.push("High Vibration");
+        if (d.pf < 0.8) issues.push("Poor Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
