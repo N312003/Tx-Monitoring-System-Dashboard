@@ -360,9 +360,9 @@
 
             <div class="card">
                 <h3 style="color:white; margin-bottom: 20px;">Sensor Calibration</h3>
-                <div class="cal-group"><div class="cal-label"><span>Voltage Offset</span><span id="val_v">0.0V</span></div><input type="range" min="-10" max="10" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_v').innerText=this.value+'V'; logEvent('Calibration Updated: Voltage', 'MAINT')"></div>
-                <div class="cal-group"><div class="cal-label"><span>Current L1 Offset</span><span id="val_c1">0.0A</span></div><input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c1').innerText=this.value+'A'; logEvent('Calibration Updated: Current L1', 'MAINT')"></div>
-                <div class="cal-group"><div class="cal-label"><span>Current L2 Offset</span><span id="val_c2">0.0A</span></div><input type="range" min="-5" max="5" step="0.1" value="0" class="cal-slider" oninput="document.getElementById('val_c2').innerText=this.value+'A'; logEvent('Calibration Updated: Current L2', 'MAINT')"></div>
+                <div class="cal-group"><div class="cal-label"><span>Voltage Cal Factor</span><span id="val_v">0.328381</span></div><input type="range" min="0" max="1.0" step="0.000001" value="0.328381" class="cal-slider" oninput="document.getElementById('val_v').innerText=this.value; logEvent('Calibration Updated: Voltage', 'MAINT')"></div>
+                <div class="cal-group"><div class="cal-label"><span>Current L1 Cal Factor</span><span id="val_c1">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="document.getElementById('val_c1').innerText=this.value; logEvent('Calibration Updated: Current L1', 'MAINT')"></div>
+                <div class="cal-group"><div class="cal-label"><span>Current L2 Cal Factor</span><span id="val_c2">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="document.getElementById('val_c2').innerText=this.value; logEvent('Calibration Updated: Current L2', 'MAINT')"></div>
                 <button class="btn-action" style="width:100%" onclick="logEvent('Calibration Settings Saved', 'SUCCESS')">SAVE CALIBRATION</button>
             </div>
         </div>
@@ -372,6 +372,7 @@
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
 
+    // --- STATE VARIABLES ---
     let sessionLog = []; 
     let map = null;
     let deviceMarker = null;
@@ -576,6 +577,7 @@
 
     // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
     function initHistorianCharts() {
+        // --- CUSTOM TOOLTIP HOVER ---
         const tooltipHandler = (context) => {
             const { chart, tooltip } = context;
             const tooltipEl = document.getElementById('unified-tooltip');
@@ -600,6 +602,7 @@
             }
         };
 
+        // --- CLICK HANDLER TO UPDATE SIDEBAR ---
         const clickHandler = (e, elements) => {
             if (elements.length > 0) {
                 const index = elements[0].index;
@@ -618,7 +621,7 @@
                 legend: { labels: { color: '#fff' } },
                 tooltip: { enabled: false, external: tooltipHandler }
             },
-            onClick: clickHandler
+            onClick: clickHandler // Attach Click Logic
         };
 
         chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
@@ -647,12 +650,14 @@
 
     function detectAbnormality(d) {
         let issues = [];
+        // THRESHOLDS
         if (d.v > 250) issues.push("High Voltage");
         if (d.v < 190) issues.push("Low Voltage");
         if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
         if (d.t > 60) issues.push("Overheating");
         if (d.vib > 2.0) issues.push("High Vibration");
         if (d.pf < 0.8) issues.push("Poor Power Factor");
+
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -660,6 +665,7 @@
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
         
+        // Update Values
         document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
         document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
         document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
@@ -668,10 +674,16 @@
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
 
+        // Update Status with Abnormality Check
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
+        
         statusEl.innerText = statusText;
-        statusEl.style.color = statusText === "Normal Operation" ? "#10b981" : "#ef4444";
+        if(statusText === "Normal Operation") {
+            statusEl.style.color = "#10b981"; // Green
+        } else {
+            statusEl.style.color = "#ef4444"; // Red
+        }
     }
 
     function toggleChartDataset(idx) {
