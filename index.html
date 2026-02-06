@@ -350,8 +350,8 @@
                 
                 <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
                     <div class="cal-group"><div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div><input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)"></div>
-                    <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
-                    <div class="cal-group"><div class="cal-label"><span>Sim Current L2</span><span id="sim_c2_val">5A</span></div><input type="range" min="0" max="100" value="5" class="cal-slider" oninput="updateSimulation('c2', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="1000" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Current L2</span><span id="sim_c2_val">5A</span></div><input type="range" min="0" max="1000" value="5" class="cal-slider" oninput="updateSimulation('c2', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div><input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div><input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)"></div>
@@ -688,12 +688,12 @@
 
     function detectAbnormality(d) {
         let issues = [];
-        if (d.v > 250) issues.push("High Voltage");
-        if (d.v < 190) issues.push("Low Voltage");
-        if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
-        if (d.t > 60) issues.push("Overheating");
-        if (d.vib > 2.0) issues.push("High Vibration");
-        if (d.pf < 0.8) issues.push("Poor Power Factor");
+        if (d.v > 264) issues.push("High Voltage");
+        if (d.v < 216) issues.push("Low Voltage");
+        if (d.c1 > 312 || d.c2 > 312) issues.push("Overcurrent");
+        if (d.t > 75) issues.push("Overheating");
+        if (d.vib > 0.20) issues.push("High Vibration");
+        if (d.pf < 0.85) issues.push("Poor Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
