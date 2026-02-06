@@ -322,7 +322,7 @@
 
             <div class="card" style="min-height: 500px; overflow-y:auto; max-height:70vh;">
                 <table class="data-table">
-                    <thead><tr><th>TIME</th><th>VOLT</th><th>L1</th><th>L2</th><th>TEMP</th><th>VIB</th><th>PF</th></tr></thead>
+                    <thead><tr><th>TIME</th><th>VOLT</th><th>L1</th><th>L2</th><th>TEMP</th><th>VIB</th><th>PF</th><th>STATUS</th></tr></thead>
                     <tbody id="dailyTableBody"></tbody>
                 </table>
             </div>
@@ -576,7 +576,6 @@
 
     // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
     function initHistorianCharts() {
-        // --- CUSTOM TOOLTIP HOVER ---
         const tooltipHandler = (context) => {
             const { chart, tooltip } = context;
             const tooltipEl = document.getElementById('unified-tooltip');
@@ -601,7 +600,6 @@
             }
         };
 
-        // --- CLICK HANDLER TO UPDATE SIDEBAR ---
         const clickHandler = (e, elements) => {
             if (elements.length > 0) {
                 const index = elements[0].index;
@@ -620,7 +618,7 @@
                 legend: { labels: { color: '#fff' } },
                 tooltip: { enabled: false, external: tooltipHandler }
             },
-            onClick: clickHandler // Attach Click Logic
+            onClick: clickHandler
         };
 
         chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
@@ -649,14 +647,12 @@
 
     function detectAbnormality(d) {
         let issues = [];
-        // THRESHOLDS
         if (d.v > 250) issues.push("High Voltage");
         if (d.v < 190) issues.push("Low Voltage");
         if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
         if (d.t > 60) issues.push("Overheating");
         if (d.vib > 2.0) issues.push("High Vibration");
         if (d.pf < 0.8) issues.push("Poor Power Factor");
-
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -664,7 +660,6 @@
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
         
-        // Update Values
         document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
         document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
         document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
@@ -673,16 +668,10 @@
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
 
-        // Update Status with Abnormality Check
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
-        
         statusEl.innerText = statusText;
-        if(statusText === "Normal Operation") {
-            statusEl.style.color = "#10b981"; // Green
-        } else {
-            statusEl.style.color = "#ef4444"; // Red
-        }
+        statusEl.style.color = statusText === "Normal Operation" ? "#10b981" : "#ef4444";
     }
 
     function toggleChartDataset(idx) {
@@ -758,7 +747,9 @@
         }
 
         displayData.forEach(d => {
-            let row = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${d.v.toFixed(1)}</td><td>${d.c1.toFixed(1)}</td><td>${d.c2.toFixed(1)}</td><td>${d.t.toFixed(1)}</td><td>${d.vib.toFixed(2)}</td><td>${d.pf.toFixed(2)}</td></tr>`;
+            const status = detectAbnormality(d);
+            const color = status === "Normal Operation" ? "#10b981" : "#ef4444";
+            let row = `<tr><td>${d.time.toLocaleTimeString()}</td><td>${d.v.toFixed(1)}</td><td>${d.c1.toFixed(1)}</td><td>${d.c2.toFixed(1)}</td><td>${d.t.toFixed(1)}</td><td>${d.vib.toFixed(2)}</td><td>${d.pf.toFixed(2)}</td><td><span style="color:${color}; font-weight:bold;">${status}</span></td></tr>`;
             tbody.insertAdjacentHTML("beforeend", row);
         });
         
@@ -773,9 +764,9 @@
         const doc = new jsPDF();
         doc.text("TxMS PRO - Report Log", 14, 15);
         
-        const tableColumn = ["Time", "Volt", "L1", "L2", "PF", "Temp", "Vib"];
+        const tableColumn = ["Time", "Volt", "L1", "L2", "PF", "Temp", "Vib", "Status"];
         const tableRows = dataToExport.map(log => [
-            log.time.toLocaleTimeString(), log.v.toFixed(1), log.c1.toFixed(1), log.c2.toFixed(1), log.pf.toFixed(2), log.t.toFixed(1), log.vib.toFixed(2)
+            log.time.toLocaleTimeString(), log.v.toFixed(1), log.c1.toFixed(1), log.c2.toFixed(1), log.pf.toFixed(2), log.t.toFixed(1), log.vib.toFixed(2), detectAbnormality(log)
         ]);
 
         doc.autoTable(tableColumn, tableRows, { startY: 20 });
@@ -788,7 +779,7 @@
         
         const data = dataToExport.map(log => ({
             Date: log.time.toLocaleDateString(), Time: log.time.toLocaleTimeString(),
-            Voltage: log.v, Current_L1: log.c1, Current_L2: log.c2, Power_Factor: log.pf, Temperature: log.t, Vibration: log.vib
+            Voltage: log.v, Current_L1: log.c1, Current_L2: log.c2, Power_Factor: log.pf, Temperature: log.t, Vibration: log.vib, Status: detectAbnormality(log)
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
