@@ -383,6 +383,7 @@
     let isSimulationMode = false;
     let simValues = { v: 220, c1: 5, c2: 5, pf: 0.9, t: 30, vib: 0 };
     let currentChartData = []; 
+    let simUploadTimer = null; // Debounce Timer
 
     window.onload = function() {
         initMap();
@@ -528,9 +529,18 @@
         } catch (error) { alert("Network Error"); checkbox.checked = !newState; }
     }
 
+    // --- SIMULATION LOGIC (WITH UPLOAD) ---
     function toggleTestMode(checkbox) {
         isSimulationMode = checkbox.checked;
         const controls = document.getElementById('simulationControls');
+        
+        // Notify Server of Mode Change
+        fetch(`${API_URL}/simulation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: DEVICE_ID, active: isSimulationMode, ...simValues })
+        });
+
         if(isSimulationMode) {
             controls.style.opacity = "1"; controls.style.pointerEvents = "auto";
             logEvent("Simulation Mode STARTED", "MAINT");
@@ -544,7 +554,35 @@
         simValues[param] = value;
         const unit = (param === 'v') ? 'V' : (param === 'vib' ? 'g' : (param === 'pf' ? '' : (param === 't' ? '°C' : 'A')));
         document.getElementById(`sim_${param}_val`).innerText = value + unit;
-        if(isSimulationMode) updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
+        
+        if(isSimulationMode) {
+            updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
+        }
+
+        // Debounced Upload to Server
+        clearTimeout(simUploadTimer);
+        simUploadTimer = setTimeout(sendSimulationData, 500); 
+    }
+
+    async function sendSimulationData() {
+        if(!isSimulationMode) return;
+        try {
+            await fetch(`${API_URL}/simulation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    device_id: DEVICE_ID,
+                    active: true,
+                    v: parseFloat(simValues.v),
+                    c1: parseFloat(simValues.c1),
+                    c2: parseFloat(simValues.c2),
+                    pf: parseFloat(simValues.pf),
+                    t: parseFloat(simValues.t),
+                    vib: parseFloat(simValues.vib)
+                })
+            });
+            console.log("Sim Uploaded");
+        } catch (e) { console.error("Sim Upload Fail", e); }
     }
 
     function initMap() {
@@ -621,7 +659,7 @@
                 legend: { labels: { color: '#fff' } },
                 tooltip: { enabled: false, external: tooltipHandler }
             },
-            onClick: clickHandler // Attach Click Logic
+            onClick: clickHandler
         };
 
         chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
@@ -650,14 +688,12 @@
 
     function detectAbnormality(d) {
         let issues = [];
-        // THRESHOLDS
         if (d.v > 250) issues.push("High Voltage");
         if (d.v < 190) issues.push("Low Voltage");
         if (d.c1 > 80 || d.c2 > 80) issues.push("Overcurrent");
         if (d.t > 60) issues.push("Overheating");
         if (d.vib > 2.0) issues.push("High Vibration");
         if (d.pf < 0.8) issues.push("Poor Power Factor");
-
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -665,7 +701,6 @@
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
         
-        // Update Values
         document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
         document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
         document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
@@ -674,16 +709,10 @@
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
 
-        // Update Status with Abnormality Check
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
-        
         statusEl.innerText = statusText;
-        if(statusText === "Normal Operation") {
-            statusEl.style.color = "#10b981"; // Green
-        } else {
-            statusEl.style.color = "#ef4444"; // Red
-        }
+        statusEl.style.color = statusText === "Normal Operation" ? "#10b981" : "#ef4444";
     }
 
     function toggleChartDataset(idx) {
