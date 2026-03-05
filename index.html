@@ -66,8 +66,9 @@
         .dashboard-split { display: grid; grid-template-columns: 2fr 1.5fr; gap: 25px; margin-bottom: 25px; align-items: stretch; }
         @media (max-width: 1200px) { .dashboard-split { grid-template-columns: 1fr; } }
         .big-chart-card { display: flex; flex-direction: column; height: 100%; }
-        .small-charts-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 20px; height: 100%; }
-        .small-chart-card { padding: 15px; display: flex; flex-direction: column; height: 100%; }
+        /* UPDATED: Increased rows to 3 for the new power parameter charts */
+        .small-charts-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 20px; height: 100%; }
+        .small-chart-card { padding: 15px; display: flex; flex-direction: column; height: 100%; min-height: 150px; }
         .chart-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted); }
         .chart-box { flex-grow: 1; position: relative; width: 100%; min-height: 0; }
         
@@ -201,6 +202,9 @@
 
                 <div class="small-charts-grid">
                     <div class="card small-chart-card"><div class="chart-header"><span>Voltage</span></div><div class="chart-box"><canvas id="chartVolt"></canvas></div></div>
+                    <div class="card small-chart-card"><div class="chart-header"><span>Active Power (kW)</span></div><div class="chart-box"><canvas id="chartKW"></canvas></div></div>
+                    <div class="card small-chart-card"><div class="chart-header"><span>Loading (%)</span></div><div class="chart-box"><canvas id="chartLoad"></canvas></div></div>
+                    
                     <div class="card small-chart-card"><div class="chart-header"><span>PF Trend</span></div><div class="chart-box"><canvas id="chartPF"></canvas></div></div>
                     <div class="card small-chart-card"><div class="chart-header"><span>Temp</span></div><div class="chart-box"><canvas id="chartTemp"></canvas></div></div>
                     <div class="card small-chart-card"><div class="chart-header"><span>Vibration</span></div><div class="chart-box"><canvas id="chartVib"></canvas></div></div>
@@ -234,11 +238,17 @@
                 </div>
 
                 <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="cb_v" checked onchange="toggleChartDataset(0)"> Voltage</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_c1" checked onchange="toggleChartDataset(1)"> Current L1</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_pf" checked onchange="toggleChartDataset(2)"> PF</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_t" checked onchange="toggleChartDataset(3)"> Temp</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_vib" checked onchange="toggleChartDataset(4)"> Vib</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_v" checked onchange="toggleChartDataset('elec', 0)"> Voltage</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_c1" checked onchange="toggleChartDataset('elec', 1)"> Current L1</label>
+                    
+                    <label class="checkbox-item"><input type="checkbox" id="cb_kw" checked onchange="toggleChartDataset('power', 0)"> kW</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_kva" checked onchange="toggleChartDataset('power', 1)"> kVA</label>
+                    
+                    <label class="checkbox-item"><input type="checkbox" id="cb_pf" checked onchange="toggleChartDataset('pf', 0)"> PF</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_load" checked onchange="toggleChartDataset('pf', 1)"> Load %</label>
+                    
+                    <label class="checkbox-item"><input type="checkbox" id="cb_t" checked onchange="toggleChartDataset('phys', 0)"> Temp</label>
+                    <label class="checkbox-item"><input type="checkbox" id="cb_vib" checked onchange="toggleChartDataset('phys', 1)"> Vib</label>
                 </div>
             </div>
 
@@ -249,7 +259,11 @@
                         <div class="chart-container-single"><canvas id="histChartElec"></canvas></div>
                     </div>
                     <div class="card" style="padding:15px;">
-                        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">EFFICIENCY (Power Factor)</h4>
+                        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">POWER (Active / Apparent)</h4>
+                        <div class="chart-container-single"><canvas id="histChartPower"></canvas></div>
+                    </div>
+                    <div class="card" style="padding:15px;">
+                        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">EFFICIENCY & LOADING (PF / Load %)</h4>
                         <div class="chart-container-single"><canvas id="histChartPF"></canvas></div>
                     </div>
                     <div class="card" style="padding:15px;">
@@ -392,12 +406,10 @@
         </div>
     </div>
 
-
-
 <script>
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
-    const TRANS_KVA_RATING = 75.0; // Local definition for simulations
+    const TRANS_KVA_RATING = 75.0; 
 
     // --- STATE VARIABLES ---
     let sessionLog = []; 
@@ -405,12 +417,13 @@
     let deviceMarker = null;
     let isMuted = false;
     let pollInterval = null;
-    let chartElec = null, chartPF = null, chartPhys = null;
-    let chartTimeWindow = 0; // 0=Live
+    
+    // Chart References
+    let chartElec = null, chartPower = null, chartPF = null, chartPhys = null;
+    let chartTimeWindow = 0; 
     let isSimulationMode = false;
     let isCalibrationMode = false;
     
-    // UPDATED SIM & CALIB STATE (No c2)
     let simValues = { v: 220, c1: 5, pf: 0.9, t: 30, vib: 0 };
     let calValues = { v: 0.328381, c1: 0.066 }; 
     
@@ -476,21 +489,19 @@
             vib = parseFloat(simValues.vib);
             pf = parseFloat(simValues.pf);
             
-            // Calculate power parameters locally in Simulation
             kva = (v * c1) / 1000.0;
             kw = kva * pf;
             load = (TRANS_KVA_RATING > 0) ? (kva / TRANS_KVA_RATING) * 100.0 : 0.0;
             
             sourceTag = "SIMULATION";
         } else {
-            // Updated mappings to support new backend payload keys
-            v = d.v || d.voltage || 0;
-            c1 = d.c1 || d.currentL1 || 0;
+            v = d.voltage || 0;
+            c1 = d.currentL1 || 0;
             pf = d.pf || 0;
             kw = d.kw || 0;
             kva = d.kva || 0;
             load = d.load || 0;
-            t = d.t || d.temp || 0;
+            t = d.temp || 0;
             vib = d.vib || 0;
         }
 
@@ -506,6 +517,8 @@
 
         updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
         updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
+        // Added updates for new Dashboard Mini Charts
+        updateSingleChart(kwChart, kw); updateSingleChart(loadChart, load);
         
         // Single Phase Line Chart
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift();
@@ -527,7 +540,6 @@
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
             deviceMarker.setIcon(newIcon);
 
-            // Pop-up updated without C2
             const popupContent = `
                 <div style="min-width: 200px;">
                     <div style="background: ${isAlarm ? '#ef4444' : '#10b981'}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
@@ -570,7 +582,6 @@
         }
 
         const now = new Date();
-        // Saving the extended data object for charts & exports
         sessionLog.push({time: now, v, c1, pf, kw, kva, load, t, vib, source: sourceTag});
         
         if (sessionLog.length > 5000) sessionLog.shift();
@@ -702,7 +713,6 @@
             logEvent("Calibration Settings Saved", "SUCCESS");
             alert("Calibration Saved & Locked!");
             
-            // Auto-Lock
             document.getElementById('calibToggle').checked = false;
             toggleCalibrationMode({checked: false});
         });
@@ -735,7 +745,9 @@
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#f97316"),vibChart=createMiniChart("chartVib","#fbbf24");
     
-    // UPDATED: Current chart now only shows single phase (L1)
+    // NEW: Active Power and Loading Mini Charts for the Dashboard
+    const kwChart=createMiniChart("chartKW","#eab308"), loadChart=createMiniChart("chartLoad","#ec4899");
+    
     const cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{
         type:"line",
         data:{labels:Array(20).fill(""),datasets:[{label:"Current",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4}]},
@@ -755,10 +767,12 @@
                 if (data) {
                     let html = `<div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:5px;">${data.time.toLocaleTimeString()}</div>`;
                     
-                    // UPDATED: Tooltip logic with C2 removed, Power added
+                    // UPDATED TOOLTIP LOGIC: Added new mapped IDs
                     if(document.getElementById('cb_v').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Voltage:</span> <span class="tooltip-value" style="color:#7c3aed">${data.v.toFixed(1)} V</span></div>`;
                     if(document.getElementById('cb_c1').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Current:</span> <span class="tooltip-value" style="color:#10b981">${data.c1.toFixed(1)} A</span></div>`;
-                    html += `<div class="tooltip-row"><span class="tooltip-label">Load:</span> <span class="tooltip-value" style="color:#ec4899">${data.load.toFixed(1)} %</span></div>`;
+                    if(document.getElementById('cb_kw').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Active Power:</span> <span class="tooltip-value" style="color:#eab308">${data.kw.toFixed(2)} kW</span></div>`;
+                    if(document.getElementById('cb_kva').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Apparent:</span> <span class="tooltip-value" style="color:#3b82f6">${data.kva.toFixed(2)} kVA</span></div>`;
+                    if(document.getElementById('cb_load').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Load:</span> <span class="tooltip-value" style="color:#ec4899">${data.load.toFixed(1)} %</span></div>`;
                     if(document.getElementById('cb_pf').checked) html += `<div class="tooltip-row"><span class="tooltip-label">PF:</span> <span class="tooltip-value" style="color:#d946ef">${data.pf.toFixed(2)}</span></div>`;
                     if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
                     if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
@@ -796,13 +810,25 @@
             type: 'line',
             data: { labels: [], datasets: [
                 { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },
-                { label: 'Current', data: [], borderColor: '#10b981', tension: 0.4 } // L2 removed
+                { label: 'Current', data: [], borderColor: '#10b981', tension: 0.4 }
+            ]}, options: commonOptions
+        });
+
+        // NEW: Power Chart Instantiation
+        chartPower = new Chart(document.getElementById('histChartPower').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Active Power (kW)', data: [], borderColor: '#eab308', tension: 0.4 },
+                { label: 'Apparent Power (kVA)', data: [], borderColor: '#3b82f6', tension: 0.4 }
             ]}, options: commonOptions
         });
 
         chartPF = new Chart(document.getElementById('histChartPF').getContext('2d'), {
             type: 'line',
-            data: { labels: [], datasets: [{ label: 'Power Factor', data: [], borderColor: '#d946ef', tension: 0.4 }]}, 
+            data: { labels: [], datasets: [
+                { label: 'Power Factor', data: [], borderColor: '#d946ef', tension: 0.4 },
+                { label: 'Loading %', data: [], borderColor: '#ec4899', tension: 0.4 } // Added Loading % here
+            ]}, 
             options: commonOptions
         });
 
@@ -819,8 +845,8 @@
         let issues = [];
         if (d.v > 264) issues.push("Overvoltage");
         if (d.v < 216) issues.push("Undervoltage");
-        if (d.c1 > 312) issues.push("Overcurrent"); // Updated for 1 Phase
-        if (d.load > 100) issues.push("Tx Overloaded"); // New metric added to alarm
+        if (d.c1 > 312) issues.push("Overcurrent");
+        if (d.load > 100) issues.push("Tx Overloaded");
         if (d.t > 75) issues.push("Overheating");
         if (d.vib > 0.20) issues.push("High Vibration");
         if (d.pf < 0.85) issues.push("Low Power Factor");
@@ -834,12 +860,9 @@
         document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
         document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
         document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
-        
-        // Updated with Power Details
         document.getElementById('sum_kw').innerText = data.kw.toFixed(2) + " kW";
         document.getElementById('sum_kva').innerText = data.kva.toFixed(2) + " kVA";
         document.getElementById('sum_load').innerText = data.load.toFixed(1) + " %";
-        
         document.getElementById('sum_pf').innerText = data.pf.toFixed(2);
         document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
         document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
@@ -853,7 +876,6 @@
         statusEl.innerText = statusText;
         statusEl.style.color = statusText === "Normal Operation" ? "#10b981" : "#ef4444";
 
-        // ROW HIGHLIGHTING LOGIC
         ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
             document.getElementById(id).classList.remove('abnormal-row');
         });
@@ -866,11 +888,13 @@
         if (data.vib > 0.20) document.getElementById('row_vib').classList.add('abnormal-row');
     }
 
-    function toggleChartDataset(idx) {
-        let targetChart, dsIndex;
-        if(idx <= 1) { targetChart = chartElec; dsIndex = idx; } // Adjusted index without L2
-        else if(idx === 2) { targetChart = chartPF; dsIndex = 0; }
-        else { targetChart = chartPhys; dsIndex = idx - 3; }
+    // UPDATED CHECKBOX TOGGLING LOGIC
+    function toggleChartDataset(chartType, dsIndex) {
+        let targetChart;
+        if(chartType === 'elec') targetChart = chartElec;
+        else if(chartType === 'power') targetChart = chartPower;
+        else if(chartType === 'pf') targetChart = chartPF;
+        else if(chartType === 'phys') targetChart = chartPhys;
 
         if(targetChart) {
             const meta = targetChart.getDatasetMeta(dsIndex);
@@ -910,11 +934,18 @@
 
         chartElec.data.labels = labels;
         chartElec.data.datasets[0].data = filteredData.map(d => d.v);
-        chartElec.data.datasets[1].data = filteredData.map(d => d.c1); // C2 removed
+        chartElec.data.datasets[1].data = filteredData.map(d => d.c1); 
         chartElec.update('none');
+
+        // NEW: Populating Historian Power Chart
+        chartPower.data.labels = labels;
+        chartPower.data.datasets[0].data = filteredData.map(d => d.kw);
+        chartPower.data.datasets[1].data = filteredData.map(d => d.kva);
+        chartPower.update('none');
 
         chartPF.data.labels = labels;
         chartPF.data.datasets[0].data = filteredData.map(d => d.pf);
+        chartPF.data.datasets[1].data = filteredData.map(d => d.load); // Combined Load % with PF
         chartPF.update('none');
 
         chartPhys.data.labels = labels;
@@ -940,7 +971,6 @@
         displayData.forEach(d => {
             const status = detectAbnormality(d);
             const color = status === "Normal Operation" ? "#10b981" : "#ef4444";
-            // Table row format matches updated headers
             let row = `<tr>
                 <td>${d.time.toLocaleTimeString()}</td>
                 <td>${d.v.toFixed(1)}</td>
@@ -964,7 +994,7 @@
         if(dataToExport.length === 0) return alert("No data to export");
 
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('landscape'); // Set to landscape to fit more columns
+        const doc = new jsPDF('landscape'); 
         doc.text("TxMS PRO - Report Log", 14, 15);
         
         const tableColumn = ["Time", "Volt", "Amp", "kW", "kVA", "Load %", "PF", "Temp", "Vib", "Status"];
