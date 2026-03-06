@@ -66,7 +66,6 @@
         .dashboard-split { display: grid; grid-template-columns: 2fr 1.5fr; gap: 25px; margin-bottom: 25px; align-items: stretch; }
         @media (max-width: 1200px) { .dashboard-split { grid-template-columns: 1fr; } }
         .big-chart-card { display: flex; flex-direction: column; height: 100%; }
-        /* UPDATED: Increased rows to 3 for the new power parameter charts */
         .small-charts-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 20px; height: 100%; }
         .small-chart-card { padding: 15px; display: flex; flex-direction: column; height: 100%; min-height: 150px; }
         .chart-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted); }
@@ -378,32 +377,25 @@
 
              <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div><h3 style="color: white; font-size: 1rem;">Simulation Mode</h3><span style="color: #aaa; font-size: 0.8rem;">Override Sensor Inputs</span></div>
+                    <div><h3 style="color: white; font-size: 1rem;">Simulation Mode</h3><span style="color: #aaa; font-size: 0.8rem;">Override All Variables</span></div>
                     <label class="switch"><input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)"><span class="slider"></span></label>
                 </div>
                 
                 <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
                     <div class="cal-group"><div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div><input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)"></div>
-                    <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="1000" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="400" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
+                    
+                    <div class="cal-group"><div class="cal-label"><span>Sim Active Power (kW)</span><span id="sim_kw_val">0.99kW</span></div><input type="range" min="0" max="100" step="0.1" value="0.99" class="cal-slider" oninput="updateSimulation('kw', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Apparent Power (kVA)</span><span id="sim_kva_val">1.1kVA</span></div><input type="range" min="0" max="100" step="0.1" value="1.1" class="cal-slider" oninput="updateSimulation('kva', this.value)"></div>
+                    <div class="cal-group"><div class="cal-label"><span>Sim Loading (%)</span><span id="sim_load_val">1.4%</span></div><input type="range" min="0" max="150" step="0.1" value="1.4" class="cal-slider" oninput="updateSimulation('load', this.value)"></div>
+                    
                     <div class="cal-group"><div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div><input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div><input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)"></div>
                 </div>
             </div>
-
-             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div><h3 style="color: white; margin:0; font-size: 1rem;">Sensor Calibration</h3><span style="color: #aaa; font-size: 0.8rem;">Fine Tune Readings</span></div>
-                    <label class="switch"><input type="checkbox" id="calibToggle" onchange="toggleCalibrationMode(this)"><span class="slider"></span></label>
-                </div>
-
-                <div id="calibrationControls" style="opacity: 0.5; pointer-events: none; transition: 0.3s;">
-                    <div class="cal-group"><div class="cal-label"><span>Voltage Cal Factor</span><span id="val_v">0.328381</span></div><input type="range" min="0" max="1.0" step="0.000001" value="0.328381" class="cal-slider" oninput="updateCalibration('v', this.value)"></div>
-                    <div class="cal-group"><div class="cal-label"><span>Current L1 Cal Factor</span><span id="val_c1">0.066</span></div><input type="range" min="0" max="0.5" step="0.001" value="0.066" class="cal-slider" oninput="updateCalibration('c1', this.value)"></div>
-                    <button class="btn-action" style="width:100%" onclick="saveCalibration()">SAVE & LOCK CALIBRATION</button>
-                </div>
+            
             </div>
-        </div>
     </div>
 
 <script>
@@ -422,14 +414,12 @@
     let chartElec = null, chartPower = null, chartPF = null, chartPhys = null;
     let chartTimeWindow = 0; 
     let isSimulationMode = false;
-    let isCalibrationMode = false;
     
-    let simValues = { v: 220, c1: 5, pf: 0.9, t: 30, vib: 0 };
-    let calValues = { v: 0.328381, c1: 0.066 }; 
+    // Added new power fields to simulation state
+    let simValues = { v: 220, c1: 5, kw: 0.99, kva: 1.1, load: 1.4, pf: 0.9, t: 30, vib: 0 };
     
     let currentChartData = []; 
     let simUploadTimer = null; 
-    let calUploadTimer = null;
 
     window.onload = function() {
         initMap();
@@ -483,16 +473,15 @@
         let sourceTag = "LIVE"; 
 
         if (isSimulationMode) {
+            // Direct override from all sliders
             v = parseFloat(simValues.v);
             c1 = parseFloat(simValues.c1);
+            kw = parseFloat(simValues.kw);
+            kva = parseFloat(simValues.kva);
+            load = parseFloat(simValues.load);
             t = parseFloat(simValues.t);
             vib = parseFloat(simValues.vib);
             pf = parseFloat(simValues.pf);
-            
-            kva = (v * c1) / 1000.0;
-            kw = kva * pf;
-            load = (TRANS_KVA_RATING > 0) ? (kva / TRANS_KVA_RATING) * 100.0 : 0.0;
-            
             sourceTag = "SIMULATION";
         } else {
             v = d.voltage || 0;
@@ -517,14 +506,11 @@
 
         updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
         updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
-        // Added updates for new Dashboard Mini Charts
         updateSingleChart(kwChart, kw); updateSingleChart(loadChart, load);
         
-        // Single Phase Line Chart
         cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift();
         cChart.update();
 
-        // Alarm checking logic
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
         const isAlarm = status !== "Normal Operation";
@@ -640,7 +626,17 @@
 
     function updateSimulation(param, value) {
         simValues[param] = value;
-        const unit = (param === 'v') ? 'V' : (param === 'vib' ? 'g' : (param === 'pf' ? '' : (param === 't' ? '°C' : 'A')));
+        
+        // Correct unit resolution for new variables
+        let unit = '';
+        if(param === 'v') unit = 'V';
+        else if(param === 'c1') unit = 'A';
+        else if(param === 'kw') unit = 'kW';
+        else if(param === 'kva') unit = 'kVA';
+        else if(param === 'load') unit = '%';
+        else if(param === 't') unit = '°C';
+        else if(param === 'vib') unit = 'g';
+        
         document.getElementById(`sim_${param}_val`).innerText = value + unit;
         
         if(isSimulationMode) {
@@ -662,6 +658,9 @@
                     active: true,
                     v: parseFloat(simValues.v),
                     c1: parseFloat(simValues.c1),
+                    kw: parseFloat(simValues.kw),
+                    kva: parseFloat(simValues.kva),
+                    load: parseFloat(simValues.load),
                     pf: parseFloat(simValues.pf),
                     t: parseFloat(simValues.t),
                     vib: parseFloat(simValues.vib)
@@ -669,53 +668,6 @@
             });
             console.log("Sim Uploaded");
         } catch (e) { console.error("Sim Upload Fail", e); }
-    }
-
-    // --- CALIBRATION LOGIC ---
-    function toggleCalibrationMode(checkbox) {
-        isCalibrationMode = checkbox.checked;
-        const controls = document.getElementById('calibrationControls');
-        if(isCalibrationMode) {
-            controls.style.opacity = "1";
-            controls.style.pointerEvents = "auto";
-            logEvent("Calibration Mode UNLOCKED", "MAINT");
-        } else {
-            controls.style.opacity = "0.5";
-            controls.style.pointerEvents = "none";
-            logEvent("Calibration Mode LOCKED", "INFO");
-        }
-    }
-
-    function updateCalibration(param, value) {
-        calValues[param] = value;
-        document.getElementById(`val_${param}`).innerText = value;
-        clearTimeout(calUploadTimer);
-        calUploadTimer = setTimeout(uploadCalibrationData, 500); 
-    }
-
-    async function uploadCalibrationData() {
-        try {
-            await fetch(`${API_URL}/calibration`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    device_id: DEVICE_ID,
-                    cal_v: parseFloat(calValues.v),
-                    cal_c1: parseFloat(calValues.c1)
-                })
-            });
-            console.log("Calibration Uploaded");
-        } catch (e) { console.error("Cal Upload Fail", e); }
-    }
-
-    function saveCalibration() {
-        uploadCalibrationData().then(() => {
-            logEvent("Calibration Settings Saved", "SUCCESS");
-            alert("Calibration Saved & Locked!");
-            
-            document.getElementById('calibToggle').checked = false;
-            toggleCalibrationMode({checked: false});
-        });
     }
 
     function initMap() {
@@ -744,8 +696,6 @@
 
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
     const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#f97316"),vibChart=createMiniChart("chartVib","#fbbf24");
-    
-    // NEW: Active Power and Loading Mini Charts for the Dashboard
     const kwChart=createMiniChart("chartKW","#eab308"), loadChart=createMiniChart("chartLoad","#ec4899");
     
     const cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{
@@ -767,7 +717,6 @@
                 if (data) {
                     let html = `<div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:5px;">${data.time.toLocaleTimeString()}</div>`;
                     
-                    // UPDATED TOOLTIP LOGIC: Added new mapped IDs
                     if(document.getElementById('cb_v').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Voltage:</span> <span class="tooltip-value" style="color:#7c3aed">${data.v.toFixed(1)} V</span></div>`;
                     if(document.getElementById('cb_c1').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Current:</span> <span class="tooltip-value" style="color:#10b981">${data.c1.toFixed(1)} A</span></div>`;
                     if(document.getElementById('cb_kw').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Active Power:</span> <span class="tooltip-value" style="color:#eab308">${data.kw.toFixed(2)} kW</span></div>`;
@@ -814,7 +763,6 @@
             ]}, options: commonOptions
         });
 
-        // NEW: Power Chart Instantiation
         chartPower = new Chart(document.getElementById('histChartPower').getContext('2d'), {
             type: 'line',
             data: { labels: [], datasets: [
@@ -827,7 +775,7 @@
             type: 'line',
             data: { labels: [], datasets: [
                 { label: 'Power Factor', data: [], borderColor: '#d946ef', tension: 0.4 },
-                { label: 'Loading %', data: [], borderColor: '#ec4899', tension: 0.4 } // Added Loading % here
+                { label: 'Loading %', data: [], borderColor: '#ec4899', tension: 0.4 }
             ]}, 
             options: commonOptions
         });
@@ -888,7 +836,6 @@
         if (data.vib > 0.20) document.getElementById('row_vib').classList.add('abnormal-row');
     }
 
-    // UPDATED CHECKBOX TOGGLING LOGIC
     function toggleChartDataset(chartType, dsIndex) {
         let targetChart;
         if(chartType === 'elec') targetChart = chartElec;
@@ -937,7 +884,6 @@
         chartElec.data.datasets[1].data = filteredData.map(d => d.c1); 
         chartElec.update('none');
 
-        // NEW: Populating Historian Power Chart
         chartPower.data.labels = labels;
         chartPower.data.datasets[0].data = filteredData.map(d => d.kw);
         chartPower.data.datasets[1].data = filteredData.map(d => d.kva);
@@ -945,7 +891,7 @@
 
         chartPF.data.labels = labels;
         chartPF.data.datasets[0].data = filteredData.map(d => d.pf);
-        chartPF.data.datasets[1].data = filteredData.map(d => d.load); // Combined Load % with PF
+        chartPF.data.datasets[1].data = filteredData.map(d => d.load);
         chartPF.update('none');
 
         chartPhys.data.labels = labels;
