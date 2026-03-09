@@ -99,6 +99,16 @@
         .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
+        /* NEW BLINKING ALERT CLASS FOR CARDS */
+        @keyframes pulse-card-red {
+            0% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); }
+            50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 20px 2px rgba(239, 68, 68, 0.6); background: rgba(239, 68, 68, 0.2); }
+            100% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); background: rgba(239, 68, 68, 0.1); }
+        }
+        .blink-red-card {
+            animation: pulse-card-red 1.5s infinite !important;
+        }
+
         /* Sliders */
         .cal-slider { width: 100%; margin: 10px 0; cursor: pointer; }
         .cal-group { margin-bottom: 15px; }
@@ -411,7 +421,7 @@
     let isMuted = false;
     let pollInterval = null;
     
-    // NEW: Variable to track the system state and prevent log spamming
+    // Variable to track the system state and prevent log spamming
     let lastAbnormalityString = "Normal Operation";
     
     // Chart References
@@ -477,6 +487,10 @@
         cChart.data.datasets[0].data.push(0); 
         cChart.data.datasets[0].data.shift();
         cChart.update();
+
+        // Clear any blinking red borders from the cards
+        const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
+        cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
         // Update map marker to grey
         if (deviceMarker) {
@@ -615,7 +629,20 @@
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
         
-        // --- NEW SMART EVENT LOGGING LOGIC ---
+        // --- NEW LOGIC: BLINK RED CARDS ---
+        // 1. Remove blinking class from all cards first
+        const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
+        cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
+
+        // 2. Apply blinking class conditionally based on thresholds
+        if (v > 264 || (v < 216 && v > 0)) document.getElementById('card_v').classList.add('blink-red-card');
+        if (c1 > 312) document.getElementById('card_c').classList.add('blink-red-card');
+        if (load > 100) document.getElementById('card_load').classList.add('blink-red-card');
+        if (pf < 0.85 && v > 10) document.getElementById('card_pf').classList.add('blink-red-card');
+        if (t > 75) document.getElementById('card_t').classList.add('blink-red-card');
+        if (vib > 0.20) document.getElementById('card_vib').classList.add('blink-red-card');
+
+        // --- SMART EVENT LOGGING LOGIC ---
         if (status !== lastAbnormalityString) {
             if (status === "Normal Operation") {
                 logEvent("System parameters returned to Normal Operation", "SUCCESS");
