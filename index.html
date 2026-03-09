@@ -415,7 +415,6 @@
     let chartTimeWindow = 0; 
     let isSimulationMode = false;
     
-    // Added new power fields to simulation state
     let simValues = { v: 220, c1: 5, kw: 0.99, kva: 1.1, load: 1.4, pf: 0.9, t: 30, vib: 0 };
     
     let currentChartData = []; 
@@ -451,6 +450,25 @@
         await fetchData();
         // Wait 3 seconds AFTER the previous request finishes before querying again
         pollInterval = setTimeout(pollLoop, 3000); 
+    }
+
+    // NEW FUNCTION: Force UI to zero when connection drops
+    function zeroOutDashboard() {
+        document.getElementById('v').innerText = "0.0 V";
+        document.getElementById('c1').innerText = "0.0 A";
+        document.getElementById('kw').innerText = "0.00 kW";
+        document.getElementById('kva').innerText = "0.00 kVA";
+        document.getElementById('load').innerText = "0.0 %";
+        document.getElementById('pf').innerText = "0.00";
+        
+        updateSingleChart(vChart, 0); 
+        updateSingleChart(pfChart, 0); 
+        updateSingleChart(kwChart, 0); 
+        updateSingleChart(loadChart, 0);
+        
+        cChart.data.datasets[0].data.push(0); 
+        cChart.data.datasets[0].data.shift();
+        cChart.update();
     }
 
     // Robust fetch with Stale Data Check
@@ -502,6 +520,9 @@
                     logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "ALERT");
                     statusBadge.innerText = "OFFLINE";
                     statusBadge.className = "status-badge status-offline";
+                    
+                    // Trigger the visual reset
+                    zeroOutDashboard(); 
                 }
             }
         }
