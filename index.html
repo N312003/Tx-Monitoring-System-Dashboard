@@ -96,8 +96,11 @@
 
         .marker-normal { width: 20px; height: 20px; background: var(--accent-purple); border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px var(--accent-purple); }
         .marker-alarm { width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); animation: pulse-red 1.5s infinite; }
-        /* CHANGED: Offline Marker is now Warning Yellow */
-        .marker-offline { width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
+        
+        /* NEW: Separated Grey Offline and Yellow No Power */
+        .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
+        .marker-nopower { width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
+        
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         /* BLINKING ALERT CLASS FOR CARDS */
@@ -493,7 +496,7 @@
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
-        // Update map marker to yellow
+        // Update map marker to grey
         if (deviceMarker) {
             const iconHtml = `<div class='marker-offline'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
@@ -501,7 +504,7 @@
             
             const popupContent = `
                 <div style="min-width: 150px; text-align: center;">
-                    <div style="background: #fbbf24; color: #111; padding: 8px; border-radius: 5px; font-weight: bold;">
+                    <div style="background: #64748b; color: white; padding: 8px; border-radius: 5px; font-weight: bold;">
                         SYSTEM OFFLINE
                     </div>
                 </div>
@@ -510,7 +513,7 @@
         }
         
         // Sync State Tracker
-        lastAbnormalityString = "No Power";
+        lastAbnormalityString = "System Offline";
 
         // Push offline state to the historian log to keep charts moving
         const now = new Date();
@@ -672,7 +675,7 @@
 
         if (status === "No Power") {
             statusBg = "#fbbf24"; // Yellow for No Power
-            popupTextColor = "#111"; // Dark text for contrast against yellow
+            popupTextColor = "#111"; // Dark text for readability
         } else if (status !== "Normal Operation") {
             statusBg = "#ef4444"; // Red for any Alarm
         }
@@ -683,7 +686,7 @@
             
             deviceMarker.setLatLng([lat, lng]);
             
-            const newIconClass = status === "No Power" ? 'marker-offline' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
+            const newIconClass = status === "No Power" ? 'marker-nopower' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
             const iconHtml = `<div class='${newIconClass}'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
             deviceMarker.setIcon(newIcon);
@@ -887,7 +890,10 @@
                     if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
                     if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
                     
-                    const sourceColor = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#fbbf24" : "#3b82f6");
+                    let sourceColor = "#3b82f6"; // LIVE
+                    if (data.source === "SIMULATION") sourceColor = "#fbbf24";
+                    else if (data.source === "OFFLINE") sourceColor = "#64748b";
+                    
                     html += `<div class="tooltip-row" style="margin-top:5px; border-top:1px solid #444; padding-top:3px;"><span class="tooltip-label">Source:</span> <span class="tooltip-value" style="color:${sourceColor}">${data.source || "LIVE"}</span></div>`;
 
                     tooltipEl.innerHTML = html;
@@ -966,16 +972,21 @@
 
         const sourceEl = document.getElementById('sum_source');
         sourceEl.innerText = data.source || "UNKNOWN";
-        sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#fbbf24" : "#3b82f6");
+        
+        let sourceColor = "#3b82f6";
+        if (data.source === "SIMULATION") sourceColor = "#fbbf24";
+        else if (data.source === "OFFLINE") sourceColor = "#64748b";
+        sourceEl.style.color = sourceColor;
 
         const statusEl = document.getElementById('sum_status');
-        const statusText = detectAbnormality(data);
+        const statusText = data.source === "OFFLINE" ? "System Offline" : detectAbnormality(data);
         statusEl.innerText = statusText;
         
         // Update Summary Status Color
         if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
-        else if (statusText === "No Power") statusEl.style.color = "#fbbf24";
-        else statusEl.style.color = "#ef4444";
+        else if (statusText === "System Offline") statusEl.style.color = "#64748b"; // Grey
+        else if (statusText === "No Power") statusEl.style.color = "#fbbf24"; // Yellow
+        else statusEl.style.color = "#ef4444"; // Red
 
         ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
             document.getElementById(id).classList.remove('abnormal-row');
@@ -1068,10 +1079,12 @@
         }
 
         displayData.forEach(d => {
-            const status = detectAbnormality(d);
+            const status = d.source === "OFFLINE" ? "System Offline" : detectAbnormality(d);
+            
             // Update Table Row Status Color
             let color = "#10b981"; // Green
-            if (status === "No Power") color = "#fbbf24"; // Yellow
+            if (status === "System Offline") color = "#64748b"; // Grey
+            else if (status === "No Power") color = "#fbbf24"; // Yellow
             else if (status !== "Normal Operation") color = "#ef4444"; // Red
 
             let row = `<tr>
@@ -1105,7 +1118,8 @@
             log.time.toLocaleTimeString(), 
             log.v.toFixed(1), log.c1.toFixed(1), 
             log.kw.toFixed(2), log.kva.toFixed(2), log.load.toFixed(1),
-            log.pf.toFixed(2), log.t.toFixed(1), log.vib.toFixed(2), detectAbnormality(log)
+            log.pf.toFixed(2), log.t.toFixed(1), log.vib.toFixed(2), 
+            log.source === "OFFLINE" ? "System Offline" : detectAbnormality(log)
         ]);
 
         doc.autoTable(tableColumn, tableRows, { startY: 20 });
@@ -1127,7 +1141,7 @@
             Power_Factor: log.pf, 
             Temperature: log.t, 
             Vibration: log.vib, 
-            Status: detectAbnormality(log)
+            Status: log.source === "OFFLINE" ? "System Offline" : detectAbnormality(log)
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
