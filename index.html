@@ -96,7 +96,6 @@
 
         .marker-normal { width: 20px; height: 20px; background: var(--accent-purple); border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px var(--accent-purple); }
         .marker-alarm { width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); animation: pulse-red 1.5s infinite; }
-        /* NEW GREY MARKER FOR OFFLINE STATUS */
         .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
@@ -553,6 +552,21 @@
         }
     }
 
+    // NEW LOGIC: Checks if voltage and current are exactly 0, and returns "No Power"
+    function detectAbnormality(d) {
+        if (d.v === 0 && d.c1 === 0) return "No Power"; // The newly requested check
+        
+        let issues = [];
+        if (d.v > 264) issues.push("Overvoltage");
+        if (d.v < 216 && d.v > 0) issues.push("Undervoltage"); 
+        if (d.c1 > 312) issues.push("Overcurrent");
+        if (d.load > 100) issues.push("Tx Overloaded");
+        if (d.t > 75) issues.push("Overheating");
+        if (d.vib > 0.20) issues.push("High Vibration");
+        if (d.pf < 0.85 && d.v > 10) issues.push("Low Power Factor");
+        return issues.length > 0 ? issues.join(", ") : "Normal Operation";
+    }
+
     function updateDashboard(d) {
         let v, c1, kw, kva, load, t, vib, pf;
         let sourceTag = "LIVE"; 
@@ -597,23 +611,27 @@
 
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
-        const isAlarm = status !== "Normal Operation";
+        
+        // Define color based on the new status logic
+        let statusBg = "#10b981"; // Green for Normal
+        if (status === "No Power") statusBg = "#64748b"; // Grey for No Power
+        else if (status !== "Normal Operation") statusBg = "#ef4444"; // Red for any Alarm
 
-        // FIX: Removed the '!isSimulationMode' block here so the map marker fully reacts to your simulation sliders!
         if (map && deviceMarker && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
             
             deviceMarker.setLatLng([lat, lng]);
             
-            const newIconClass = isAlarm ? 'marker-alarm' : 'marker-normal';
+            // Map Marker logic updated to include the grey "No Power" state
+            const newIconClass = status === "No Power" ? 'marker-offline' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
             const iconHtml = `<div class='${newIconClass}'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
             deviceMarker.setIcon(newIcon);
 
             const popupContent = `
                 <div style="min-width: 200px;">
-                    <div style="background: ${isAlarm ? '#ef4444' : '#10b981'}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                    <div style="background: ${statusBg}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
                         ${status}
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9rem; color: #ccc;">
@@ -627,7 +645,7 @@
                 </div>
             `;
             deviceMarker.bindPopup(popupContent);
-            if(isAlarm && !deviceMarker.isPopupOpen()) deviceMarker.openPopup();
+            if(status !== "Normal Operation" && !deviceMarker.isPopupOpen()) deviceMarker.openPopup();
         }
 
         if(!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
@@ -871,19 +889,6 @@
         });
     }
 
-    function detectAbnormality(d) {
-        let issues = [];
-        if (d.v > 264) issues.push("Overvoltage");
-        if (d.v < 216 && d.v > 0) issues.push("Undervoltage"); // Prevents undervoltage alarm when truly offline
-        if (d.c1 > 312) issues.push("Overcurrent");
-        if (d.load > 100) issues.push("Tx Overloaded");
-        if (d.t > 75) issues.push("Overheating");
-        if (d.vib > 0.20) issues.push("High Vibration");
-        // FIX: Ensured Low Power Factor triggers as long as voltage is present (d.v > 10)
-        if (d.pf < 0.85 && d.v > 10) issues.push("Low Power Factor");
-        return issues.length > 0 ? issues.join(", ") : "Normal Operation";
-    }
-
     function updateSummaryPanel(data) {
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
@@ -905,7 +910,11 @@
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
         statusEl.innerText = statusText;
-        statusEl.style.color = statusText === "Normal Operation" ? "#10b981" : "#ef4444";
+        
+        // Update Summary Status Color
+        if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
+        else if (statusText === "No Power") statusEl.style.color = "#64748b";
+        else statusEl.style.color = "#ef4444";
 
         ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
             document.getElementById(id).classList.remove('abnormal-row');
@@ -999,7 +1008,11 @@
 
         displayData.forEach(d => {
             const status = detectAbnormality(d);
-            const color = status === "Normal Operation" ? "#10b981" : "#ef4444";
+            // Update Table Row Status Color
+            let color = "#10b981"; // Green
+            if (status === "No Power") color = "#64748b"; // Grey
+            else if (status !== "Normal Operation") color = "#ef4444"; // Red
+
             let row = `<tr>
                 <td>${d.time.toLocaleTimeString()}</td>
                 <td>${d.v.toFixed(1)}</td>
