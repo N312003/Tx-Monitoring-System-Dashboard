@@ -411,6 +411,9 @@
     let isMuted = false;
     let pollInterval = null;
     
+    // NEW: Variable to track the system state and prevent log spamming
+    let lastAbnormalityString = "Normal Operation";
+    
     // Chart References
     let chartElec = null, chartPower = null, chartPF = null, chartPhys = null;
     let chartTimeWindow = 0; 
@@ -453,7 +456,7 @@
         pollInterval = setTimeout(pollLoop, 3000); 
     }
 
-    // NEW FUNCTION: Force UI to zero when connection drops & update Map
+    // Force UI to zero when connection drops & update Map
     function zeroOutDashboard() {
         document.getElementById('v').innerText = "0.0 V";
         document.getElementById('c1').innerText = "0.0 A";
@@ -490,6 +493,9 @@
             `;
             deviceMarker.bindPopup(popupContent);
         }
+        
+        // Sync State Tracker
+        lastAbnormalityString = "No Power";
 
         // Push offline state to the historian log to keep charts moving
         const now = new Date();
@@ -510,7 +516,6 @@
 
             if(data.message === "No data") throw new Error("No database records");
 
-            // --- BULLETPROOF HARDWARE OFFLINE DETECTION ---
             // Checks the exact seconds calculated by the PostgreSQL Database
             if (data.seconds_offline > 15 && !isSimulationMode) {
                 throw new Error("Hardware Offline");
@@ -546,15 +551,13 @@
                     statusBadge.className = "status-badge status-offline";
                 }
                 
-                // Trigger the visual reset continuously while offline
                 zeroOutDashboard(); 
             }
         }
     }
 
-    // NEW LOGIC: Checks if voltage and current are exactly 0, and returns "No Power"
     function detectAbnormality(d) {
-        if (d.v === 0 && d.c1 === 0) return "No Power"; // The newly requested check
+        if (d.v === 0 && d.c1 === 0) return "No Power";
         
         let issues = [];
         if (d.v > 264) issues.push("Overvoltage");
@@ -612,7 +615,30 @@
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
         
-        // Define color based on the new status logic
+        // --- NEW SMART EVENT LOGGING LOGIC ---
+        if (status !== lastAbnormalityString) {
+            if (status === "Normal Operation") {
+                logEvent("System parameters returned to Normal Operation", "SUCCESS");
+            } else if (status === "No Power") {
+                logEvent("AC Power Supply Lost (0.0V, 0.0A)", "ALERT");
+            } else {
+                // Generate detailed alarm strings showing exact values
+                let details = [];
+                if (v > 264) details.push(`Overvoltage at ${v.toFixed(1)}V`);
+                if (v < 216 && v > 0) details.push(`Undervoltage at ${v.toFixed(1)}V`);
+                if (c1 > 312) details.push(`Overcurrent at ${c1.toFixed(1)}A`);
+                if (load > 100) details.push(`Tx Overloaded at ${load.toFixed(1)}%`);
+                if (t > 75) details.push(`Temp Critical at ${t.toFixed(1)}°C`);
+                if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
+                if (pf < 0.85 && v > 10) details.push(`Low PF at ${pf.toFixed(2)}`);
+
+                logEvent(`FAULT DETECTED: ${details.join(" | ")}`, "ALERT");
+            }
+            // Update tracker so it doesn't log the same issue twice
+            lastAbnormalityString = status;
+        }
+
+        // Define color based on the status logic
         let statusBg = "#10b981"; // Green for Normal
         if (status === "No Power") statusBg = "#64748b"; // Grey for No Power
         else if (status !== "Normal Operation") statusBg = "#ef4444"; // Red for any Alarm
@@ -623,7 +649,6 @@
             
             deviceMarker.setLatLng([lat, lng]);
             
-            // Map Marker logic updated to include the grey "No Power" state
             const newIconClass = status === "No Power" ? 'marker-offline' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
             const iconHtml = `<div class='${newIconClass}'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
@@ -724,6 +749,8 @@
         } else {
             controls.style.opacity = "0.3"; controls.style.pointerEvents = "none";
             logEvent("Simulation Mode ENDED", "INFO");
+            // Reset abnormality tracker so it correctly evaluates the live data returning
+            lastAbnormalityString = ""; 
         }
     }
 
