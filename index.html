@@ -96,10 +96,11 @@
 
         .marker-normal { width: 20px; height: 20px; background: var(--accent-purple); border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px var(--accent-purple); }
         .marker-alarm { width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); animation: pulse-red 1.5s infinite; }
-        .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
+        /* CHANGED: Offline Marker is now Warning Yellow */
+        .marker-offline { width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        /* NEW BLINKING ALERT CLASS FOR CARDS */
+        /* BLINKING ALERT CLASS FOR CARDS */
         @keyframes pulse-card-red {
             0% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); }
             50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 20px 2px rgba(239, 68, 68, 0.6); background: rgba(239, 68, 68, 0.2); }
@@ -492,7 +493,7 @@
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
-        // Update map marker to grey
+        // Update map marker to yellow
         if (deviceMarker) {
             const iconHtml = `<div class='marker-offline'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
@@ -500,7 +501,7 @@
             
             const popupContent = `
                 <div style="min-width: 150px; text-align: center;">
-                    <div style="background: #64748b; color: white; padding: 8px; border-radius: 5px; font-weight: bold;">
+                    <div style="background: #fbbf24; color: #111; padding: 8px; border-radius: 5px; font-weight: bold;">
                         SYSTEM OFFLINE
                     </div>
                 </div>
@@ -629,7 +630,7 @@
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
         
-        // --- NEW LOGIC: BLINK RED CARDS ---
+        // --- LOGIC: BLINK RED CARDS ---
         // 1. Remove blinking class from all cards first
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
@@ -667,8 +668,14 @@
 
         // Define color based on the status logic
         let statusBg = "#10b981"; // Green for Normal
-        if (status === "No Power") statusBg = "#64748b"; // Grey for No Power
-        else if (status !== "Normal Operation") statusBg = "#ef4444"; // Red for any Alarm
+        let popupTextColor = "white"; // Default text color
+
+        if (status === "No Power") {
+            statusBg = "#fbbf24"; // Yellow for No Power
+            popupTextColor = "#111"; // Dark text for contrast against yellow
+        } else if (status !== "Normal Operation") {
+            statusBg = "#ef4444"; // Red for any Alarm
+        }
 
         if (map && deviceMarker && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
@@ -683,7 +690,7 @@
 
             const popupContent = `
                 <div style="min-width: 200px;">
-                    <div style="background: ${statusBg}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                    <div style="background: ${statusBg}; color: ${popupTextColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
                         ${status}
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9rem; color: #ccc;">
@@ -880,7 +887,7 @@
                     if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
                     if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
                     
-                    const sourceColor = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#64748b" : "#3b82f6");
+                    const sourceColor = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#fbbf24" : "#3b82f6");
                     html += `<div class="tooltip-row" style="margin-top:5px; border-top:1px solid #444; padding-top:3px;"><span class="tooltip-label">Source:</span> <span class="tooltip-value" style="color:${sourceColor}">${data.source || "LIVE"}</span></div>`;
 
                     tooltipEl.innerHTML = html;
@@ -959,7 +966,7 @@
 
         const sourceEl = document.getElementById('sum_source');
         sourceEl.innerText = data.source || "UNKNOWN";
-        sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#ef4444" : "#3b82f6");
+        sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#fbbf24" : "#3b82f6");
 
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
@@ -967,7 +974,7 @@
         
         // Update Summary Status Color
         if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
-        else if (statusText === "No Power") statusEl.style.color = "#64748b";
+        else if (statusText === "No Power") statusEl.style.color = "#fbbf24";
         else statusEl.style.color = "#ef4444";
 
         ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
@@ -1064,7 +1071,7 @@
             const status = detectAbnormality(d);
             // Update Table Row Status Color
             let color = "#10b981"; // Green
-            if (status === "No Power") color = "#64748b"; // Grey
+            if (status === "No Power") color = "#fbbf24"; // Yellow
             else if (status !== "Normal Operation") color = "#ef4444"; // Red
 
             let row = `<tr>
