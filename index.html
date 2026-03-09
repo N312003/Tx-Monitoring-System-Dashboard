@@ -182,7 +182,7 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Voltage</div></div>
+                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Real-time</div></div>
                 <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value" id="c1">--</div><div class="stat-label">Current Line 1</div><div class="stat-pill" style="background: #06b6d4;">Amperage</div></div>
                 <div class="stat-card" id="card_kw"><i class="fa-solid fa-lightbulb stat-icon" style="color: #eab308;"></i><div class="stat-value" id="kw">--</div><div class="stat-label">Active Power</div><div class="stat-pill" style="background: #eab308;">kW</div></div>
                 <div class="stat-card" id="card_kva"><i class="fa-solid fa-car-battery stat-icon" style="color: #3b82f6;"></i><div class="stat-value" id="kva">--</div><div class="stat-label">Apparent Power</div><div class="stat-pill" style="background: #3b82f6;">kVA</div></div>
@@ -599,7 +599,8 @@
         const status = detectAbnormality(currentDataPoint);
         const isAlarm = status !== "Normal Operation";
 
-        if (map && deviceMarker && !isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
+        // FIX: Removed the '!isSimulationMode' block here so the map marker fully reacts to your simulation sliders!
+        if (map && deviceMarker && d.config && d.config.location && d.config.location.lat !== 0) {
             const lat = d.config.location.lat;
             const lng = d.config.location.lng;
             
@@ -878,7 +879,8 @@
         if (d.load > 100) issues.push("Tx Overloaded");
         if (d.t > 75) issues.push("Overheating");
         if (d.vib > 0.20) issues.push("High Vibration");
-        if (d.pf < 0.85 && d.c1 > 0.5) issues.push("Low Power Factor");
+        // FIX: Ensured Low Power Factor triggers as long as voltage is present (d.v > 10)
+        if (d.pf < 0.85 && d.v > 10) issues.push("Low Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -912,7 +914,7 @@
         if (data.v > 264 || (data.v < 216 && data.v > 0)) document.getElementById('row_v').classList.add('abnormal-row');
         if (data.c1 > 312) document.getElementById('row_c1').classList.add('abnormal-row');
         if (data.load > 100) document.getElementById('row_load').classList.add('abnormal-row');
-        if (data.pf < 0.85 && data.c1 > 0.5) document.getElementById('row_pf').classList.add('abnormal-row');
+        if (data.pf < 0.85 && data.v > 10) document.getElementById('row_pf').classList.add('abnormal-row');
         if (data.t > 75) document.getElementById('row_t').classList.add('abnormal-row');
         if (data.vib > 0.20) document.getElementById('row_vib').classList.add('abnormal-row');
     }
@@ -1070,4 +1072,3 @@
 </script>
 </body>
 </html>
-
