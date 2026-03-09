@@ -96,6 +96,8 @@
 
         .marker-normal { width: 20px; height: 20px; background: var(--accent-purple); border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px var(--accent-purple); }
         .marker-alarm { width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); animation: pulse-red 1.5s infinite; }
+        /* NEW GREY MARKER FOR OFFLINE STATUS */
+        .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         /* Sliders */
@@ -452,7 +454,7 @@
         pollInterval = setTimeout(pollLoop, 3000); 
     }
 
-    // NEW FUNCTION: Force UI to zero when connection drops
+    // NEW FUNCTION: Force UI to zero when connection drops & update Map
     function zeroOutDashboard() {
         document.getElementById('v').innerText = "0.0 V";
         document.getElementById('c1').innerText = "0.0 A";
@@ -460,15 +462,43 @@
         document.getElementById('kva').innerText = "0.00 kVA";
         document.getElementById('load').innerText = "0.0 %";
         document.getElementById('pf').innerText = "0.00";
+        document.getElementById('t').innerText = "0.0 °C";
+        document.getElementById('vib').innerText = "0.00 g";
         
         updateSingleChart(vChart, 0); 
         updateSingleChart(pfChart, 0); 
+        updateSingleChart(tChart, 0); 
+        updateSingleChart(vibChart, 0); 
         updateSingleChart(kwChart, 0); 
         updateSingleChart(loadChart, 0);
         
         cChart.data.datasets[0].data.push(0); 
         cChart.data.datasets[0].data.shift();
         cChart.update();
+
+        // Update map marker to grey
+        if (deviceMarker) {
+            const iconHtml = `<div class='marker-offline'></div>`;
+            const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
+            deviceMarker.setIcon(newIcon);
+            
+            const popupContent = `
+                <div style="min-width: 150px; text-align: center;">
+                    <div style="background: #64748b; color: white; padding: 8px; border-radius: 5px; font-weight: bold;">
+                        SYSTEM OFFLINE
+                    </div>
+                </div>
+            `;
+            deviceMarker.bindPopup(popupContent);
+        }
+
+        // Push offline state to the historian log to keep charts moving
+        const now = new Date();
+        sessionLog.push({time: now, v: 0, c1: 0, pf: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, source: "OFFLINE"});
+        if (sessionLog.length > 5000) sessionLog.shift();
+        
+        filterReportDate(); 
+        updateHistoryChartData();
     }
 
     // Robust fetch with Stale Data Check
@@ -501,7 +531,7 @@
             updateDashboard(data);
 
         } catch (error) {
-            if (error.message === "Hardware Offline") {
+            if (error.message === "Hardware Offline" || error.message === "No database records") {
                 failedAttempts = MAX_FAILURES; 
             } else {
                 failedAttempts++;
@@ -515,10 +545,10 @@
                     logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "ALERT");
                     statusBadge.innerText = "OFFLINE";
                     statusBadge.className = "status-badge status-offline";
-                    
-                    // Trigger the visual reset
-                    zeroOutDashboard(); 
                 }
+                
+                // Trigger the visual reset continuously while offline
+                zeroOutDashboard(); 
             }
         }
     }
@@ -777,7 +807,7 @@
                     if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
                     if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
                     
-                    const sourceColor = (data.source === "SIMULATION") ? "#fbbf24" : "#3b82f6";
+                    const sourceColor = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#64748b" : "#3b82f6");
                     html += `<div class="tooltip-row" style="margin-top:5px; border-top:1px solid #444; padding-top:3px;"><span class="tooltip-label">Source:</span> <span class="tooltip-value" style="color:${sourceColor}">${data.source || "LIVE"}</span></div>`;
 
                     tooltipEl.innerHTML = html;
@@ -843,12 +873,12 @@
     function detectAbnormality(d) {
         let issues = [];
         if (d.v > 264) issues.push("Overvoltage");
-        if (d.v < 216) issues.push("Undervoltage");
+        if (d.v < 216 && d.v > 0) issues.push("Undervoltage"); // Prevents undervoltage alarm when truly offline
         if (d.c1 > 312) issues.push("Overcurrent");
         if (d.load > 100) issues.push("Tx Overloaded");
         if (d.t > 75) issues.push("Overheating");
         if (d.vib > 0.20) issues.push("High Vibration");
-        if (d.pf < 0.85) issues.push("Low Power Factor");
+        if (d.pf < 0.85 && d.c1 > 0.5) issues.push("Low Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -868,7 +898,7 @@
 
         const sourceEl = document.getElementById('sum_source');
         sourceEl.innerText = data.source || "UNKNOWN";
-        sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : "#3b82f6";
+        sourceEl.style.color = (data.source === "SIMULATION") ? "#fbbf24" : (data.source === "OFFLINE" ? "#ef4444" : "#3b82f6");
 
         const statusEl = document.getElementById('sum_status');
         const statusText = detectAbnormality(data);
@@ -879,10 +909,10 @@
             document.getElementById(id).classList.remove('abnormal-row');
         });
 
-        if (data.v > 264 || data.v < 216) document.getElementById('row_v').classList.add('abnormal-row');
+        if (data.v > 264 || (data.v < 216 && data.v > 0)) document.getElementById('row_v').classList.add('abnormal-row');
         if (data.c1 > 312) document.getElementById('row_c1').classList.add('abnormal-row');
         if (data.load > 100) document.getElementById('row_load').classList.add('abnormal-row');
-        if (data.pf < 0.85) document.getElementById('row_pf').classList.add('abnormal-row');
+        if (data.pf < 0.85 && data.c1 > 0.5) document.getElementById('row_pf').classList.add('abnormal-row');
         if (data.t > 75) document.getElementById('row_t').classList.add('abnormal-row');
         if (data.vib > 0.20) document.getElementById('row_vib').classList.add('abnormal-row');
     }
