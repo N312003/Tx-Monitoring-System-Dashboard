@@ -384,11 +384,9 @@
                 <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
                     <div class="cal-group"><div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div><input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="400" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
-                    
                     <div class="cal-group"><div class="cal-label"><span>Sim Active Power (kW)</span><span id="sim_kw_val">0.99kW</span></div><input type="range" min="0" max="100" step="0.1" value="0.99" class="cal-slider" oninput="updateSimulation('kw', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Apparent Power (kVA)</span><span id="sim_kva_val">1.1kVA</span></div><input type="range" min="0" max="100" step="0.1" value="1.1" class="cal-slider" oninput="updateSimulation('kva', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Loading (%)</span><span id="sim_load_val">1.4%</span></div><input type="range" min="0" max="150" step="0.1" value="1.4" class="cal-slider" oninput="updateSimulation('load', this.value)"></div>
-                    
                     <div class="cal-group"><div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div><input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div><input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)"></div>
@@ -420,7 +418,7 @@
     let currentChartData = []; 
     let simUploadTimer = null; 
     
-    // NEW: Variables for Recursive Polling
+    // NEW: Variables for Recursive Polling & Hardware Offline Detection
     let failedAttempts = 0;
     const MAX_FAILURES = 3;
 
@@ -440,53 +438,68 @@
         logEvent(isMuted ? "System Muted" : "System Unmuted", "INFO");
     }
 
-    // NEW: Updated startPolling to use recursive loop instead of setInterval
+    // NEW: Recursive Loop logic
     function startPolling() {
         if(pollInterval) clearTimeout(pollInterval);
         pollLoop();
     }
 
-    // NEW: Recursive loop function
     async function pollLoop() {
         await fetchData();
+        // Wait 3 seconds AFTER the previous request finishes before querying again
         pollInterval = setTimeout(pollLoop, 3000); 
     }
 
-    // NEW: Updated fetchData with 3-strike rule
+    // NEW: Robust fetch with Stale Data Check
     async function fetchData() {
         try {
             const response = await fetch(`${API_URL}/status/${DEVICE_ID}`);
-            
             if (!response.ok) throw new Error("HTTP Status Error"); 
             
             const data = await response.json();
 
-            if(data.message === "No data") return;
+            if(data.message === "No data") throw new Error("No database records");
+
+            // --- HARDWARE OFFLINE DETECTION ---
+            // Checks if the ESP32 stopped sending data (Requires backend to return last_seen)
+            if (data.last_seen && !isSimulationMode) {
+                const lastSeenTime = new Date(data.last_seen).getTime();
+                const currentTime = new Date().getTime();
+                
+                // If data is older than 15 seconds, the ESP32 is turned off
+                if (currentTime - lastSeenTime > 15000) {
+                    throw new Error("Hardware Offline");
+                }
+            }
 
             failedAttempts = 0; 
 
             const statusBadge = document.getElementById('netStatus');
             if(statusBadge.innerText === "OFFLINE") {
                 logEvent("Connection Restored", "SUCCESS");
+                statusBadge.innerText = "ONLINE";
+                statusBadge.className = "status-badge status-online";
             }
-
-            statusBadge.innerText = "ONLINE";
-            statusBadge.className = "status-badge status-online";
             
             updateDashboard(data);
 
         } catch (error) {
-            failedAttempts++;
-            console.warn(`Fetch attempt failed (${failedAttempts}/${MAX_FAILURES}):`, error);
+            // Instantly disconnect if it's specifically a hardware timeout
+            if (error.message === "Hardware Offline") {
+                failedAttempts = MAX_FAILURES; 
+            } else {
+                failedAttempts++;
+            }
+
+            console.warn(`Fetch issue (${failedAttempts}/${MAX_FAILURES}):`, error.message);
 
             if (failedAttempts >= MAX_FAILURES) {
                 const statusBadge = document.getElementById('netStatus');
                 if(statusBadge.innerText !== "OFFLINE") {
-                    logEvent("Connection Lost", "ALERT");
+                    logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "ALERT");
+                    statusBadge.innerText = "OFFLINE";
+                    statusBadge.className = "status-badge status-offline";
                 }
-                
-                statusBadge.innerText = "OFFLINE";
-                statusBadge.className = "status-badge status-offline";
             }
         }
     }
@@ -649,7 +662,6 @@
     function updateSimulation(param, value) {
         simValues[param] = value;
         
-        // Correct unit resolution for new variables
         let unit = '';
         if(param === 'v') unit = 'V';
         else if(param === 'c1') unit = 'A';
@@ -688,7 +700,6 @@
                     vib: parseFloat(simValues.vib)
                 })
             });
-            console.log("Sim Uploaded");
         } catch (e) { console.error("Sim Upload Fail", e); }
     }
 
@@ -727,7 +738,6 @@
     });
     function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
-    // --- SEPARATED HISTORIAN CHARTS WITH CLICK HANDLER ---
     function initHistorianCharts() {
         const tooltipHandler = (context) => {
             const { chart, tooltip } = context;
