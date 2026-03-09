@@ -395,7 +395,7 @@
                 </div>
             </div>
             
-            </div>
+        </div>
     </div>
 
 <script>
@@ -415,11 +415,14 @@
     let chartTimeWindow = 0; 
     let isSimulationMode = false;
     
-    // Added new power fields to simulation state
     let simValues = { v: 220, c1: 5, kw: 0.99, kva: 1.1, load: 1.4, pf: 0.9, t: 30, vib: 0 };
     
     let currentChartData = []; 
     let simUploadTimer = null; 
+    
+    // NEW: Variables for Recursive Polling
+    let failedAttempts = 0;
+    const MAX_FAILURES = 3;
 
     window.onload = function() {
         initMap();
@@ -437,21 +440,35 @@
         logEvent(isMuted ? "System Muted" : "System Unmuted", "INFO");
     }
 
+    // NEW: Updated startPolling to use recursive loop instead of setInterval
     function startPolling() {
-        if(pollInterval) clearInterval(pollInterval);
-        fetchData();
-        pollInterval = setInterval(fetchData, 2000);
+        if(pollInterval) clearTimeout(pollInterval);
+        pollLoop();
     }
 
+    // NEW: Recursive loop function
+    async function pollLoop() {
+        await fetchData();
+        pollInterval = setTimeout(pollLoop, 3000); 
+    }
+
+    // NEW: Updated fetchData with 3-strike rule
     async function fetchData() {
         try {
             const response = await fetch(`${API_URL}/status/${DEVICE_ID}`);
+            
+            if (!response.ok) throw new Error("HTTP Status Error"); 
+            
             const data = await response.json();
 
             if(data.message === "No data") return;
 
+            failedAttempts = 0; 
+
             const statusBadge = document.getElementById('netStatus');
-            if(statusBadge.innerText === "OFFLINE") logEvent("Connection Restored", "SUCCESS");
+            if(statusBadge.innerText === "OFFLINE") {
+                logEvent("Connection Restored", "SUCCESS");
+            }
 
             statusBadge.innerText = "ONLINE";
             statusBadge.className = "status-badge status-online";
@@ -459,12 +476,18 @@
             updateDashboard(data);
 
         } catch (error) {
-            console.error("Fetch Error:", error);
-            const statusBadge = document.getElementById('netStatus');
-            if(statusBadge.innerText !== "OFFLINE") logEvent("Connection Lost", "ALERT");
-            
-            statusBadge.innerText = "OFFLINE";
-            statusBadge.className = "status-badge status-offline";
+            failedAttempts++;
+            console.warn(`Fetch attempt failed (${failedAttempts}/${MAX_FAILURES}):`, error);
+
+            if (failedAttempts >= MAX_FAILURES) {
+                const statusBadge = document.getElementById('netStatus');
+                if(statusBadge.innerText !== "OFFLINE") {
+                    logEvent("Connection Lost", "ALERT");
+                }
+                
+                statusBadge.innerText = "OFFLINE";
+                statusBadge.className = "status-badge status-offline";
+            }
         }
     }
 
@@ -473,7 +496,6 @@
         let sourceTag = "LIVE"; 
 
         if (isSimulationMode) {
-            // Direct override from all sliders
             v = parseFloat(simValues.v);
             c1 = parseFloat(simValues.c1);
             kw = parseFloat(simValues.kw);
