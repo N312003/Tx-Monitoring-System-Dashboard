@@ -659,6 +659,19 @@
             vib = d.vib || 0;
         }
 
+        // --- NEW: SENSOR NOISE FILTER (DEADBAND) ---
+        // The PZEM-004T acts like an antenna when AC power is cut and picks up 
+        // static electricity/noise (e.g., 1.5V, 3.2V).
+        // Since a 220V grid dropping below 50V means it's dead anyway, we force it to 0.
+        if (v < 50) {
+            v = 0.0;
+            c1 = 0.0;
+            kw = 0.0;
+            kva = 0.0;
+            load = 0.0;
+            pf = 0.0;
+        }
+
         document.getElementById('v').innerText = v.toFixed(1) + " V";
         document.getElementById('c1').innerText = c1.toFixed(1) + " A";
         document.getElementById('kw').innerText = kw.toFixed(2);
@@ -712,7 +725,7 @@
         let popupTextColor = "white"; 
         
         if (status === "No Power") {
-            statusBg = "#f97316"; // Orange for No Power
+            statusBg = "#f97316"; // Orange
             popupTextColor = "white"; 
         } else if (status !== "Normal Operation") {
             statusBg = "#ef4444"; // Red
@@ -1030,7 +1043,7 @@
         
         if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
         else if (statusText === "CONNECTING...") statusEl.style.color = "#fbbf24"; // Yellow
-        else if (statusText === "SYSTEM OFFLINE") statusEl.style.color = "#64748b"; // Grey
+        else if (statusText === "SYSTEM OFFLINE") statusEl.style.color = "#64748b"; // Gray
         else if (statusText === "No Power") statusEl.style.color = "#f97316"; // Orange
         else statusEl.style.color = "#ef4444"; // Red
 
