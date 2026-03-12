@@ -145,6 +145,20 @@
         .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .tooltip-label { color: #94a3b8; }
         .tooltip-value { font-weight: bold; }
+        
+        /* Loader Overlay */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 7, 10, 0.8); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column; color: var(--accent-purple);
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1); border-left-color: var(--accent-purple);
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Mobile */
         @media (max-width: 1000px) { .historian-container { grid-template-columns: 1fr; } .summary-panel { position: static; margin-bottom: 20px; } }
@@ -152,6 +166,11 @@
     </style>
 </head>
 <body>
+
+    <div id="global-loader">
+        <div class="spinner"></div>
+        <div id="loader-text" style="font-weight:bold; letter-spacing:1px; color:#fff;">FETCHING DATA...</div>
+    </div>
 
     <div id="unified-tooltip"></div>
 
@@ -195,7 +214,7 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Voltage</div></div>
+                <div class="stat-card" id="card_v"><i class="fa-solid fa-bolt stat-icon" style="color: #7c3aed;"></i><div class="stat-value" id="v">--</div><div class="stat-label">Main Voltage</div><div class="stat-pill" style="background: #7c3aed;">Real-time</div></div>
                 <div class="stat-card" id="card_c"><i class="fa-solid fa-plug stat-icon" style="color: #06b6d4;"></i><div class="stat-value" id="c1">--</div><div class="stat-label">Current Line 1</div><div class="stat-pill" style="background: #06b6d4;">Amperage</div></div>
                 <div class="stat-card" id="card_kw"><i class="fa-solid fa-lightbulb stat-icon" style="color: #eab308;"></i><div class="stat-value" id="kw">--</div><div class="stat-label">Active Power</div><div class="stat-pill" style="background: #eab308;">kW</div></div>
                 <div class="stat-card" id="card_kva"><i class="fa-solid fa-car-battery stat-icon" style="color: #3b82f6;"></i><div class="stat-value" id="kva">--</div><div class="stat-label">Apparent Power</div><div class="stat-pill" style="background: #3b82f6;">kVA</div></div>
@@ -424,21 +443,19 @@
     let deviceMarker = null;
     let isMuted = false;
     let pollInterval = null;
-    
     let lastAbnormalityString = "Normal Operation";
     let chartTimeWindow = 0; 
     let isSimulationMode = false;
-    
     let simValues = { v: 220, c1: 5, kw: 0.99, kva: 1.1, load: 1.4, pf: 0.9, t: 30, vib: 0 };
-    
     let currentChartData = []; 
     let simUploadTimer = null; 
-    
     let failedAttempts = 0;
     const MAX_FAILURES = 3;
-    
     let currentPollRate = 3000; 
     let offlineStartTime = 0; 
+
+    // Chart Variables
+    let chartElec, chartPower, chartPF, chartPhys;
 
     window.onload = function() {
         initMap();
@@ -494,7 +511,6 @@
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
-        // Switch to Yellow for Connecting, Gray for Offline
         let markerClass = displayStatus === "CONNECTING..." ? 'marker-connecting' : 'marker-offline';
         let statusBg = displayStatus === "CONNECTING..." ? '#fbbf24' : '#64748b';
         let textColor = displayStatus === "CONNECTING..." ? '#111' : 'white';
@@ -659,10 +675,6 @@
             vib = d.vib || 0;
         }
 
-        // --- NEW: SENSOR NOISE FILTER (DEADBAND) ---
-        // The PZEM-004T acts like an antenna when AC power is cut and picks up 
-        // static electricity/noise (e.g., 1.5V, 3.2V).
-        // Since a 220V grid dropping below 50V means it's dead anyway, we force it to 0.
         if (v < 50) {
             v = 0.0;
             c1 = 0.0;
@@ -796,7 +808,6 @@
         
         if (sessionLog.length > 5000) sessionLog.shift();
         
-        // Only trigger UI refreshes on view-specific events
         if (chartTimeWindow === 0) updateHistoryChartData(); 
     }
 
@@ -935,15 +946,13 @@
         
         let displayData = [];
         
-        // 1. Check if we are in LIVE mode (0 hours)
         if (chartTimeWindow === 0) {
-            // Use the data currently in browser memory for instant updates
             displayData = sessionLog.slice(-50);
             renderHistorian(displayData);
         } else {
-            // 2. Fetch from Supabase via your Backend
+            document.getElementById('global-loader').style.display = 'flex';
+            document.getElementById('loader-text').innerText = 'FETCHING HISTORICAL DATA...';
             try {
-                // Show a small console log for debugging
                 console.log(`Querying Supabase for last ${chartTimeWindow} hours...`);
                 
                 const response = await fetch(`${API_URL}/history/${DEVICE_ID}?hours=${chartTimeWindow}`);
@@ -960,18 +969,19 @@
                         load: parseFloat(d.load || 0),
                         t: parseFloat(d.temp || 0),
                         vib: parseFloat(d.vib || 0),
-                        source: "SUPABASE"
+                        source: "DATABASE"
                     }));
                     
                     renderHistorian(displayData);
                 } else {
                     console.warn("No data found in Supabase for this time range.");
-                    // Clear charts if no data
                     renderHistorian([]);
                 }
             } catch (e) {
                 console.error("Database connection failed:", e);
                 logEvent("Failed to sync with Supabase", "WARNING");
+            } finally {
+                document.getElementById('global-loader').style.display = 'none';
             }
         }
     }
@@ -979,15 +989,12 @@
     function renderHistorian(filteredData) {
         currentChartData = filteredData;
         
-        // Format labels for the X-axis
         const labels = filteredData.map(d => {
-            // If viewing more than 12 hours, show the date too
             return chartTimeWindow > 12 
                 ? d.time.toLocaleDateString() + " " + d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 : d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
         });
 
-        // Update all 4 Historian Charts
         const chartConfigs = [
             { chart: chartElec, datasets: [filteredData.map(d => d.v), filteredData.map(d => d.c1)] },
             { chart: chartPower, datasets: [filteredData.map(d => d.kw), filteredData.map(d => d.kva)] },
@@ -1001,7 +1008,7 @@
             if (conf.chart.data.datasets[1]) {
                 conf.chart.data.datasets[1].data = conf.datasets[1];
             }
-            conf.chart.update('none'); // Update without animation for speed
+            conf.chart.update('none'); 
         });
     }
 
@@ -1014,7 +1021,8 @@
         let reportData = [];
 
         if (dateInput) {
-            // Fetch specific date from Supabase
+            document.getElementById('global-loader').style.display = 'flex';
+            document.getElementById('loader-text').innerText = 'FETCHING DAILY REPORT...';
             try {
                 const response = await fetch(`${API_URL}/history/${DEVICE_ID}?date=${dateInput}`);
                 const dbData = await response.json();
@@ -1037,9 +1045,10 @@
                 console.error("Report Fetch Error:", e);
                 tbody.innerHTML = "<tr><td colspan='10' style='text-align:center; color:red;'>Error loading database records</td></tr>";
                 return;
+            } finally {
+                document.getElementById('global-loader').style.display = 'none';
             }
         } else {
-            // Default to showing the last 500 session points if no date is picked
             reportData = sessionLog.slice().reverse().slice(0, 500);
         }
 
@@ -1091,10 +1100,10 @@
                     if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
                     if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
                     
-                    let sourceColor = "#3b82f6"; // LIVE
+                    let sourceColor = "#3b82f6"; 
                     if (data.source === "SIMULATION") sourceColor = "#fbbf24";
                     else if (data.source === "OFFLINE") sourceColor = "#64748b";
-                    else if (data.source === "SUPABASE" || data.source === "DATABASE") sourceColor = "#10b981";
+                    else if (data.source === "DATABASE") sourceColor = "#10b981";
                     
                     html += `<div class="tooltip-row" style="margin-top:5px; border-top:1px solid #444; padding-top:3px;"><span class="tooltip-label">Source:</span> <span class="tooltip-value" style="color:${sourceColor}">${data.source || "LIVE"}</span></div>`;
 
@@ -1181,7 +1190,7 @@
         let sourceColor = "#3b82f6";
         if (data.source === "SIMULATION") sourceColor = "#fbbf24";
         else if (data.source === "OFFLINE") sourceColor = "#64748b";
-        else if (data.source === "SUPABASE" || data.source === "DATABASE") sourceColor = "#10b981";
+        else if (data.source === "DATABASE") sourceColor = "#10b981";
         sourceEl.style.color = sourceColor;
 
         const statusEl = document.getElementById('sum_status');
@@ -1331,6 +1340,11 @@
                 doc.setFontSize(10);
                 doc.setTextColor(100);
                 doc.text(chartTitles[i], 14, chartY - 2);
+                
+                // Add white background behind the transparent PNG to prevent glitches
+                doc.setFillColor(255, 255, 255);
+                doc.rect(14, chartY, 180, 50, 'F');
+                
                 doc.addImage(imgData, 'PNG', 14, chartY, 180, 50);
                 chartY += 65;
             }
@@ -1368,4 +1382,3 @@
 </script>
 </body>
 </html>
-
