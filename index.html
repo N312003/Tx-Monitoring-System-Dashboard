@@ -36,7 +36,7 @@
         
         /* Sidebar */
         .sidebar { width: 80px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; align-items: center; padding-top: 20px; position: fixed; height: 100%; z-index: 100; border-right: 1px solid #2d3748; }
-        .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+        .nav-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; color: var(--text-muted); cursor: transition: 0.3s; }
         .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
         .nav-item.active { background-color: var(--accent-purple); color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
         
@@ -96,8 +96,6 @@
 
         .marker-normal { width: 20px; height: 20px; background: var(--accent-purple); border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px var(--accent-purple); }
         .marker-alarm { width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); animation: pulse-red 1.5s infinite; }
-        
-        /* NEW: Separated Grey Offline and Yellow No Power */
         .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         .marker-nopower { width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         
@@ -515,13 +513,16 @@
         // Sync State Tracker
         lastAbnormalityString = "System Offline";
 
-        // Push offline state to the historian log to keep charts moving
-        const now = new Date();
-        sessionLog.push({time: now, v: 0, c1: 0, pf: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, source: "OFFLINE"});
-        if (sessionLog.length > 5000) sessionLog.shift();
-        
-        filterReportDate(); 
-        updateHistoryChartData();
+        // NEW LOGIC: Only log offline state once to prevent spamming the daily report
+        const lastLog = sessionLog.length > 0 ? sessionLog[sessionLog.length - 1] : null;
+        if (!lastLog || lastLog.source !== "OFFLINE") {
+            const now = new Date();
+            sessionLog.push({time: now, v: 0, c1: 0, pf: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, source: "OFFLINE"});
+            if (sessionLog.length > 5000) sessionLog.shift();
+            
+            filterReportDate(); 
+            updateHistoryChartData();
+        }
     }
 
     // Robust fetch with Stale Data Check
