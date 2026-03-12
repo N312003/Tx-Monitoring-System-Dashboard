@@ -423,11 +423,7 @@
     let isMuted = false;
     let pollInterval = null;
     
-    // Variable to track the system state and prevent log spamming
     let lastAbnormalityString = "Normal Operation";
-    
-    // Chart References
-    let chartElec = null, chartPower = null, chartPF = null, chartPhys = null;
     let chartTimeWindow = 0; 
     let isSimulationMode = false;
     
@@ -436,9 +432,11 @@
     let currentChartData = []; 
     let simUploadTimer = null; 
     
-    // Variables for Recursive Polling & Hardware Offline Detection
     let failedAttempts = 0;
     const MAX_FAILURES = 3;
+    
+    let currentPollRate = 3000; 
+    let offlineStartTime = 0; 
 
     window.onload = function() {
         initMap();
@@ -456,7 +454,6 @@
         logEvent(isMuted ? "System Muted" : "System Unmuted", "INFO");
     }
 
-    // Recursive Loop logic
     function startPolling() {
         if(pollInterval) clearTimeout(pollInterval);
         pollLoop();
@@ -464,12 +461,10 @@
 
     async function pollLoop() {
         await fetchData();
-        // Wait 3 seconds AFTER the previous request finishes before querying again
-        pollInterval = setTimeout(pollLoop, 3000); 
+        pollInterval = setTimeout(pollLoop, currentPollRate); 
     }
 
-    // Force UI to zero when connection drops & update Map
-    function zeroOutDashboard() {
+    function zeroOutDashboard(displayStatus) {
         document.getElementById('v').innerText = "0.0 V";
         document.getElementById('c1').innerText = "0.0 A";
         document.getElementById('kw').innerText = "0.00 kW";
@@ -490,11 +485,9 @@
         cChart.data.datasets[0].data.shift();
         cChart.update();
 
-        // Clear any blinking red borders from the cards
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
-        // Update map marker and rich popup to grey "System Offline"
         if (deviceMarker) {
             const iconHtml = `<div class='marker-offline'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
@@ -503,7 +496,7 @@
             const popupContent = `
                 <div style="min-width: 220px;">
                     <div style="background: #64748b; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
-                        SYSTEM OFFLINE
+                        ${displayStatus}
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
                         <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">0.0 V</span>
@@ -525,22 +518,21 @@
             }
         }
         
-        // Sync State Tracker
-        lastAbnormalityString = "System Offline";
+        lastAbnormalityString = displayStatus;
 
-        // NEW LOGIC: Only log offline state once to prevent spamming the daily report
         const lastLog = sessionLog.length > 0 ? sessionLog[sessionLog.length - 1] : null;
         if (!lastLog || lastLog.source !== "OFFLINE") {
             const now = new Date();
-            sessionLog.push({time: now, v: 0, c1: 0, pf: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, source: "OFFLINE"});
+            sessionLog.push({time: now, v: 0, c1: 0, pf: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, source: "OFFLINE", offlineState: displayStatus});
             if (sessionLog.length > 5000) sessionLog.shift();
-            
             filterReportDate(); 
             updateHistoryChartData();
+        } else if (lastLog && lastLog.source === "OFFLINE" && lastLog.offlineState !== displayStatus) {
+            lastLog.offlineState = displayStatus; 
+            filterReportDate(); 
         }
     }
 
-    // Robust fetch with Stale Data Check
     async function fetchData() {
         try {
             const response = await fetch(`${API_URL}/status/${DEVICE_ID}`);
@@ -550,16 +542,17 @@
 
             if(data.message === "No data") throw new Error("No database records");
 
-            // Checks the exact seconds calculated by the PostgreSQL Database
             if (data.seconds_offline > 15 && !isSimulationMode) {
                 throw new Error("Hardware Offline");
             }
 
             failedAttempts = 0; 
+            currentPollRate = 3000; 
+            offlineStartTime = 0; 
 
             const statusBadge = document.getElementById('netStatus');
             
-            if(statusBadge.innerText === "OFFLINE") {
+            if(statusBadge.innerText === "CONNECTING..." || statusBadge.innerText === "SYSTEM OFFLINE") {
                 logEvent("Connection Restored", "SUCCESS");
             }
             
@@ -578,14 +571,24 @@
             console.warn(`Fetch issue (${failedAttempts}/${MAX_FAILURES}):`, error.message);
 
             if (failedAttempts >= MAX_FAILURES) {
+                currentPollRate = 1000; 
+
+                if (offlineStartTime === 0) offlineStartTime = Date.now();
+                let timeOffline = Date.now() - offlineStartTime;
+                let displayStatus = timeOffline > 30000 ? "SYSTEM OFFLINE" : "CONNECTING...";
+
                 const statusBadge = document.getElementById('netStatus');
-                if(statusBadge.innerText !== "OFFLINE") {
-                    logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "ALERT");
-                    statusBadge.innerText = "OFFLINE";
+                if (statusBadge.innerText !== displayStatus) {
+                    if (displayStatus === "SYSTEM OFFLINE") {
+                        logEvent("Connection Timed Out (30s). System Offline.", "ALERT");
+                    } else if (statusBadge.innerText !== "CONNECTING...") {
+                        logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "WARNING");
+                    }
+                    statusBadge.innerText = displayStatus;
                     statusBadge.className = "status-badge status-offline";
                 }
                 
-                zeroOutDashboard(); 
+                zeroOutDashboard(displayStatus); 
             }
         }
     }
@@ -629,7 +632,6 @@
             vib = d.vib || 0;
         }
 
-        // Apply values to HTML elements
         document.getElementById('v').innerText = v.toFixed(1) + " V";
         document.getElementById('c1').innerText = c1.toFixed(1) + " A";
         document.getElementById('kw').innerText = kw.toFixed(2);
@@ -649,7 +651,6 @@
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
         
-        // --- LOGIC: BLINK RED CARDS ---
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
@@ -660,7 +661,6 @@
         if (t > 75) document.getElementById('card_t').classList.add('blink-red-card');
         if (vib > 0.20) document.getElementById('card_vib').classList.add('blink-red-card');
 
-        // --- SMART EVENT LOGGING LOGIC ---
         if (status !== lastAbnormalityString) {
             if (status === "Normal Operation") {
                 logEvent("System parameters returned to Normal Operation", "SUCCESS");
@@ -681,13 +681,12 @@
             lastAbnormalityString = status;
         }
 
-        // Define color based on the status logic
         let statusBg = "#10b981"; // Green
-        let popupTextColor = "white"; // Default text color
+        let popupTextColor = "white"; 
         
         if (status === "No Power") {
             statusBg = "#fbbf24"; // Yellow
-            popupTextColor = "#111"; // Dark text for contrast against yellow
+            popupTextColor = "#111"; 
         } else if (status !== "Normal Operation") {
             statusBg = "#ef4444"; // Red
         }
@@ -703,7 +702,6 @@
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
             deviceMarker.setIcon(newIcon);
 
-            // Rich popup containing all telemetry variables
             const popupContent = `
                 <div style="min-width: 220px;">
                     <div style="background: ${statusBg}; color: ${popupTextColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
@@ -722,7 +720,6 @@
                 </div>
             `;
             
-            // Dynamically update popup content even if it's already open
             if (!deviceMarker.getPopup()) {
                 deviceMarker.bindPopup(popupContent);
             } else {
@@ -765,7 +762,7 @@
 
     function logEvent(msg, type) {
         const tbody = document.getElementById("eventLogBody");
-        const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : (type === 'MAINT' ? '#fbbf24' : '#3b82f6'));
+        const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : (type === 'MAINT' ? '#fbbf24' : (type === 'WARNING' ? '#f97316' : '#3b82f6')));
         const row = `<tr>
             <td style="color:#888; font-size:0.85rem;">${new Date().toLocaleTimeString()}</td>
             <td style="color:white; font-weight:500;">${msg}</td>
@@ -791,7 +788,6 @@
         } catch (error) { alert("Network Error"); checkbox.checked = !newState; }
     }
 
-    // --- SIMULATION LOGIC ---
     function toggleTestMode(checkbox) {
         isSimulationMode = checkbox.checked;
         const controls = document.getElementById('simulationControls');
@@ -863,7 +859,6 @@
         const icon = L.divIcon({ className: 'custom-div-icon', html: `<div class='marker-normal'></div>` });
         deviceMarker = L.marker([14.5995, 120.9842], {icon: icon}).addTo(map);
         
-        // Add a default popup before data loads
         deviceMarker.bindPopup("<div style='text-align:center; padding:5px; color:#aaa;'>Connecting to Node...</div>");
     }
     function toggleGeoControls() {
@@ -1003,14 +998,13 @@
         sourceEl.style.color = sourceColor;
 
         const statusEl = document.getElementById('sum_status');
-        const statusText = data.source === "OFFLINE" ? "System Offline" : detectAbnormality(data);
+        const statusText = data.source === "OFFLINE" ? data.offlineState : detectAbnormality(data);
         statusEl.innerText = statusText;
         
-        // Update Summary Status Color
         if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
-        else if (statusText === "System Offline") statusEl.style.color = "#64748b"; // Grey
-        else if (statusText === "No Power") statusEl.style.color = "#fbbf24"; // Yellow
-        else statusEl.style.color = "#ef4444"; // Red
+        else if (statusText === "CONNECTING..." || statusText === "SYSTEM OFFLINE") statusEl.style.color = "#64748b"; 
+        else if (statusText === "No Power") statusEl.style.color = "#fbbf24"; 
+        else statusEl.style.color = "#ef4444"; 
 
         ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
             document.getElementById(id).classList.remove('abnormal-row');
@@ -1103,13 +1097,12 @@
         }
 
         displayData.forEach(d => {
-            const status = d.source === "OFFLINE" ? "System Offline" : detectAbnormality(d);
+            const status = d.source === "OFFLINE" ? d.offlineState : detectAbnormality(d);
             
-            // Update Table Row Status Color
-            let color = "#10b981"; // Green
-            if (status === "System Offline") color = "#64748b"; // Grey
-            else if (status === "No Power") color = "#fbbf24"; // Yellow
-            else if (status !== "Normal Operation") color = "#ef4444"; // Red
+            let color = "#10b981"; 
+            if (status === "CONNECTING..." || status === "SYSTEM OFFLINE") color = "#64748b"; 
+            else if (status === "No Power") color = "#fbbf24"; 
+            else if (status !== "Normal Operation") color = "#ef4444"; 
 
             let row = `<tr>
                 <td>${d.time.toLocaleTimeString()}</td>
@@ -1143,7 +1136,7 @@
             log.v.toFixed(1), log.c1.toFixed(1), 
             log.kw.toFixed(2), log.kva.toFixed(2), log.load.toFixed(1),
             log.pf.toFixed(2), log.t.toFixed(1), log.vib.toFixed(2), 
-            log.source === "OFFLINE" ? "System Offline" : detectAbnormality(log)
+            log.source === "OFFLINE" ? log.offlineState : detectAbnormality(log)
         ]);
 
         doc.autoTable(tableColumn, tableRows, { startY: 20 });
@@ -1165,7 +1158,7 @@
             Power_Factor: log.pf, 
             Temperature: log.t, 
             Vibration: log.vib, 
-            Status: log.source === "OFFLINE" ? "System Offline" : detectAbnormality(log)
+            Status: log.source === "OFFLINE" ? log.offlineState : detectAbnormality(log)
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);
