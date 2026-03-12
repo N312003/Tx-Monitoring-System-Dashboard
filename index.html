@@ -1118,7 +1118,10 @@
         const commonOptions = {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false }, 
-            scales: { x: { ticks: { color: '#888' }, grid: { color: '#333' } }, y: { ticks: { color: '#888' }, grid: { color: '#333' } } },
+            scales: { 
+                x: { ticks: { color: '#888' }, grid: { color: '#333' } }, 
+                y: { suggestedMin: 0, ticks: { color: '#888' }, grid: { color: '#333' } } 
+            },
             elements: { point: { radius: 0 } }, 
             plugins: { legend: { labels: { color: '#fff' } }, tooltip: { enabled: false, external: tooltipHandler } },
             onClick: clickHandler
@@ -1307,8 +1310,19 @@
         doc.text("Analytical Historian Trends", 105, 20, { align: 'center' });
 
         const chartIds = ['histChartElec', 'histChartPower', 'histChartPF', 'histChartPhys'];
+        const chartInstances = [chartElec, chartPower, chartPF, chartPhys];
         const chartTitles = ["Electrical Trends (V/A)", "Power Trends (kW/kVA)", "Efficiency & Load (%)", "Physical Health (Temp/Vib)"];
         
+        // --- FIX FOR VISIBILITY: Force text to black temporarily ---
+        chartInstances.forEach(c => {
+            if (c && c.options && c.options.plugins && c.options.plugins.legend) {
+                c.options.plugins.legend.labels.color = '#000';
+                if(c.options.scales.x.ticks) c.options.scales.x.ticks.color = '#000';
+                if(c.options.scales.y.ticks) c.options.scales.y.ticks.color = '#000';
+                c.update('none'); // Update instantly without animation
+            }
+        });
+
         let chartY = 30;
         for (let i = 0; i < chartIds.length; i++) {
             const canvas = document.getElementById(chartIds[i]);
@@ -1321,6 +1335,16 @@
                 chartY += 65;
             }
         }
+
+        // --- REVERT BACK TO WHITE FOR WEB VIEW ---
+        chartInstances.forEach(c => {
+            if (c && c.options && c.options.plugins && c.options.plugins.legend) {
+                c.options.plugins.legend.labels.color = '#fff';
+                if(c.options.scales.x.ticks) c.options.scales.x.ticks.color = '#888';
+                if(c.options.scales.y.ticks) c.options.scales.y.ticks.color = '#888';
+                c.update('none'); 
+            }
+        });
 
         // FOOTER
         doc.setFontSize(8);
