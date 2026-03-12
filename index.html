@@ -94,10 +94,12 @@
         .geo-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .geo-btn:hover { opacity: 0.9; }
 
+        /* New Status Color Classes for Map Markers */
         .marker-normal { width: 20px; height: 20px; background: var(--accent-purple); border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px var(--accent-purple); }
         .marker-alarm { width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); animation: pulse-red 1.5s infinite; }
+        .marker-connecting { width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         .marker-offline { width: 20px; height: 20px; background: #64748b; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
-        .marker-nopower { width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
+        .marker-nopower { width: 20px; height: 20px; background: #f97316; border-radius: 50%; border: 3px solid rgba(255,255,255,0.5); }
         
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
@@ -492,14 +494,19 @@
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
+        // Switch to Yellow for Connecting, Gray for Offline
+        let markerClass = displayStatus === "CONNECTING..." ? 'marker-connecting' : 'marker-offline';
+        let statusBg = displayStatus === "CONNECTING..." ? '#fbbf24' : '#64748b';
+        let textColor = displayStatus === "CONNECTING..." ? '#111' : 'white';
+
         if (deviceMarker) {
-            const iconHtml = `<div class='marker-offline'></div>`;
+            const iconHtml = `<div class='${markerClass}'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
             deviceMarker.setIcon(newIcon);
             
             const popupContent = `
                 <div style="min-width: 220px;">
-                    <div style="background: #64748b; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                    <div style="background: ${statusBg}; color: ${textColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
                         ${displayStatus}
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
@@ -705,8 +712,8 @@
         let popupTextColor = "white"; 
         
         if (status === "No Power") {
-            statusBg = "#fbbf24"; // Yellow
-            popupTextColor = "#111"; 
+            statusBg = "#f97316"; // Orange for No Power
+            popupTextColor = "white"; 
         } else if (status !== "Normal Operation") {
             statusBg = "#ef4444"; // Red
         }
@@ -1022,9 +1029,10 @@
         statusEl.innerText = statusText;
         
         if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
-        else if (statusText === "CONNECTING..." || statusText === "SYSTEM OFFLINE") statusEl.style.color = "#64748b"; 
-        else if (statusText === "No Power") statusEl.style.color = "#fbbf24"; 
-        else statusEl.style.color = "#ef4444"; 
+        else if (statusText === "CONNECTING...") statusEl.style.color = "#fbbf24"; // Yellow
+        else if (statusText === "SYSTEM OFFLINE") statusEl.style.color = "#64748b"; // Grey
+        else if (statusText === "No Power") statusEl.style.color = "#f97316"; // Orange
+        else statusEl.style.color = "#ef4444"; // Red
 
         ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
             document.getElementById(id).classList.remove('abnormal-row');
@@ -1120,9 +1128,10 @@
             const status = d.source === "OFFLINE" ? d.offlineState : detectAbnormality(d);
             
             let color = "#10b981"; 
-            if (status === "CONNECTING..." || status === "SYSTEM OFFLINE") color = "#64748b"; 
-            else if (status === "No Power") color = "#fbbf24"; 
-            else if (status !== "Normal Operation") color = "#ef4444"; 
+            if (status === "CONNECTING...") color = "#fbbf24"; // Yellow
+            else if (status === "SYSTEM OFFLINE") color = "#64748b"; // Gray
+            else if (status === "No Power") color = "#f97316"; // Orange
+            else if (status !== "Normal Operation") color = "#ef4444"; // Red
 
             let row = `<tr>
                 <td>${d.time.toLocaleTimeString()}</td>
