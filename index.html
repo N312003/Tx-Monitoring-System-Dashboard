@@ -460,7 +460,11 @@
     }
 
     async function pollLoop() {
-        await fetchData();
+        try {
+            await fetchData();
+        } catch (e) {
+            console.error("Poll Loop Error:", e);
+        }
         pollInterval = setTimeout(pollLoop, currentPollRate); 
     }
 
@@ -534,8 +538,18 @@
     }
 
     async function fetchData() {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         try {
-            const response = await fetch(`${API_URL}/status/${DEVICE_ID}`);
+            const timestamp = new Date().getTime();
+            const response = await fetch(`${API_URL}/status/${DEVICE_ID}?t=${timestamp}`, {
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+
             if (!response.ok) throw new Error("HTTP Status Error"); 
             
             const data = await response.json();
@@ -562,6 +576,12 @@
             updateDashboard(data);
 
         } catch (error) {
+            clearTimeout(timeoutId);
+
+            if (error.name === 'AbortError') {
+                error.message = "Server Timeout";
+            }
+
             if (error.message === "Hardware Offline" || error.message === "No database records") {
                 failedAttempts = MAX_FAILURES; 
             } else {
