@@ -1267,21 +1267,23 @@ function setChartRange(hours, btn) {
     updateHistoryChartData();
 }
 
-// Function 2: NEW - Handle picking a specific date
+// Function 2: Handle picking a specific date
 function fetchHistoryByDate() {
     const dateInput = document.getElementById('historyDateSelect').value;
     if(!dateInput) return;
     
-    // Remove active class from time buttons since we are doing a custom date
+    // Remove active class from time buttons
     document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
     
-    // Set a flag so updateHistoryChartData knows we are using a specific date
+    // Set the mode flag
     chartTimeWindow = 'DATE'; 
-    updateHistoryChartData(dateInput);
+    
+    // Call the update function (no need to pass the date, it will grab it itself)
+    updateHistoryChartData(); 
 }
 
-// Function 3: Updated fetch logic to handle both scenarios seamlessly
-async function updateHistoryChartData(customDate = null) {
+// Function 3: Safely handle both Hour Ranges and Specific Dates
+async function updateHistoryChartData() {
     if (!chartElec) return;
     
     let displayData = [];
@@ -1296,10 +1298,16 @@ async function updateHistoryChartData(customDate = null) {
         document.getElementById('loader-text').innerText = 'RETRIEVING HISTORICAL DATA...';
         
         try {
-            // Determine the correct API endpoint based on user interaction
             let fetchUrl = '';
-            if (chartTimeWindow === 'DATE' && customDate) {
-                fetchUrl = `${API_URL}/history/${DEVICE_ID}?date=${customDate}`;
+            
+            // If in DATE mode, grab the value straight from the HTML input
+            if (chartTimeWindow === 'DATE') {
+                const selectedDate = document.getElementById('historyDateSelect').value;
+                if (!selectedDate) {
+                    document.getElementById('global-loader').style.display = 'none';
+                    return; // Abort if no date is actually selected
+                }
+                fetchUrl = `${API_URL}/history/${DEVICE_ID}?date=${selectedDate}`;
             } else {
                 fetchUrl = `${API_URL}/history/${DEVICE_ID}?hours=${chartTimeWindow}`;
             }
@@ -1322,11 +1330,10 @@ async function updateHistoryChartData(customDate = null) {
                 }));
                 renderHistorian(displayData);
             } else {
-                renderHistorian([]); // Clear charts if no data exists for that date
+                renderHistorian([]); // Clear charts if the database is empty for that date
             }
         } catch (e) {
             console.error("Database sync failed:", e);
-            logEvent("History Sync Failed", "WARNING");
         } finally {
             document.getElementById('global-loader').style.display = 'none';
         }
@@ -1488,6 +1495,7 @@ async function updateHistoryChartData(customDate = null) {
 </script>
 </body>
 </html>
+
 
 
 
