@@ -999,10 +999,18 @@ function renderHistorian(filteredData) {
     currentChartData = filteredData;
     
     const labels = filteredData.map(d => {
-        // Show date + time if the range is large (multiple days)
-        return chartTimeWindow > 12 
-            ? d.time.toLocaleDateString([], {month:'short', day:'numeric'}) + " " + d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-            : d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        // Show dat// Helper to update the actual Chart.js instances
+function renderHistorian(filteredData) {
+    currentChartData = filteredData;
+    
+    const labels = filteredData.map(d => {
+        // Formats the time to 24-hour format (e.g., "13:00", "14:30")
+        // Setting hour12: false forces the 24-hour clock and drops the AM/PM
+        return d.time.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+        });
     });
 
     const chartConfigs = [
@@ -1495,6 +1503,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
