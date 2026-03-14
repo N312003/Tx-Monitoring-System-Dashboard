@@ -1253,12 +1253,85 @@ function renderHistorian(filteredData) {
         if(charts[type]) { charts[type].getDatasetMeta(idx).hidden = !charts[type].getDatasetMeta(idx).hidden; charts[type].update(); }
     }
 
-    function setChartRange(hours, btn) {
-        chartTimeWindow = hours;
-        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        updateHistoryChartData();
+    // Function 1: Handle clicking the quick-select hour buttons
+function setChartRange(hours, btn) {
+    chartTimeWindow = hours;
+    
+    // Clear the date picker since we are using hour ranges
+    document.getElementById('historyDateSelect').value = ''; 
+    
+    // Update button visuals
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    
+    updateHistoryChartData();
+}
+
+// Function 2: NEW - Handle picking a specific date
+function fetchHistoryByDate() {
+    const dateInput = document.getElementById('historyDateSelect').value;
+    if(!dateInput) return;
+    
+    // Remove active class from time buttons since we are doing a custom date
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+    
+    // Set a flag so updateHistoryChartData knows we are using a specific date
+    chartTimeWindow = 'DATE'; 
+    updateHistoryChartData(dateInput);
+}
+
+// Function 3: Updated fetch logic to handle both scenarios seamlessly
+async function updateHistoryChartData(customDate = null) {
+    if (!chartElec) return;
+    
+    let displayData = [];
+    
+    // LIVE Mode
+    if (chartTimeWindow === 0) {
+        displayData = sessionLog.slice(-50);
+        renderHistorian(displayData);
+    } else {
+        // Historical / Database Mode
+        document.getElementById('global-loader').style.display = 'flex';
+        document.getElementById('loader-text').innerText = 'RETRIEVING HISTORICAL DATA...';
+        
+        try {
+            // Determine the correct API endpoint based on user interaction
+            let fetchUrl = '';
+            if (chartTimeWindow === 'DATE' && customDate) {
+                fetchUrl = `${API_URL}/history/${DEVICE_ID}?date=${customDate}`;
+            } else {
+                fetchUrl = `${API_URL}/history/${DEVICE_ID}?hours=${chartTimeWindow}`;
+            }
+            
+            const response = await fetch(fetchUrl);
+            const dbData = await response.json();
+            
+            if (Array.isArray(dbData) && dbData.length > 0) {
+                displayData = dbData.map(d => ({
+                    time: new Date(d.created_at),
+                    v: parseFloat(d.voltage || 0),
+                    c1: parseFloat(d.current_l1 || 0),
+                    pf: parseFloat(d.pf || 0),
+                    kw: parseFloat(d.kw || 0),
+                    kva: parseFloat(d.kva || 0),
+                    load: parseFloat(d.load || 0),
+                    t: parseFloat(d.temp || 0),
+                    vib: parseFloat(d.vib || 0),
+                    source: "DATABASE"
+                }));
+                renderHistorian(displayData);
+            } else {
+                renderHistorian([]); // Clear charts if no data exists for that date
+            }
+        } catch (e) {
+            console.error("Database sync failed:", e);
+            logEvent("History Sync Failed", "WARNING");
+        } finally {
+            document.getElementById('global-loader').style.display = 'none';
+        }
     }
+}
 
     // --- 3. INTEGRATED ADVANCED PDF GENERATOR ---
     async function downloadPDF() {
@@ -1415,6 +1488,7 @@ function renderHistorian(filteredData) {
 </script>
 </body>
 </html>
+
 
 
 
