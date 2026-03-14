@@ -273,10 +273,13 @@
                 <div class="checkbox-group">
                     <label class="checkbox-item"><input type="checkbox" id="cb_v" checked onchange="toggleChartDataset('elec', 0)"> Voltage</label>
                     <label class="checkbox-item"><input type="checkbox" id="cb_c1" checked onchange="toggleChartDataset('elec', 1)"> Current L1</label>
+                    
                     <label class="checkbox-item"><input type="checkbox" id="cb_kw" checked onchange="toggleChartDataset('power', 0)"> kW</label>
                     <label class="checkbox-item"><input type="checkbox" id="cb_kva" checked onchange="toggleChartDataset('power', 1)"> kVA</label>
+                    
                     <label class="checkbox-item"><input type="checkbox" id="cb_pf" checked onchange="toggleChartDataset('pf', 0)"> PF</label>
                     <label class="checkbox-item"><input type="checkbox" id="cb_load" checked onchange="toggleChartDataset('pf', 1)"> Load %</label>
+                    
                     <label class="checkbox-item"><input type="checkbox" id="cb_t" checked onchange="toggleChartDataset('phys', 0)"> Temp</label>
                     <label class="checkbox-item"><input type="checkbox" id="cb_vib" checked onchange="toggleChartDataset('phys', 1)"> Vib</label>
                 </div>
@@ -314,17 +317,51 @@
                         </div>
 
                         <div id="summary-data" style="display: none;">
-                            <div class="summary-item"><span class="summary-label">Timestamp</span><span class="summary-val" id="sum_time" style="font-size: 0.85rem; color: #ccc;">--:--:--</span></div>
-                            <div class="summary-item"><span class="summary-label">Data Source</span><span class="summary-val" id="sum_source" style="font-size: 0.85rem;">--</span></div>
-                            <div class="summary-item"><span class="summary-label">System Status</span><span class="summary-val" id="sum_status" style="font-size: 0.85rem;">--</span></div>
-                            <div class="summary-item" id="row_v"><span class="summary-label">Voltage</span><span class="summary-val" style="color: #7c3aed;" id="sum_v">-- V</span></div>
-                            <div class="summary-item" id="row_c1"><span class="summary-label">Current L1</span><span class="summary-val" style="color: #10b981;" id="sum_c1">-- A</span></div>
-                            <div class="summary-item" id="row_kw"><span class="summary-label">Active Power</span><span class="summary-val" style="color: #eab308;" id="sum_kw">-- kW</span></div>
-                            <div class="summary-item" id="row_kva"><span class="summary-label">Apparent Power</span><span class="summary-val" style="color: #3b82f6;" id="sum_kva">-- kVA</span></div>
-                            <div class="summary-item" id="row_load"><span class="summary-label">Loading Level</span><span class="summary-val" style="color: #ec4899;" id="sum_load">-- %</span></div>
-                            <div class="summary-item" id="row_pf"><span class="summary-label">Power Factor</span><span class="summary-val" style="color: #d946ef;" id="sum_pf">--</span></div>
-                            <div class="summary-item" id="row_t"><span class="summary-label">Temperature</span><span class="summary-val" style="color: var(--temp-color);" id="sum_t">-- °C</span></div>
-                            <div class="summary-item" id="row_vib"><span class="summary-label">Vibration</span><span class="summary-val" style="color: #fbbf24;" id="sum_vib">-- g</span></div>
+                            <div class="summary-item">
+                                <span class="summary-label">Timestamp</span>
+                                <span class="summary-val" id="sum_time" style="font-size: 0.85rem; color: #ccc;">--:--:--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Data Source</span>
+                                <span class="summary-val" id="sum_source" style="font-size: 0.85rem;">--</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">System Status</span>
+                                <span class="summary-val" id="sum_status" style="font-size: 0.85rem;">--</span>
+                            </div>
+
+                            <div class="summary-item" id="row_v">
+                                <span class="summary-label">Voltage</span>
+                                <span class="summary-val" style="color: #7c3aed;" id="sum_v">-- V</span>
+                            </div>
+                            <div class="summary-item" id="row_c1">
+                                <span class="summary-label">Current L1</span>
+                                <span class="summary-val" style="color: #10b981;" id="sum_c1">-- A</span>
+                            </div>
+                            <div class="summary-item" id="row_kw">
+                                <span class="summary-label">Active Power</span>
+                                <span class="summary-val" style="color: #eab308;" id="sum_kw">-- kW</span>
+                            </div>
+                            <div class="summary-item" id="row_kva">
+                                <span class="summary-label">Apparent Power</span>
+                                <span class="summary-val" style="color: #3b82f6;" id="sum_kva">-- kVA</span>
+                            </div>
+                            <div class="summary-item" id="row_load">
+                                <span class="summary-label">Loading Level</span>
+                                <span class="summary-val" style="color: #ec4899;" id="sum_load">-- %</span>
+                            </div>
+                            <div class="summary-item" id="row_pf">
+                                <span class="summary-label">Power Factor</span>
+                                <span class="summary-val" style="color: #d946ef;" id="sum_pf">--</span>
+                            </div>
+                            <div class="summary-item" id="row_t">
+                                <span class="summary-label">Temperature</span>
+                                <span class="summary-val" style="color: var(--temp-color);" id="sum_t">-- °C</span>
+                            </div>
+                            <div class="summary-item" id="row_vib">
+                                <span class="summary-label">Vibration</span>
+                                <span class="summary-val" style="color: #fbbf24;" id="sum_vib">-- g</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -381,14 +418,17 @@
                 <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
                     <div class="cal-group"><div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div><input type="range" min="0" max="300" value="220" class="cal-slider" oninput="updateSimulation('v', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input type="range" min="0" max="400" value="5" class="cal-slider" oninput="updateSimulation('c1', this.value)"></div>
+                    
                     <div class="cal-group"><div class="cal-label"><span>Sim Active Power (kW)</span><span id="sim_kw_val">0.99kW</span></div><input type="range" min="0" max="100" step="0.1" value="0.99" class="cal-slider" oninput="updateSimulation('kw', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Apparent Power (kVA)</span><span id="sim_kva_val">1.1kVA</span></div><input type="range" min="0" max="100" step="0.1" value="1.1" class="cal-slider" oninput="updateSimulation('kva', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Loading (%)</span><span id="sim_load_val">1.4%</span></div><input type="range" min="0" max="150" step="0.1" value="1.4" class="cal-slider" oninput="updateSimulation('load', this.value)"></div>
+                    
                     <div class="cal-group"><div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div><input type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider" oninput="updateSimulation('pf', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div><input type="range" min="0" max="150" value="30" class="cal-slider" oninput="updateSimulation('t', this.value)"></div>
                     <div class="cal-group"><div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)"></div>
                 </div>
             </div>
+            
         </div>
     </div>
 
@@ -397,6 +437,7 @@
     const DEVICE_ID = "Tx01";
     const TRANS_KVA_RATING = 75.0; 
 
+    // --- STATE VARIABLES ---
     let sessionLog = []; 
     let map = null;
     let deviceMarker = null;
@@ -438,7 +479,11 @@
     }
 
     async function pollLoop() {
-        try { await fetchData(); } catch (e) { console.error("Poll Loop Error:", e); }
+        try {
+            await fetchData();
+        } catch (e) {
+            console.error("Poll Loop Error:", e);
+        }
         pollInterval = setTimeout(pollLoop, currentPollRate); 
     }
 
@@ -452,9 +497,16 @@
         document.getElementById('t').innerText = "0.0 °C";
         document.getElementById('vib').innerText = "0.00 g";
         
-        updateSingleChart(vChart, 0); updateSingleChart(pfChart, 0); updateSingleChart(tChart, 0); 
-        updateSingleChart(vibChart, 0); updateSingleChart(kwChart, 0); updateSingleChart(loadChart, 0);
-        cChart.data.datasets[0].data.push(0); cChart.data.datasets[0].data.shift(); cChart.update();
+        updateSingleChart(vChart, 0); 
+        updateSingleChart(pfChart, 0); 
+        updateSingleChart(tChart, 0); 
+        updateSingleChart(vibChart, 0); 
+        updateSingleChart(kwChart, 0); 
+        updateSingleChart(loadChart, 0);
+        
+        cChart.data.datasets[0].data.push(0); 
+        cChart.data.datasets[0].data.shift();
+        cChart.update();
 
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
@@ -467,84 +519,170 @@
             const iconHtml = `<div class='${markerClass}'></div>`;
             const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
             deviceMarker.setIcon(newIcon);
-            const popupContent = `<div style="min-width: 220px;"><div style="background: ${statusBg}; color: ${textColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">${displayStatus}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;"><span>Voltage:</span> <span style="color: #fff; font-weight: bold;">0.0 V</span><span>Current:</span> <span style="color: #fff; font-weight: bold;">0.0 A</span><span>Active:</span> <span style="color: #fff; font-weight: bold;">0.00 kW</span><span>Apparent:</span> <span style="color: #fff; font-weight: bold;">0.00 kVA</span><span>Load:</span> <span style="color: #fff; font-weight: bold;">0.0 %</span><span>PF:</span> <span style="color: #fff; font-weight: bold;">0.00</span><span>Temp:</span> <span style="color: #fff; font-weight: bold;">0.0 °C</span><span>Vib:</span> <span style="color: #fff; font-weight: bold;">0.00 g</span></div></div>`;
-            if (!deviceMarker.getPopup()) deviceMarker.bindPopup(popupContent);
-            else deviceMarker.setPopupContent(popupContent);
+            
+            const popupContent = `
+                <div style="min-width: 220px;">
+                    <div style="background: ${statusBg}; color: ${textColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                        ${displayStatus}
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
+                        <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">0.0 V</span>
+                        <span>Current:</span> <span style="color: #fff; font-weight: bold;">0.0 A</span>
+                        <span>Active:</span> <span style="color: #fff; font-weight: bold;">0.00 kW</span>
+                        <span>Apparent:</span> <span style="color: #fff; font-weight: bold;">0.00 kVA</span>
+                        <span>Load:</span> <span style="color: #fff; font-weight: bold;">0.0 %</span>
+                        <span>PF:</span> <span style="color: #fff; font-weight: bold;">0.00</span>
+                        <span>Temp:</span> <span style="color: #fff; font-weight: bold;">0.0 °C</span>
+                        <span>Vib:</span> <span style="color: #fff; font-weight: bold;">0.00 g</span>
+                    </div>
+                </div>
+            `;
+            
+            if (!deviceMarker.getPopup()) {
+                deviceMarker.bindPopup(popupContent);
+            } else {
+                deviceMarker.setPopupContent(popupContent);
+            }
         }
         
         lastAbnormalityString = displayStatus;
+
         const lastLog = sessionLog.length > 0 ? sessionLog[sessionLog.length - 1] : null;
         if (!lastLog || lastLog.source !== "OFFLINE") {
             const now = new Date();
             sessionLog.push({time: now, v: 0, c1: 0, pf: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, source: "OFFLINE", offlineState: displayStatus});
             if (sessionLog.length > 5000) sessionLog.shift();
-            filterReportDate(); updateHistoryChartData();
+            filterReportDate(); 
+            updateHistoryChartData();
         } else if (lastLog && lastLog.source === "OFFLINE" && lastLog.offlineState !== displayStatus) {
-            lastLog.offlineState = displayStatus; filterReportDate(); 
+            lastLog.offlineState = displayStatus; 
+            filterReportDate(); 
         }
     }
 
     async function fetchData() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         try {
             const timestamp = new Date().getTime();
-            const response = await fetch(`${API_URL}/status/${DEVICE_ID}?t=${timestamp}`, { cache: 'no-store', signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (!response.ok) throw new Error("HTTP Status Error"); 
-            const data = await response.json();
-            if(data.message === "No data") throw new Error("No database records");
-            if (data.seconds_offline > 15 && !isSimulationMode) throw new Error("Hardware Offline");
+            const response = await fetch(`${API_URL}/status/${DEVICE_ID}?t=${timestamp}`, {
+                cache: 'no-store',
+                signal: controller.signal
+            });
             
-            failedAttempts = 0; currentPollRate = 3000; offlineStartTime = 0; 
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error("HTTP Status Error"); 
+            
+            const data = await response.json();
+
+            if(data.message === "No data") throw new Error("No database records");
+
+            if (data.seconds_offline > 15 && !isSimulationMode) {
+                throw new Error("Hardware Offline");
+            }
+
+            failedAttempts = 0; 
+            currentPollRate = 3000; 
+            offlineStartTime = 0; 
+
             const statusBadge = document.getElementById('netStatus');
-            if(statusBadge.innerText === "CONNECTING..." || statusBadge.innerText === "SYSTEM OFFLINE") logEvent("Connection Restored", "SUCCESS");
-            statusBadge.innerText = "ONLINE"; statusBadge.className = "status-badge status-online";
+            
+            if(statusBadge.innerText === "CONNECTING..." || statusBadge.innerText === "SYSTEM OFFLINE") {
+                logEvent("Connection Restored", "SUCCESS");
+            }
+            
+            statusBadge.innerText = "ONLINE";
+            statusBadge.className = "status-badge status-online";
             
             updateDashboard(data);
+
         } catch (error) {
             clearTimeout(timeoutId);
-            failedAttempts++;
+
+            if (error.name === 'AbortError') {
+                error.message = "Server Timeout";
+            }
+
+            if (error.message === "Hardware Offline" || error.message === "No database records") {
+                failedAttempts = MAX_FAILURES; 
+            } else {
+                failedAttempts++;
+            }
+
+            console.warn(`Fetch issue (${failedAttempts}/${MAX_FAILURES}):`, error.message);
+
             if (failedAttempts >= MAX_FAILURES) {
                 currentPollRate = 1000; 
+
                 if (offlineStartTime === 0) offlineStartTime = Date.now();
                 let timeOffline = Date.now() - offlineStartTime;
                 let displayStatus = timeOffline > 30000 ? "SYSTEM OFFLINE" : "CONNECTING...";
+
                 const statusBadge = document.getElementById('netStatus');
                 if (statusBadge.innerText !== displayStatus) {
-                    if (displayStatus === "SYSTEM OFFLINE") logEvent("Connection Timed Out (30s). System Offline.", "ALERT");
-                    else if (statusBadge.innerText !== "CONNECTING...") logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "WARNING");
-                    statusBadge.innerText = displayStatus; statusBadge.className = "status-badge status-offline";
+                    if (displayStatus === "SYSTEM OFFLINE") {
+                        logEvent("Connection Timed Out (30s). System Offline.", "ALERT");
+                    } else if (statusBadge.innerText !== "CONNECTING...") {
+                        logEvent(error.message === "Hardware Offline" ? "Monitoring Hardware Offline" : "Server Connection Lost", "WARNING");
+                    }
+                    statusBadge.innerText = displayStatus;
+                    statusBadge.className = "status-badge status-offline";
                 }
+                
                 zeroOutDashboard(displayStatus); 
             }
         }
     }
 
     function detectAbnormality(d) {
-        if (d.v < 50 && d.c1 < 0.1) return "No Power";
+        if (d.v === 0 && d.c1 === 0) return "No Power";
+        
         let issues = [];
-        if (d.v > 264) issues.push(`Overvoltage (${d.v.toFixed(1)}V)`);
-        if (d.v < 216 && d.v > 50) issues.push(`Undervoltage (${d.v.toFixed(1)}V)`);
-        if (d.c1 > 312) issues.push(`Overcurrent (${d.c1.toFixed(1)}A)`);
-        if (d.load > 100) issues.push(`Tx Overloaded (${d.load.toFixed(1)}%)`);
-        if (d.t > 75) issues.push(`Overheating (${d.t.toFixed(1)}C)`);
-        if (d.vib > 0.20) issues.push(`High Vibration (${d.vib.toFixed(2)}g)`);
-        if (d.pf < 0.85 && d.v > 10) issues.push(`Low PF (${d.pf.toFixed(2)})`);
+        if (d.v > 264) issues.push("Overvoltage");
+        if (d.v < 216 && d.v > 0) issues.push("Undervoltage"); 
+        if (d.c1 > 312) issues.push("Overcurrent");
+        if (d.load > 100) issues.push("Tx Overloaded");
+        if (d.t > 75) issues.push("Overheating");
+        if (d.vib > 0.20) issues.push("High Vibration");
+        if (d.pf < 0.85 && d.v > 10) issues.push("Low Power Factor");
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
     function updateDashboard(d) {
-        let v = isSimulationMode ? parseFloat(simValues.v) : (d.voltage || 0);
-        let c1 = isSimulationMode ? parseFloat(simValues.c1) : (d.currentL1 || 0);
-        let pf = isSimulationMode ? parseFloat(simValues.pf) : (d.pf || 0);
-        let kw = isSimulationMode ? parseFloat(simValues.kw) : (d.kw || 0);
-        let kva = isSimulationMode ? parseFloat(simValues.kva) : (d.kva || 0);
-        let load = isSimulationMode ? parseFloat(simValues.load) : (d.load || 0);
-        let t = isSimulationMode ? parseFloat(simValues.t) : (d.temp || 0);
-        let vib = isSimulationMode ? parseFloat(simValues.vib) : (d.vib || 0);
+        let v, c1, kw, kva, load, t, vib, pf;
+        let sourceTag = "LIVE"; 
 
-        if (v < 50) { v = 0.0; c1 = 0.0; kw = 0.0; kva = 0.0; load = 0.0; pf = 0.0; }
+        if (isSimulationMode) {
+            v = parseFloat(simValues.v);
+            c1 = parseFloat(simValues.c1);
+            kw = parseFloat(simValues.kw);
+            kva = parseFloat(simValues.kva);
+            load = parseFloat(simValues.load);
+            t = parseFloat(simValues.t);
+            vib = parseFloat(simValues.vib);
+            pf = parseFloat(simValues.pf);
+            sourceTag = "SIMULATION";
+        } else {
+            v = d.voltage || 0;
+            c1 = d.currentL1 || 0;
+            pf = d.pf || 0;
+            kw = d.kw || 0;
+            kva = d.kva || 0;
+            load = d.load || 0;
+            t = d.temp || 0;
+            vib = d.vib || 0;
+        }
+
+        if (v < 50) {
+            v = 0.0;
+            c1 = 0.0;
+            kw = 0.0;
+            kva = 0.0;
+            load = 0.0;
+            pf = 0.0;
+        }
 
         document.getElementById('v').innerText = v.toFixed(1) + " V";
         document.getElementById('c1').innerText = c1.toFixed(1) + " A";
@@ -555,9 +693,12 @@
         document.getElementById('t').innerText = t.toFixed(1) + " °C";
         document.getElementById('vib').innerText = vib.toFixed(2) + " g";
 
-        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); updateSingleChart(tChart, t); 
-        updateSingleChart(vibChart, vib); updateSingleChart(kwChart, kw); updateSingleChart(loadChart, load);
-        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift(); cChart.update();
+        updateSingleChart(vChart, v); updateSingleChart(pfChart, pf); 
+        updateSingleChart(tChart, t); updateSingleChart(vibChart, vib);
+        updateSingleChart(kwChart, kw); updateSingleChart(loadChart, load);
+        
+        cChart.data.datasets[0].data.push(c1); cChart.data.datasets[0].data.shift();
+        cChart.update();
 
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
         const status = detectAbnormality(currentDataPoint);
@@ -565,7 +706,7 @@
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
 
-        if (v > 264 || (v < 216 && v > 50)) document.getElementById('card_v').classList.add('blink-red-card');
+        if (v > 264 || (v < 216 && v > 0)) document.getElementById('card_v').classList.add('blink-red-card');
         if (c1 > 312) document.getElementById('card_c').classList.add('blink-red-card');
         if (load > 100) document.getElementById('card_load').classList.add('blink-red-card');
         if (pf < 0.85 && v > 10) document.getElementById('card_pf').classList.add('blink-red-card');
@@ -573,20 +714,70 @@
         if (vib > 0.20) document.getElementById('card_vib').classList.add('blink-red-card');
 
         if (status !== lastAbnormalityString) {
-            if (status === "Normal Operation") logEvent("System parameters returned to Normal Operation", "SUCCESS");
-            else if (status === "No Power") logEvent("AC Power Supply Lost (0.0V, 0.0A)", "ALERT");
-            else logEvent(`FAULT DETECTED: ${status}`, "ALERT");
+            if (status === "Normal Operation") {
+                logEvent("System parameters returned to Normal Operation", "SUCCESS");
+            } else if (status === "No Power") {
+                logEvent("AC Power Supply Lost (0.0V, 0.0A)", "ALERT");
+            } else {
+                let details = [];
+                if (v > 264) details.push(`Overvoltage at ${v.toFixed(1)}V`);
+                if (v < 216 && v > 0) details.push(`Undervoltage at ${v.toFixed(1)}V`);
+                if (c1 > 312) details.push(`Overcurrent at ${c1.toFixed(1)}A`);
+                if (load > 100) details.push(`Tx Overloaded at ${load.toFixed(1)}%`);
+                if (t > 75) details.push(`Temp Critical at ${t.toFixed(1)}°C`);
+                if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
+                if (pf < 0.85 && v > 10) details.push(`Low PF at ${pf.toFixed(2)}`);
+
+                logEvent(`FAULT DETECTED: ${details.join(" | ")}`, "ALERT");
+            }
             lastAbnormalityString = status;
         }
 
-        let statusBg = status === "No Power" ? "#f97316" : (status !== "Normal Operation" ? "#ef4444" : "#10b981");
+        let statusBg = "#10b981"; // Green
+        let popupTextColor = "white"; 
+        
+        if (status === "No Power") {
+            statusBg = "#f97316"; // Orange
+            popupTextColor = "white"; 
+        } else if (status !== "Normal Operation") {
+            statusBg = "#ef4444"; // Red
+        }
 
-        if (map && deviceMarker && d.config && d.config.location) {
-            deviceMarker.setLatLng([d.config.location.lat, d.config.location.lng]);
-            const mClass = status === "No Power" ? 'marker-nopower' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
-            deviceMarker.setIcon(L.divIcon({ className: 'custom-div-icon', html: `<div class='${mClass}'></div>` }));
-            const popupContent = `<div style="min-width: 220px;"><div style="background: ${statusBg}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">${status.toUpperCase()}</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;"><span>Voltage:</span> <span style="color: #fff; font-weight: bold;">${v.toFixed(1)} V</span><span>Current:</span> <span style="color: #fff; font-weight: bold;">${c1.toFixed(1)} A</span><span>Active:</span> <span style="color: #fff; font-weight: bold;">${kw.toFixed(2)} kW</span><span>Apparent:</span> <span style="color: #fff; font-weight: bold;">${kva.toFixed(2)} kVA</span><span>Load:</span> <span style="color: #fff; font-weight: bold;">${load.toFixed(1)} %</span><span>PF:</span> <span style="color: #fff; font-weight: bold;">${pf.toFixed(2)}</span><span>Temp:</span> <span style="color: #fff; font-weight: bold;">${t.toFixed(1)} °C</span><span>Vib:</span> <span style="color: #fff; font-weight: bold;">${vib.toFixed(2)} g</span></div></div>`;
-            deviceMarker.bindPopup(popupContent);
+        if (map && deviceMarker && d.config && d.config.location && d.config.location.lat !== 0) {
+            const lat = d.config.location.lat;
+            const lng = d.config.location.lng;
+            
+            deviceMarker.setLatLng([lat, lng]);
+            
+            const newIconClass = status === "No Power" ? 'marker-nopower' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
+            const iconHtml = `<div class='${newIconClass}'></div>`;
+            const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
+            deviceMarker.setIcon(newIcon);
+
+            const popupContent = `
+                <div style="min-width: 220px;">
+                    <div style="background: ${statusBg}; color: ${popupTextColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                        ${status.toUpperCase()}
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
+                        <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">${v.toFixed(1)} V</span>
+                        <span>Current:</span> <span style="color: #fff; font-weight: bold;">${c1.toFixed(1)} A</span>
+                        <span>Active:</span> <span style="color: #fff; font-weight: bold;">${kw.toFixed(2)} kW</span>
+                        <span>Apparent:</span> <span style="color: #fff; font-weight: bold;">${kva.toFixed(2)} kVA</span>
+                        <span>Load:</span> <span style="color: #fff; font-weight: bold;">${load.toFixed(1)} %</span>
+                        <span>PF:</span> <span style="color: #fff; font-weight: bold;">${pf.toFixed(2)}</span>
+                        <span>Temp:</span> <span style="color: #fff; font-weight: bold;">${t.toFixed(1)} °C</span>
+                        <span>Vib:</span> <span style="color: #fff; font-weight: bold;">${vib.toFixed(2)} g</span>
+                    </div>
+                </div>
+            `;
+            
+            if (!deviceMarker.getPopup()) {
+                deviceMarker.bindPopup(popupContent);
+            } else {
+                deviceMarker.setPopupContent(popupContent);
+            }
+            
             if(status !== "Normal Operation" && !deviceMarker.isPopupOpen()) deviceMarker.openPopup();
         }
 
@@ -600,14 +791,21 @@
             const statusText = document.getElementById('armStatusText');
             if (toggle.checked !== d.alarmArmed) {
                 toggle.checked = d.alarmArmed;
-                statusText.innerText = d.alarmArmed ? "SYSTEM ARMED" : "SYSTEM DISARMED";
-                statusText.style.color = d.alarmArmed ? "#ef4444" : "#10b981";
-                logEvent(d.alarmArmed ? "Remote Arm Command Received" : "Remote Disarm Command Received", d.alarmArmed ? "ALERT" : "INFO");
+                if (d.alarmArmed) {
+                    statusText.innerText = "SYSTEM ARMED";
+                    statusText.style.color = "#ef4444";
+                    logEvent("Remote Arm Command Received", "ALERT");
+                } else {
+                    statusText.innerText = "SYSTEM DISARMED";
+                    statusText.style.color = "#10b981";
+                    logEvent("Remote Disarm Command Received", "INFO");
+                }
             }
         }
 
         const now = new Date();
-        sessionLog.push({time: now, v, c1, pf, kw, kva, load, t, vib, source: isSimulationMode ? "SIMULATION" : "LIVE"});
+        sessionLog.push({time: now, v, c1, pf, kw, kva, load, t, vib, source: sourceTag});
+        
         if (sessionLog.length > 5000) sessionLog.shift();
         
         if (chartTimeWindow === 0) updateHistoryChartData(); 
@@ -615,33 +813,70 @@
 
     function logEvent(msg, type) {
         const tbody = document.getElementById("eventLogBody");
-        const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : (type === 'MAINT' ? '#fbbf24' : '#3b82f6'));
-        tbody.insertAdjacentHTML("afterbegin", `<tr><td style="color:#888; font-size:0.85rem;">${new Date().toLocaleTimeString()}</td><td style="color:white; font-weight:500;">${msg}</td><td><span class="stat-pill" style="background:${color}">${type}</span></td></tr>`);
+        const color = type === 'ALERT' ? '#ef4444' : (type === 'SUCCESS' ? '#10b981' : (type === 'MAINT' ? '#fbbf24' : (type === 'WARNING' ? '#f97316' : '#3b82f6')));
+        const row = `<tr>
+            <td style="color:#888; font-size:0.85rem;">${new Date().toLocaleTimeString()}</td>
+            <td style="color:white; font-weight:500;">${msg}</td>
+            <td><span class="stat-pill" style="background:${color}">${type}</span></td>
+        </tr>`;
+        tbody.insertAdjacentHTML("afterbegin", row);
     }
 
     async function toggleAlarm(checkbox) {
         const newState = checkbox.checked;
         const statusText = document.getElementById('armStatusText');
-        statusText.innerText = newState ? "ARMING..." : "DISARMING...";
+        if (newState) { statusText.innerText = "ARMING..."; statusText.style.color = "#ef4444"; } 
+        else { statusText.innerText = "DISARMING..."; statusText.style.color = "#10b981"; }
+
         try {
-            await fetch(`${API_URL}/control`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: DEVICE_ID, alarm_armed: newState }) });
-            logEvent(newState ? "User Armed System" : "User Disarmed System", "ALERT");
-        } catch (error) { alert("Failed to update alarm"); checkbox.checked = !newState; }
+            const response = await fetch(`${API_URL}/control`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device_id: DEVICE_ID, alarm_armed: newState })
+            });
+            if (!response.ok) { alert("Failed!"); checkbox.checked = !newState; } 
+            else { logEvent(newState ? "User Armed System" : "User Disarmed System", "ALERT"); }
+        } catch (error) { alert("Network Error"); checkbox.checked = !newState; }
     }
 
     function toggleTestMode(checkbox) {
         isSimulationMode = checkbox.checked;
         const controls = document.getElementById('simulationControls');
-        fetch(`${API_URL}/simulation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: DEVICE_ID, active: isSimulationMode, ...simValues }) });
-        controls.style.opacity = isSimulationMode ? "1" : "0.3";
-        controls.style.pointerEvents = isSimulationMode ? "auto" : "none";
-        logEvent(isSimulationMode ? "Simulation Mode STARTED" : "Simulation Mode ENDED", isSimulationMode ? "MAINT" : "INFO");
+        
+        fetch(`${API_URL}/simulation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: DEVICE_ID, active: isSimulationMode, ...simValues })
+        });
+
+        if(isSimulationMode) {
+            controls.style.opacity = "1"; controls.style.pointerEvents = "auto";
+            logEvent("Simulation Mode STARTED", "MAINT");
+        } else {
+            controls.style.opacity = "0.3"; controls.style.pointerEvents = "none";
+            logEvent("Simulation Mode ENDED", "INFO");
+            lastAbnormalityString = ""; 
+        }
     }
 
     function updateSimulation(param, value) {
         simValues[param] = value;
-        let units = {v:'V', c1:'A', kw:'kW', kva:'kVA', load:'%', pf:'', t:'°C', vib:'g'};
-        document.getElementById(`sim_${param}_val`).innerText = value + (units[param] || '');
+        
+        let unit = '';
+        if(param === 'v') unit = 'V';
+        else if(param === 'c1') unit = 'A';
+        else if(param === 'kw') unit = 'kW';
+        else if(param === 'kva') unit = 'kVA';
+        else if(param === 'load') unit = '%';
+        else if(param === 't') unit = '°C';
+        else if(param === 'vib') unit = 'g';
+        
+        document.getElementById(`sim_${param}_val`).innerText = value + unit;
+        
+        if(isSimulationMode) {
+            updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
+        }
+
         clearTimeout(simUploadTimer);
         simUploadTimer = setTimeout(sendSimulationData, 500); 
     }
@@ -649,38 +884,68 @@
     async function sendSimulationData() {
         if(!isSimulationMode) return;
         try {
-            await fetch(`${API_URL}/simulation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device_id: DEVICE_ID, active: true, ...simValues }) });
+            await fetch(`${API_URL}/simulation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    device_id: DEVICE_ID,
+                    active: true,
+                    v: parseFloat(simValues.v),
+                    c1: parseFloat(simValues.c1),
+                    kw: parseFloat(simValues.kw),
+                    kva: parseFloat(simValues.kva),
+                    load: parseFloat(simValues.load),
+                    pf: parseFloat(simValues.pf),
+                    t: parseFloat(simValues.t),
+                    vib: parseFloat(simValues.vib)
+                })
+            });
         } catch (e) { console.error("Sim Upload Fail", e); }
     }
 
     function initMap() {
         if(map) return;
         map = L.map('map').setView([14.5995, 120.9842], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-        deviceMarker = L.marker([14.5995, 120.9842], {icon: L.divIcon({ className: 'custom-div-icon', html: `<div class='marker-normal'></div>` })}).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+        const icon = L.divIcon({ className: 'custom-div-icon', html: `<div class='marker-normal'></div>` });
+        deviceMarker = L.marker([14.5995, 120.9842], {icon: icon}).addTo(map);
+        
         deviceMarker.bindPopup("<div style='text-align:center; padding:5px; color:#aaa;'>Connecting to Node...</div>");
     }
-    
-    function toggleGeoControls() { 
-        const p = document.getElementById('geoControlsPanel'); 
-        p.style.display = p.style.display === 'none' ? 'flex' : 'none'; 
-        if(map) map.invalidateSize(); 
+    function toggleGeoControls() {
+        const p = document.getElementById('geoControlsPanel');
+        p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+        if(map) map.invalidateSize();
     }
-    
     async function saveManualLocation() {
         const lat = parseFloat(document.getElementById('inputLat').value);
         const lng = parseFloat(document.getElementById('inputLng').value);
-        await fetch(`${API_URL}/location`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ device_id: DEVICE_ID, lat, lng }) });
-        alert("Location Updated!"); 
+        if(!lat || !lng) return alert("Invalid Coords");
+        await fetch(`${API_URL}/location`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ device_id: DEVICE_ID, lat, lng })
+        });
+        alert("Location Updated!"); logEvent("Location Updated Manually", "SUCCESS");
     }
 
     function createMiniChart(e,t){return new Chart(document.getElementById(e).getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{data:Array(20).fill(0),borderColor:t,borderWidth:2,pointRadius:0,tension:.4,fill:!0,backgroundColor:t+"11"}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#333"},ticks:{color:"#bbb",font:{size:11}}}},plugins:{legend:{display:!1}},animation:!1}})}
-    const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#f97316"),vibChart=createMiniChart("chartVib","#fbbf24"), kwChart=createMiniChart("chartKW","#eab308"), loadChart=createMiniChart("chartLoad","#ec4899");
-    const cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{type:"line",data:{labels:Array(20).fill(""),datasets:[{label:"Current",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4}]},options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"}}},plugins:{legend:{display:!0}},animation:!1}});
+    const vChart=createMiniChart("chartVolt","#7c3aed"),pfChart=createMiniChart("chartPF","#d946ef"),tChart=createMiniChart("chartTemp","#f97316"),vibChart=createMiniChart("chartVib","#fbbf24");
+    const kwChart=createMiniChart("chartKW","#eab308"), loadChart=createMiniChart("chartLoad","#ec4899");
+    
+    const cChart=new Chart(document.getElementById("chartCurr").getContext("2d"),{
+        type:"line",
+        data:{labels:Array(20).fill(""),datasets:[{label:"Current",data:Array(20).fill(0),borderColor:"#10b981",borderWidth:2,pointRadius:0,tension:.4}]},
+        options:{responsive:!0,maintainAspectRatio:!1,scales:{x:{display:!1},y:{display:!0,grid:{color:"#444"},ticks:{color:"#ffffff",font:{size:12,weight:"bold"}}}},plugins:{legend:{display:!0,labels:{color:"#ccc"}}},animation:!1}
+    });
+    function updateSingleChart(e,t){e.data.datasets[0].data.push(t),e.data.datasets[0].data.shift(),e.update()}
 
+    // --- 1. INTEGRATED DATABASE-DRIVEN HISTORIAN ---
     async function updateHistoryChartData() {
         if (!chartElec) return;
+        
         let displayData = [];
+        
         if (chartTimeWindow === 0) {
             displayData = sessionLog.slice(-50);
             renderHistorian(displayData);
@@ -688,65 +953,71 @@
             document.getElementById('global-loader').style.display = 'flex';
             document.getElementById('loader-text').innerText = 'FETCHING HISTORICAL DATA...';
             try {
+                console.log(`Querying Supabase for last ${chartTimeWindow} hours...`);
+                
                 const response = await fetch(`${API_URL}/history/${DEVICE_ID}?hours=${chartTimeWindow}`);
                 const dbData = await response.json();
+                
                 if (Array.isArray(dbData) && dbData.length > 0) {
                     displayData = dbData.map(d => ({
-                        time: new Date(d.created_at), v: parseFloat(d.voltage || 0), c1: parseFloat(d.current_l1 || 0),
-                        pf: parseFloat(d.pf || 0), kw: parseFloat(d.kw || 0), kva: parseFloat(d.kva || 0),
-                        load: parseFloat(d.load || 0), t: parseFloat(d.temp || 0), vib: parseFloat(d.vib || 0), source: "DATABASE"
+                        time: new Date(d.created_at),
+                        v: parseFloat(d.voltage || 0),
+                        c1: parseFloat(d.current_l1 || 0),
+                        pf: parseFloat(d.pf || 0),
+                        kw: parseFloat(d.kw || 0),
+                        kva: parseFloat(d.kva || 0),
+                        load: parseFloat(d.load || 0),
+                        t: parseFloat(d.temp || 0),
+                        vib: parseFloat(d.vib || 0),
+                        source: "DATABASE"
                     }));
+                    
                     renderHistorian(displayData);
-                } else renderHistorian([]);
-            } catch (e) { console.error("Database connection failed:", e); }
-            finally { document.getElementById('global-loader').style.display = 'none'; }
+                } else {
+                    console.warn("No data found in Supabase for this time range.");
+                    renderHistorian([]);
+                }
+            } catch (e) {
+                console.error("Database connection failed:", e);
+                logEvent("Failed to sync with Supabase", "WARNING");
+            } finally {
+                document.getElementById('global-loader').style.display = 'none';
+            }
         }
     }
 
     function renderHistorian(filteredData) {
         currentChartData = filteredData;
         
-        // Ensure ALL charts (1H, 6H, 12H, 24H) only show Hours and Minutes, NO DATES.
         const labels = filteredData.map(d => {
-            if (chartTimeWindow === 0) {
-                // Live view keeps the seconds for speed feeling
-                return d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-            } else {
-                // 1H, 6H, 12H, 24H strictly show Hour and Minute (e.g. 1:00 PM)
-                return d.time.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
-            }
+            return chartTimeWindow > 12 
+                ? d.time.toLocaleDateString() + " " + d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                : d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
         });
 
-        const chartConfigs = [{ chart: chartElec, d: [filteredData.map(d => d.v), filteredData.map(d => d.c1)] }, { chart: chartPower, d: [filteredData.map(d => d.kw), filteredData.map(d => d.kva)] }, { chart: chartPF, d: [filteredData.map(d => d.pf), filteredData.map(d => d.load)] }, { chart: chartPhys, d: [filteredData.map(d => d.t), filteredData.map(d => d.vib)] }];
-        
+        const chartConfigs = [
+            { chart: chartElec, datasets: [filteredData.map(d => d.v), filteredData.map(d => d.c1)] },
+            { chart: chartPower, datasets: [filteredData.map(d => d.kw), filteredData.map(d => d.kva)] },
+            { chart: chartPF, datasets: [filteredData.map(d => d.pf), filteredData.map(d => d.load)] },
+            { chart: chartPhys, datasets: [filteredData.map(d => d.t), filteredData.map(d => d.vib)] }
+        ];
+
         chartConfigs.forEach(conf => {
             conf.chart.data.labels = labels;
-            conf.chart.data.datasets[0].data = conf.d[0];
-            if (conf.chart.data.datasets[1]) conf.chart.data.datasets[1].data = conf.d[1];
-
-            if (conf.chart.options.plugins.legend) conf.chart.options.plugins.legend.labels.color = '#fff';
-            
-            // Limit the X-axis labels to prevent text overlapping for all views
-            if (conf.chart.options.scales.x) {
-                conf.chart.options.scales.x.ticks.color = '#888';
-                if (chartTimeWindow > 0) {
-                    conf.chart.options.scales.x.ticks.maxTicksLimit = 12; // Enforce clean axis
-                    conf.chart.options.scales.x.ticks.maxRotation = 0; // Keep labels straight
-                } else {
-                    delete conf.chart.options.scales.x.ticks.maxTicksLimit; 
-                    delete conf.chart.options.scales.x.ticks.maxRotation;
-                }
+            conf.chart.data.datasets[0].data = conf.datasets[0];
+            if (conf.chart.data.datasets[1]) {
+                conf.chart.data.datasets[1].data = conf.datasets[1];
             }
-            if (conf.chart.options.scales.y) conf.chart.options.scales.y.ticks.color = '#888';
-
             conf.chart.update('none'); 
         });
     }
 
+    // --- 2. INTEGRATED DATABASE-DRIVEN REPORT FILTER ---
     async function filterReportDate() {
         const dateInput = document.getElementById('reportDate').value;
         const tbody = document.getElementById("dailyTableBody");
-        tbody.innerHTML = "<tr><td colspan='10' style='text-align:center;'>Fetching from DATABASE...</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='10' style='text-align:center;'>Fetching from Supabase...</td></tr>";
+
         let reportData = [];
 
         if (dateInput) {
@@ -755,24 +1026,57 @@
             try {
                 const response = await fetch(`${API_URL}/history/${DEVICE_ID}?date=${dateInput}`);
                 const dbData = await response.json();
+                
                 if (Array.isArray(dbData)) {
                     reportData = dbData.map(d => ({
-                        time: new Date(d.created_at), v: parseFloat(d.voltage || 0), c1: parseFloat(d.current_l1 || 0), pf: parseFloat(d.pf || 0),
-                        kw: parseFloat(d.kw || 0), kva: parseFloat(d.kva || 0), load: parseFloat(d.load || 0), t: parseFloat(d.temp || 0), vib: parseFloat(d.vib || 0), source: "DATABASE"
+                        time: new Date(d.created_at),
+                        v: parseFloat(d.voltage || 0),
+                        c1: parseFloat(d.current_l1 || 0),
+                        pf: parseFloat(d.pf || 0),
+                        kw: parseFloat(d.kw || 0),
+                        kva: parseFloat(d.kva || 0),
+                        load: parseFloat(d.load || 0),
+                        t: parseFloat(d.temp || 0),
+                        vib: parseFloat(d.vib || 0),
+                        source: "DATABASE"
                     }));
                 }
-            } catch (e) { tbody.innerHTML = "<tr><td colspan='10'>Error Loading Data</td></tr>"; return; } 
-            finally { document.getElementById('global-loader').style.display = 'none'; }
+            } catch (e) {
+                console.error("Report Fetch Error:", e);
+                tbody.innerHTML = "<tr><td colspan='10' style='text-align:center; color:red;'>Error loading database records</td></tr>";
+                return;
+            } finally {
+                document.getElementById('global-loader').style.display = 'none';
+            }
         } else {
             reportData = sessionLog.slice().reverse().slice(0, 500);
         }
 
-        tbody.innerHTML = reportData.length === 0 ? "<tr><td colspan='10' style='text-align:center;'>No records found</td></tr>" : "";
+        tbody.innerHTML = "";
+        if (reportData.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='10' style='text-align:center;'>No records found for this date.</td></tr>";
+        }
+
         reportData.forEach(d => {
             const status = d.source === "OFFLINE" ? d.offlineState : detectAbnormality(d);
-            let color = status === "Normal Operation" ? "#10b981" : (status === "No Power" ? "#f97316" : "#ef4444");
-            tbody.insertAdjacentHTML("beforeend", `<tr><td>${d.time.toLocaleTimeString()}</td><td>${d.v.toFixed(1)}</td><td>${d.c1.toFixed(1)}</td><td>${d.kw.toFixed(2)}</td><td>${d.kva.toFixed(2)}</td><td>${d.load.toFixed(1)}%</td><td>${d.t.toFixed(1)}</td><td>${d.vib.toFixed(2)}</td><td>${d.pf.toFixed(2)}</td><td><span style="color:${color}; font-weight:bold;">${status}</span></td></tr>`);
+            let color = (status === "Normal Operation") ? "#10b981" : "#ef4444";
+            if (status === "No Power") color = "#f97316";
+
+            let row = `<tr>
+                <td>${d.time.toLocaleTimeString()}</td>
+                <td>${d.v.toFixed(1)}</td>
+                <td>${d.c1.toFixed(1)}</td>
+                <td>${d.kw.toFixed(2)}</td>
+                <td>${d.kva.toFixed(2)}</td>
+                <td>${d.load.toFixed(1)}%</td>
+                <td>${d.t.toFixed(1)}</td>
+                <td>${d.vib.toFixed(2)}</td>
+                <td>${d.pf.toFixed(2)}</td>
+                <td><span style="color:${color}; font-weight:bold;">${status}</span></td>
+            </tr>`;
+            tbody.insertAdjacentHTML("beforeend", row);
         });
+        
         window.filteredExportData = reportData;
     }
 
@@ -782,44 +1086,127 @@
             const tooltipEl = document.getElementById('unified-tooltip');
             if (tooltip.opacity === 0) { tooltipEl.style.opacity = 0; return; }
             if (tooltip.dataPoints.length > 0) {
-                const data = currentChartData[tooltip.dataPoints[0].dataIndex];
+                const index = tooltip.dataPoints[0].dataIndex;
+                const data = currentChartData[index];
                 if (data) {
                     let html = `<div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #444; padding-bottom:5px;">${data.time.toLocaleTimeString()}</div>`;
-                    const c = {cb_v:['Voltage','v','#7c3aed','V'], cb_c1:['Current','c1','#10b981','A'], cb_kw:['Active','kw','#eab308','kW'], cb_kva:['Apparent','kva','#3b82f6','kVA'], cb_load:['Load','load','#ec4899','%'], cb_pf:['PF','pf','#d946ef',''], cb_t:['Temp','t','#f97316','°C'], cb_vib:['Vib','vib','#fbbf24','g']};
-                    Object.keys(c).forEach(id => { if(document.getElementById(id).checked) html += `<div class="tooltip-row"><span class="tooltip-label">${c[id][0]}:</span> <span class="tooltip-value" style="color:${c[id][2]}">${data[c[id][1]].toFixed(c[id][1]==='v'?1:2)} ${c[id][3]}</span></div>`; });
-                    let srcCol = data.source === "SIMULATION" ? "#fbbf24" : (data.source === "DATABASE" ? "#10b981" : "#3b82f6");
-                    html += `<div class="tooltip-row" style="margin-top:5px; border-top:1px solid #444; padding-top:3px;"><span class="tooltip-label">Source:</span> <span class="tooltip-value" style="color:${srcCol}">${data.source || "LIVE"}</span></div>`;
+                    
+                    if(document.getElementById('cb_v').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Voltage:</span> <span class="tooltip-value" style="color:#7c3aed">${data.v.toFixed(1)} V</span></div>`;
+                    if(document.getElementById('cb_c1').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Current:</span> <span class="tooltip-value" style="color:#10b981">${data.c1.toFixed(1)} A</span></div>`;
+                    if(document.getElementById('cb_kw').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Active Power:</span> <span class="tooltip-value" style="color:#eab308">${data.kw.toFixed(2)} kW</span></div>`;
+                    if(document.getElementById('cb_kva').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Apparent:</span> <span class="tooltip-value" style="color:#3b82f6">${data.kva.toFixed(2)} kVA</span></div>`;
+                    if(document.getElementById('cb_load').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Load:</span> <span class="tooltip-value" style="color:#ec4899">${data.load.toFixed(1)} %</span></div>`;
+                    if(document.getElementById('cb_pf').checked) html += `<div class="tooltip-row"><span class="tooltip-label">PF:</span> <span class="tooltip-value" style="color:#d946ef">${data.pf.toFixed(2)}</span></div>`;
+                    if(document.getElementById('cb_t').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Temp:</span> <span class="tooltip-value" style="color:#f97316">${data.t.toFixed(1)} °C</span></div>`;
+                    if(document.getElementById('cb_vib').checked) html += `<div class="tooltip-row"><span class="tooltip-label">Vib:</span> <span class="tooltip-value" style="color:#fbbf24">${data.vib.toFixed(2)} g</span></div>`;
+                    
+                    let sourceColor = "#3b82f6"; 
+                    if (data.source === "SIMULATION") sourceColor = "#fbbf24";
+                    else if (data.source === "OFFLINE") sourceColor = "#64748b";
+                    else if (data.source === "DATABASE") sourceColor = "#10b981";
+                    
+                    html += `<div class="tooltip-row" style="margin-top:5px; border-top:1px solid #444; padding-top:3px;"><span class="tooltip-label">Source:</span> <span class="tooltip-value" style="color:${sourceColor}">${data.source || "LIVE"}</span></div>`;
+
                     tooltipEl.innerHTML = html;
-                    const pos = chart.canvas.getBoundingClientRect();
-                    tooltipEl.style.opacity = 1; tooltipEl.style.left = pos.left + window.pageXOffset + tooltip.caretX + 15 + 'px'; tooltipEl.style.top = pos.top + window.pageYOffset + tooltip.caretY + 'px';
+                    const position = context.chart.canvas.getBoundingClientRect();
+                    tooltipEl.style.opacity = 1;
+                    tooltipEl.style.left = position.left + window.pageXOffset + tooltip.caretX + 15 + 'px';
+                    tooltipEl.style.top = position.top + window.pageYOffset + tooltip.caretY + 'px';
                 }
             }
         };
 
-        const commonOptions = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { x: { ticks: { color: '#888' }, grid: { color: '#333' } }, y: { suggestedMin: 0, ticks: { color: '#888' }, grid: { color: '#333' } } }, elements: { point: { radius: 0 } }, plugins: { legend: { labels: { color: '#fff' } }, tooltip: { enabled: false, external: tooltipHandler } }, onClick: (e, els) => { if(els.length > 0) updateSummaryPanel(currentChartData[els[0].index]); } };
+        const clickHandler = (e, elements) => {
+            if (elements.length > 0) {
+                const index = elements[0].index;
+                const data = currentChartData[index];
+                if(data) updateSummaryPanel(data);
+            }
+        };
 
-        chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 }, { label: 'Current', data: [], borderColor: '#10b981', tension: 0.4 }]}, options: commonOptions });
-        chartPower = new Chart(document.getElementById('histChartPower').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ label: 'Active Power (kW)', data: [], borderColor: '#eab308', tension: 0.4 }, { label: 'Apparent Power (kVA)', data: [], borderColor: '#3b82f6', tension: 0.4 }]}, options: commonOptions });
-        chartPF = new Chart(document.getElementById('histChartPF').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ label: 'Power Factor', data: [], borderColor: '#d946ef', tension: 0.4 }, { label: 'Loading %', data: [], borderColor: '#ec4899', tension: 0.4 }]}, options: commonOptions });
-        chartPhys = new Chart(document.getElementById('histChartPhys').getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ label: 'Temp', data: [], borderColor: '#f97316', tension: 0.4 }, { label: 'Vibration', data: [], borderColor: '#fbbf24', tension: 0.4 }]}, options: commonOptions });
+        const commonOptions = {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false }, 
+            scales: { 
+                x: { ticks: { color: '#888' }, grid: { color: '#333' } }, 
+                y: { suggestedMin: 0, ticks: { color: '#888' }, grid: { color: '#333' } } 
+            },
+            elements: { point: { radius: 0 } }, 
+            plugins: { legend: { labels: { color: '#fff' } }, tooltip: { enabled: false, external: tooltipHandler } },
+            onClick: clickHandler
+        };
+
+        chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Voltage', data: [], borderColor: '#7c3aed', tension: 0.4 },
+                { label: 'Current', data: [], borderColor: '#10b981', tension: 0.4 }
+            ]}, options: commonOptions
+        });
+
+        chartPower = new Chart(document.getElementById('histChartPower').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Active Power (kW)', data: [], borderColor: '#eab308', tension: 0.4 },
+                { label: 'Apparent Power (kVA)', data: [], borderColor: '#3b82f6', tension: 0.4 }
+            ]}, options: commonOptions
+        });
+
+        chartPF = new Chart(document.getElementById('histChartPF').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Power Factor', data: [], borderColor: '#d946ef', tension: 0.4 },
+                { label: 'Loading %', data: [], borderColor: '#ec4899', tension: 0.4 }
+            ]}, 
+            options: commonOptions
+        });
+
+        chartPhys = new Chart(document.getElementById('histChartPhys').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [
+                { label: 'Temp', data: [], borderColor: '#f97316', tension: 0.4 },
+                { label: 'Vibration', data: [], borderColor: '#fbbf24', tension: 0.4 }
+            ]}, options: commonOptions
+        });
     }
 
     function updateSummaryPanel(data) {
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
+        
         document.getElementById('sum_time').innerText = data.time.toLocaleTimeString();
-        document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V"; document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
-        document.getElementById('sum_kw').innerText = data.kw.toFixed(2) + " kW"; document.getElementById('sum_kva').innerText = data.kva.toFixed(2) + " kVA";
-        document.getElementById('sum_load').innerText = data.load.toFixed(1) + " %"; document.getElementById('sum_pf').innerText = data.pf.toFixed(2);
-        document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C"; document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
+        document.getElementById('sum_v').innerText = data.v.toFixed(1) + " V";
+        document.getElementById('sum_c1').innerText = data.c1.toFixed(1) + " A";
+        document.getElementById('sum_kw').innerText = data.kw.toFixed(2) + " kW";
+        document.getElementById('sum_kva').innerText = data.kva.toFixed(2) + " kVA";
+        document.getElementById('sum_load').innerText = data.load.toFixed(1) + " %";
+        document.getElementById('sum_pf').innerText = data.pf.toFixed(2);
+        document.getElementById('sum_t').innerText = data.t.toFixed(1) + " °C";
+        document.getElementById('sum_vib').innerText = data.vib.toFixed(2) + " g";
 
-        const src = document.getElementById('sum_source'); src.innerText = data.source || "UNKNOWN";
-        src.style.color = data.source === "SIMULATION" ? "#fbbf24" : (data.source === "OFFLINE" ? "#64748b" : (data.source === "DATABASE" ? "#10b981" : "#3b82f6"));
+        const sourceEl = document.getElementById('sum_source');
+        sourceEl.innerText = data.source || "UNKNOWN";
         
-        const st = document.getElementById('sum_status'); const txt = data.source === "OFFLINE" ? data.offlineState : detectAbnormality(data);
-        st.innerText = txt; st.style.color = txt === "Normal Operation" ? "#10b981" : (txt === "No Power" ? "#f97316" : "#ef4444");
+        let sourceColor = "#3b82f6";
+        if (data.source === "SIMULATION") sourceColor = "#fbbf24";
+        else if (data.source === "OFFLINE") sourceColor = "#64748b";
+        else if (data.source === "DATABASE") sourceColor = "#10b981";
+        sourceEl.style.color = sourceColor;
+
+        const statusEl = document.getElementById('sum_status');
+        const statusText = data.source === "OFFLINE" ? data.offlineState : detectAbnormality(data);
+        statusEl.innerText = statusText;
         
-        ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => document.getElementById(id).classList.remove('abnormal-row'));
+        if (statusText === "Normal Operation") statusEl.style.color = "#10b981";
+        else if (statusText === "CONNECTING...") statusEl.style.color = "#fbbf24"; 
+        else if (statusText === "SYSTEM OFFLINE") statusEl.style.color = "#64748b"; 
+        else if (statusText === "No Power") statusEl.style.color = "#f97316"; 
+        else statusEl.style.color = "#ef4444"; 
+
+        ['row_v', 'row_c1', 'row_pf', 'row_kw', 'row_kva', 'row_load', 'row_t', 'row_vib'].forEach(id => {
+            document.getElementById(id).classList.remove('abnormal-row');
+        });
+
         if (data.v > 264 || (data.v < 216 && data.v > 0)) document.getElementById('row_v').classList.add('abnormal-row');
         if (data.c1 > 312) document.getElementById('row_c1').classList.add('abnormal-row');
         if (data.load > 100) document.getElementById('row_load').classList.add('abnormal-row');
@@ -840,134 +1227,149 @@
         updateHistoryChartData();
     }
 
+    // --- 3. INTEGRATED ADVANCED PDF GENERATOR ---
     async function downloadPDF() {
-        window.jsPDF = window.jspdf.jsPDF; 
-        const data = (window.filteredExportData && window.filteredExportData.length > 0) ? window.filteredExportData : sessionLog;
-        if (data.length === 0) return alert("No data available to export. Please select a date with records.");
+        const data = window.filteredExportData || [];
+        if (data.length === 0) return alert("Please select a date with data first.");
 
-        document.getElementById('global-loader').style.display = 'flex';
-        document.getElementById('loader-text').innerText = 'GENERATING 24H CHARTS & PDF...';
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4'); // Portrait orientation
+        const dateStr = document.getElementById('reportDate').value || new Date().toLocaleDateString();
 
-        try {
-            const pdfDateStr = document.getElementById('reportDate').value;
-            let queryUrl = `${API_URL}/history/${DEVICE_ID}?hours=24`;
-            if (pdfDateStr) queryUrl = `${API_URL}/history/${DEVICE_ID}?date=${pdfDateStr}`;
+        // 1. HEADER & TITLE
+        doc.setFontSize(20);
+        doc.setTextColor(139, 92, 246); // Accent Purple
+        doc.text("TxMS PRO - Daily Technical Report", 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text(`Monitoring Node: ${DEVICE_ID} | Date: ${dateStr}`, 105, 28, { align: 'center' });
+        doc.line(20, 32, 190, 32);
 
-            const response = await fetch(queryUrl);
-            const dbData = await response.json();
-            
-            let pdfChartData = [];
-            let pdfLabels = [];
+        // 2. CALCULATE MAXIMUM READINGS & ABNORMALITIES
+        let maxVals = { v: 0, c1: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, pf: 0 };
+        let abnormalities = [];
 
-            if (Array.isArray(dbData) && dbData.length > 0) {
-                pdfChartData = dbData.map(d => ({
-                    time: new Date(d.created_at), v: parseFloat(d.voltage || 0), c1: parseFloat(d.current_l1 || 0),
-                    pf: parseFloat(d.pf || 0), kw: parseFloat(d.kw || 0), kva: parseFloat(d.kva || 0),
-                    load: parseFloat(d.load || 0), t: parseFloat(d.temp || 0), vib: parseFloat(d.vib || 0)
-                }));
-                pdfLabels = pdfChartData.map(d => d.time.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'}));
-                currentChartData = pdfChartData;
-            }
+        data.forEach(d => {
+            if (d.v > maxVals.v) maxVals.v = d.v;
+            if (d.c1 > maxVals.c1) maxVals.c1 = d.c1;
+            if (d.kw > maxVals.kw) maxVals.kw = d.kw;
+            if (d.kva > maxVals.kva) maxVals.kva = d.kva;
+            if (d.load > maxVals.load) maxVals.load = d.load;
+            if (d.t > maxVals.t) maxVals.t = d.t;
+            if (d.vib > maxVals.vib) maxVals.vib = d.vib;
+            if (d.pf > maxVals.pf) maxVals.pf = d.pf;
 
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const displayDateStr = pdfDateStr || new Date().toLocaleDateString();
-
-            doc.setFontSize(20); doc.setTextColor(139, 92, 246); doc.text("TxMS PRO - Daily Technical Report", 105, 20, { align: 'center' });
-            doc.setFontSize(12); doc.setTextColor(100); doc.text(`Monitoring Node: ${DEVICE_ID} | Date: ${displayDateStr}`, 105, 28, { align: 'center' });
-            doc.line(20, 32, 190, 32);
-
-            let maxVals = { v: 0, c1: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, pf: 0 };
-            let abnormalities = [];
-            const analysisData = pdfChartData.length > 0 ? pdfChartData : data;
-
-            analysisData.forEach(d => {
-                if (d.v > maxVals.v) maxVals.v = d.v; if (d.c1 > maxVals.c1) maxVals.c1 = d.c1;
-                if (d.kw > maxVals.kw) maxVals.kw = d.kw; if (d.kva > maxVals.kva) maxVals.kva = d.kva;
-                if (d.load > maxVals.load) maxVals.load = d.load; if (d.t > maxVals.t) maxVals.t = d.t;
-                if (d.vib > maxVals.vib) maxVals.vib = d.vib; if (d.pf > maxVals.pf) maxVals.pf = d.pf;
-                const issue = detectAbnormality(d);
-                if (issue !== "Normal Operation" && issue !== "No Power") {
-                    const timestamp = d.time.toLocaleTimeString();
-                    if (!abnormalities.some(a => a.type === issue)) abnormalities.push({ type: issue, time: timestamp, val: d });
+            const issue = detectAbnormality(d);
+            if (issue !== "Normal Operation" && issue !== "No Power") {
+                const timestamp = d.time.toLocaleTimeString();
+                if (!abnormalities.some(a => a.type === issue)) {
+                    abnormalities.push({ type: issue, time: timestamp, val: d });
                 }
-            });
+            }
+        });
 
-            doc.setFontSize(14); doc.setTextColor(0); doc.text("Peak Performance Metrics (Max Readings)", 14, 42);
+        // 3. MAXIMUM READINGS TABLE
+        doc.setFontSize(14);
+        doc.setTextColor(0);
+        doc.text("Peak Performance Metrics (Max Readings)", 14, 42);
+        
+        doc.autoTable({
+            startY: 46,
+            head: [['Metric', 'Maximum Value', 'Unit']],
+            body: [
+                ['Line Voltage', maxVals.v.toFixed(1), 'V'],
+                ['Peak Amperage', maxVals.c1.toFixed(1), 'A'],
+                ['Active Power', maxVals.kw.toFixed(2), 'kW'],
+                ['Loading Level', maxVals.load.toFixed(1), '%'],
+                ['Core Temperature', maxVals.t.toFixed(1), '°C'],
+                ['Vibration Level', maxVals.vib.toFixed(2), 'g'],
+                ['Best Power Factor', maxVals.pf.toFixed(2), '']
+            ],
+            theme: 'striped',
+            headStyles: { fillStyle: [139, 92, 246] }
+        });
+
+        // 4. ABNORMALITY DETECTION LOG
+        let nextY = doc.lastAutoTable.finalY + 10;
+        doc.text("Safety & Abnormality Analysis", 14, nextY);
+        
+        if (abnormalities.length === 0) {
+            doc.setFontSize(10);
+            doc.setTextColor(16, 185, 129); // Success Green
+            doc.text("✔ No system abnormalities detected for this period.", 14, nextY + 7);
+        } else {
+            const anomalyRows = abnormalities.map(a => [
+                a.type,
+                a.time,
+                `Triggered value recorded during fault`
+            ]);
             doc.autoTable({
-                startY: 46,
-                head: [['Metric', 'Maximum Value', 'Unit']],
-                body: [['Line Voltage', maxVals.v.toFixed(1), 'V'], ['Peak Amperage', maxVals.c1.toFixed(1), 'A'], ['Active Power', maxVals.kw.toFixed(2), 'kW'], ['Loading Level', maxVals.load.toFixed(1), '%'], ['Core Temperature', maxVals.t.toFixed(1), '°C'], ['Vibration Level', maxVals.vib.toFixed(2), 'g'], ['Best Power Factor', maxVals.pf.toFixed(2), '']], 
-                headStyles: { fillStyle: [139, 92, 246] }
+                startY: nextY + 4,
+                head: [['Fault Type', 'Detection Time', 'System Remark']],
+                body: anomalyRows,
+                headStyles: { fillStyle: [239, 68, 68] } // Danger Red
             });
-
-            let nextY = doc.lastAutoTable.finalY + 15;
-            doc.text("Safety & Fault Analysis", 14, nextY);
-            if (abnormalities.length === 0) {
-                doc.setFontSize(11); doc.setTextColor(16, 185, 129); doc.text("✔ No system abnormalities detected for this period.", 14, nextY + 10);
-            } else {
-                doc.autoTable({
-                    startY: nextY + 5,
-                    head: [['Fault Type & Trigger Value', 'Time Detected']],
-                    body: abnormalities.map(a => [a.type, a.time]),
-                    headStyles: { fillStyle: [239, 68, 68] }
-                });
-            }
-
-            doc.addPage();
-            doc.setFontSize(16); doc.setTextColor(139, 92, 246); doc.text("24-Hour Analytical Historian Trends", 105, 20, { align: 'center' });
-
-            const chartIds = ['histChartElec', 'histChartPower', 'histChartPF', 'histChartPhys'];
-            const chartInstances = [chartElec, chartPower, chartPF, chartPhys];
-            const chartTitles = ["Electrical Trends (V/A)", "Power Trends (kW/kVA)", "Efficiency & Load (%)", "Physical Health (Temp/Vib)"];
-            
-            if (pdfChartData.length > 0) {
-                const chartConfigs = [{ chart: chartElec, d: [pdfChartData.map(d=>d.v), pdfChartData.map(d=>d.c1)] }, { chart: chartPower, d: [pdfChartData.map(d=>d.kw), pdfChartData.map(d=>d.kva)] }, { chart: chartPF, d: [pdfChartData.map(d=>d.pf), pdfChartData.map(d=>d.load)] }, { chart: chartPhys, d: [pdfChartData.map(d=>d.t), pdfChartData.map(d=>d.vib)] }];
-                chartConfigs.forEach(conf => {
-                    conf.chart.data.labels = pdfLabels;
-                    conf.chart.data.datasets[0].data = conf.d[0];
-                    if (conf.chart.data.datasets[1]) conf.chart.data.datasets[1].data = conf.d[1];
-                    
-                    if (conf.chart.options.plugins.legend) conf.chart.options.plugins.legend.labels.color = '#000';
-                    if (conf.chart.options.scales.x) {
-                        conf.chart.options.scales.x.ticks.color = '#000';
-                        conf.chart.options.scales.x.ticks.maxTicksLimit = 12; 
-                        conf.chart.options.scales.x.ticks.maxRotation = 0; 
-                    }
-                    if (conf.chart.options.scales.y) conf.chart.options.scales.y.ticks.color = '#000';
-                    conf.chart.update('none'); 
-                });
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            let chartY = 30;
-            for (let i = 0; i < chartIds.length; i++) {
-                const canvas = document.getElementById(chartIds[i]);
-                if (canvas) {
-                    doc.setFontSize(10); doc.setTextColor(100); doc.text(chartTitles[i], 14, chartY - 2);
-                    doc.setFillColor(255, 255, 255); doc.rect(14, chartY, 180, 50, 'F'); 
-                    doc.addImage(canvas.toDataURL("image/png", 1.0), 'PNG', 14, chartY, 180, 50);
-                    chartY += 65;
-                }
-            }
-
-            doc.setFontSize(8); doc.setTextColor(150); doc.text(`Generated by TxMS PRO Automated System - ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
-            doc.save(`TxMS_Report_${DEVICE_ID}_${displayDateStr}.pdf`);
-
-            updateHistoryChartData();
-
-        } catch (error) {
-            console.error("PDF Generation Failed", error);
-            alert("An error occurred while generating the PDF.");
-        } finally {
-            document.getElementById('global-loader').style.display = 'none';
         }
+
+        // 5. ATTACH HISTORIAN CHARTS (Capture from Canvas)
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor(139, 92, 246);
+        doc.text("Analytical Historian Trends", 105, 20, { align: 'center' });
+
+        const chartIds = ['histChartElec', 'histChartPower', 'histChartPF', 'histChartPhys'];
+        const chartInstances = [chartElec, chartPower, chartPF, chartPhys];
+        const chartTitles = ["Electrical Trends (V/A)", "Power Trends (kW/kVA)", "Efficiency & Load (%)", "Physical Health (Temp/Vib)"];
+        
+        // --- FIX FOR VISIBILITY: Force text to black temporarily ---
+        chartInstances.forEach(c => {
+            if (c && c.options && c.options.plugins && c.options.plugins.legend) {
+                c.options.plugins.legend.labels.color = '#000';
+                if(c.options.scales.x.ticks) c.options.scales.x.ticks.color = '#000';
+                if(c.options.scales.y.ticks) c.options.scales.y.ticks.color = '#000';
+                c.update('none'); // Update instantly without animation
+            }
+        });
+
+        let chartY = 30;
+        for (let i = 0; i < chartIds.length; i++) {
+            const canvas = document.getElementById(chartIds[i]);
+            if (canvas) {
+                const imgData = canvas.toDataURL("image/png", 1.0);
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(chartTitles[i], 14, chartY - 2);
+                
+                // Add white background behind the transparent PNG to prevent glitches
+                doc.setFillColor(255, 255, 255);
+                doc.rect(14, chartY, 180, 50, 'F');
+                
+                doc.addImage(imgData, 'PNG', 14, chartY, 180, 50);
+                chartY += 65;
+            }
+        }
+
+        // --- REVERT BACK TO WHITE FOR WEB VIEW ---
+        chartInstances.forEach(c => {
+            if (c && c.options && c.options.plugins && c.options.plugins.legend) {
+                c.options.plugins.legend.labels.color = '#fff';
+                if(c.options.scales.x.ticks) c.options.scales.x.ticks.color = '#888';
+                if(c.options.scales.y.ticks) c.options.scales.y.ticks.color = '#888';
+                c.update('none'); 
+            }
+        });
+
+        // FOOTER
+        doc.setFontSize(8);
+        doc.text(`Generated by TxMS PRO Automated System - ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
+
+        doc.save(`TxMS_Report_${DEVICE_ID}_${dateStr}.pdf`);
     }
 
     function downloadExcel() {
-        const data = (window.filteredExportData && window.filteredExportData.length > 0) ? window.filteredExportData : sessionLog;
-        if(data.length === 0) return alert("No data available to export.");
-        const arr = data.map(l => ({Date: l.time.toLocaleDateString(), Time: l.time.toLocaleTimeString(), Voltage: l.v, Current: l.c1, kW: l.kw, kVA: l.kva, Load: l.load, PF: l.pf, Temp: l.t, Vib: l.vib, Status: detectAbnormality(l)}));
-        const ws = XLSX.utils.json_to_sheet(arr); const wb = XLSX.utils.book_new();
+        const data = (window.filteredExportData || sessionLog).map(l => ({Date: l.time.toLocaleDateString(), Time: l.time.toLocaleTimeString(), Voltage: l.v, Current: l.c1, kW: l.kw, kVA: l.kva, Load: l.load, PF: l.pf, Temp: l.t, Vib: l.vib, Status: detectAbnormality(l)}));
+        const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "TxMS Data"); XLSX.writeFile(wb, "TxMS_Data_Export.xlsx");
     }
 
@@ -976,8 +1378,8 @@
         document.getElementById(e).style.display="block";
         if(e === 'dashboardView' && map) setTimeout(()=>map.invalidateSize(), 200);
         if(e === 'historyView') updateHistoryChartData();
-        if(e === 'dailyView') filterReportDate(); 
     }
 </script>
 </body>
 </html>
+
