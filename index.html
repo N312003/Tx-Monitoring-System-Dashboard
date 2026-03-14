@@ -6,6 +6,8 @@
     <title>TxMS PRO | Geospatial Command</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -274,7 +276,11 @@
         <div style="display:flex; gap:10px; align-items:center;">
             <span style="color:#aaa; font-size:0.9rem;">Specific Date:</span>
             <input type="date" id="historyDateSelect" class="date-input" onchange="fetchHistoryByDate()">
-        </div>
+            
+            <button class="btn-action" style="background:#475569; padding: 6px 12px;" onclick="resetChartsZoom()" title="Reset Chart Zoom">
+                <i class="fa-solid fa-magnifying-glass-minus"></i>
+            </button>
+            </div>
     </div>
 
     <div class="checkbox-group">
@@ -1134,6 +1140,23 @@ function renderHistorian(filteredData) {
             }
         };
 
+      // --- NEW SYNC HELPER FUNCTION ---
+        const syncCharts = (sourceChart) => {
+            // Grab the exact time boundaries of the chart you are zooming/panning
+            const min = sourceChart.scales.x.min;
+            const max = sourceChart.scales.x.max;
+            
+            // Apply those boundaries to all the other charts instantly
+            const charts = [chartElec, chartPower, chartPF, chartPhys];
+            charts.forEach(c => {
+                if (c && c !== sourceChart) {
+                    c.options.scales.x.min = min;
+                    c.options.scales.x.max = max;
+                    c.update('none'); // Updates silently without triggering laggy animations
+                }
+            });
+        };
+
         const commonOptions = {
             responsive: true, maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false }, 
@@ -1142,10 +1165,26 @@ function renderHistorian(filteredData) {
                 y: { suggestedMin: 0, ticks: { color: '#888' }, grid: { color: '#333' } } 
             },
             elements: { point: { radius: 0 } }, 
-            plugins: { legend: { labels: { color: '#fff' } }, tooltip: { enabled: false, external: tooltipHandler } },
+            plugins: { 
+                legend: { labels: { color: '#fff' } }, 
+                tooltip: { enabled: false, external: tooltipHandler },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        onPan: function({chart}) { syncCharts(chart); } // Syncs while dragging
+                    },
+                    zoom: {
+                        wheel: { enabled: true },
+                        pinch: { enabled: true },
+                        mode: 'x',
+                        onZoom: function({chart}) { syncCharts(chart); } // Syncs while scrolling
+                    }
+                }
+            },
             onClick: clickHandler
         };
-
+        
         chartElec = new Chart(document.getElementById('histChartElec').getContext('2d'), {
             type: 'line',
             data: { labels: [], datasets: [
@@ -1180,6 +1219,17 @@ function renderHistorian(filteredData) {
         });
     }
 
+    function resetChartsZoom() {
+        const allCharts = [chartElec, chartPower, chartPF, chartPhys];
+        allCharts.forEach(c => {
+            if (c) {
+                // Wipe the forced boundaries so it defaults back to showing the whole day
+                delete c.options.scales.x.min;
+                delete c.options.scales.x.max;
+                c.resetZoom();
+            }
+        });
+    }
     function updateSummaryPanel(data) {
         document.getElementById('summary-content').style.display = 'none';
         document.getElementById('summary-data').style.display = 'block';
@@ -1468,6 +1518,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
