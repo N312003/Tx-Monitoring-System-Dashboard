@@ -993,31 +993,34 @@
         }
     }
 
-    function renderHistorian(filteredData) {
-        currentChartData = filteredData;
-        
-        const labels = filteredData.map(d => {
-            return chartTimeWindow > 12 
-                ? d.time.toLocaleDateString() + " " + d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                : d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+   // Helper to update the actual Chart.js instances
+function renderHistorian(filteredData) {
+    currentChartData = filteredData;
+    
+    const labels = filteredData.map(d => {
+        // Formats the time to 24-hour format (e.g., "13:00", "14:30")
+        // Setting hour12: false forces the 24-hour clock and drops the AM/PM
+        return d.time.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
         });
+    });
 
-        const chartConfigs = [
-            { chart: chartElec, datasets: [filteredData.map(d => d.v), filteredData.map(d => d.c1)] },
-            { chart: chartPower, datasets: [filteredData.map(d => d.kw), filteredData.map(d => d.kva)] },
-            { chart: chartPF, datasets: [filteredData.map(d => d.pf), filteredData.map(d => d.load)] },
-            { chart: chartPhys, datasets: [filteredData.map(d => d.t), filteredData.map(d => d.vib)] }
-        ];
+    const chartConfigs = [
+        { chart: chartElec, datasets: [filteredData.map(d => d.v), filteredData.map(d => d.c1)] },
+        { chart: chartPower, datasets: [filteredData.map(d => d.kw), filteredData.map(d => d.kva)] },
+        { chart: chartPF, datasets: [filteredData.map(d => d.pf), filteredData.map(d => d.load)] },
+        { chart: chartPhys, datasets: [filteredData.map(d => d.t), filteredData.map(d => d.vib)] }
+    ];
 
-        chartConfigs.forEach(conf => {
-            conf.chart.data.labels = labels;
-            conf.chart.data.datasets[0].data = conf.datasets[0];
-            if (conf.chart.data.datasets[1]) {
-                conf.chart.data.datasets[1].data = conf.datasets[1];
-            }
-            conf.chart.update('none'); 
-        });
-    }
+    chartConfigs.forEach(conf => {
+        conf.chart.data.labels = labels;
+        conf.chart.data.datasets[0].data = conf.datasets[0];
+        if (conf.chart.data.datasets[1]) conf.chart.data.datasets[1].data = conf.datasets[1];
+        conf.chart.update('none'); 
+    });
+}
 
     // --- 2. INTEGRATED DATABASE-DRIVEN REPORT FILTER ---
     async function filterReportDate() {
@@ -1469,5 +1472,6 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
