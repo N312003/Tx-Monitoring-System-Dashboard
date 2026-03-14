@@ -1000,6 +1000,14 @@ async function updateHistoryChartData() {
                     vib: Number(d.vib) || 0,
                     source: "DATABASE"
                 }));
+                
+                // --- ADD THIS CHRONOLOGICAL FIX HERE ---
+                // If the first item is newer than the last item, reverse the array!
+                if (displayData.length > 1 && displayData[0].time > displayData[displayData.length - 1].time) {
+                    displayData.reverse();
+                }
+                // ---------------------------------------
+
                 renderHistorian(displayData);
             } else {
                 alert("No historical data found! The backend returned an empty list.");
@@ -1496,6 +1504,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
