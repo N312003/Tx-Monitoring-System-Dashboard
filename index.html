@@ -1002,7 +1002,7 @@
    // Helper to update the actual Chart.js instances
 function renderHistorian(filteredData) {
     currentChartData = filteredData;
-    
+    resetChartsZoom();
     const labels = filteredData.map(d => {
         // Formats the time to 24-hour format (e.g., "13:00", "14:30")
         // Setting hour12: false forces the 24-hour clock and drops the AM/PM
@@ -1518,6 +1518,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
