@@ -446,6 +446,7 @@
     </div>
 
 <script>
+    Chart.register(window['chartjs-plugin-zoom']);
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
     const TRANS_KVA_RATING = 75.0; 
@@ -1518,6 +1519,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
