@@ -1341,14 +1341,15 @@ async function updateHistoryChartData() {
         let abnormalities = [];
 
         data.forEach(d => {
-            if (d.v > maxVals.v) maxVals.v = d.v;
-            if (d.c1 > maxVals.c1) maxVals.c1 = d.c1;
-            if (d.kw > maxVals.kw) maxVals.kw = d.kw;
-            if (d.kva > maxVals.kva) maxVals.kva = d.kva;
-            if (d.load > maxVals.load) maxVals.load = d.load;
-            if (d.t > maxVals.t) maxVals.t = d.t;
-            if (d.vib > maxVals.vib) maxVals.vib = d.vib;
-            if (d.pf > maxVals.pf) maxVals.pf = d.pf;
+            // Force strict number typing and use Math.max for absolute reliability
+            maxVals.v = Math.max(maxVals.v, parseFloat(d.v) || 0);
+            maxVals.c1 = Math.max(maxVals.c1, parseFloat(d.c1) || 0);
+            maxVals.kw = Math.max(maxVals.kw, parseFloat(d.kw) || 0);
+            maxVals.kva = Math.max(maxVals.kva, parseFloat(d.kva) || 0);
+            maxVals.load = Math.max(maxVals.load, parseFloat(d.load) || 0);
+            maxVals.t = Math.max(maxVals.t, parseFloat(d.t) || 0);
+            maxVals.vib = Math.max(maxVals.vib, parseFloat(d.vib) || 0);
+            maxVals.pf = Math.max(maxVals.pf, parseFloat(d.pf) || 0);
 
             const issue = detectAbnormality(d);
             if (issue !== "Normal Operation" && issue !== "No Power") {
@@ -1358,7 +1359,6 @@ async function updateHistoryChartData() {
                 }
             }
         });
-
         // 3. MAXIMUM READINGS TABLE
         doc.setFontSize(14);
         doc.setTextColor(0);
@@ -1472,6 +1472,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
