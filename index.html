@@ -262,28 +262,35 @@
             </div>
             
             <div class="control-panel">
-                <div class="time-filters" style="margin-bottom:0;">
-                    <button class="time-btn active" id="btnLive" onclick="setChartRange(0, this)">LIVE</button>
-                    <button class="time-btn" onclick="setChartRange(1, this)">1H</button>
-                    <button class="time-btn" onclick="setChartRange(6, this)">6H</button>
-                    <button class="time-btn" onclick="setChartRange(12, this)">12H</button>
-                    <button class="time-btn" onclick="setChartRange(24, this)">24H</button>
-                </div>
-
-                <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="cb_v" checked onchange="toggleChartDataset('elec', 0)"> Voltage</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_c1" checked onchange="toggleChartDataset('elec', 1)"> Current L1</label>
-                    
-                    <label class="checkbox-item"><input type="checkbox" id="cb_kw" checked onchange="toggleChartDataset('power', 0)"> kW</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_kva" checked onchange="toggleChartDataset('power', 1)"> kVA</label>
-                    
-                    <label class="checkbox-item"><input type="checkbox" id="cb_pf" checked onchange="toggleChartDataset('pf', 0)"> PF</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_load" checked onchange="toggleChartDataset('pf', 1)"> Load %</label>
-                    
-                    <label class="checkbox-item"><input type="checkbox" id="cb_t" checked onchange="toggleChartDataset('phys', 0)"> Temp</label>
-                    <label class="checkbox-item"><input type="checkbox" id="cb_vib" checked onchange="toggleChartDataset('phys', 1)"> Vib</label>
-                </div>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                   <div class="time-filters" style="margin-bottom:0;">
+                        <button class="time-btn active" id="btnLive" onclick="setChartRange(0, this)">LIVE</button>
+                        <button class="time-btn" onclick="setChartRange(1, this)">1H</button>
+                        <button class="time-btn" onclick="setChartRange(6, this)">6H</button>
+                        <button class="time-btn" onclick="setChartRange(12, this)">12H</button>
+                        <button class="time-btn" onclick="setChartRange(24, this)">24H</button>
+                    </div>
+        
+            <div style="display:flex; gap:10px; align-items:center;">
+                <span style="color:#aaa; font-size:0.9rem;">Specific Date:</span>
+                <input type="date" id="historyDateSelect" class="date-input" onchange="fetchHistoryByDate()">
             </div>
+        </div>
+
+        <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" id="cb_v" checked onchange="toggleChartDataset('elec', 0)"> Voltage</label>
+            <label class="checkbox-item"><input type="checkbox" id="cb_c1" checked onchange="toggleChartDataset('elec', 1)"> Current L1</label>
+        
+            <label class="checkbox-item"><input type="checkbox" id="cb_kw" checked onchange="toggleChartDataset('power', 0)"> kW</label>
+            <label class="checkbox-item"><input type="checkbox" id="cb_kva" checked onchange="toggleChartDataset('power', 1)"> kVA</label>
+        
+            <label class="checkbox-item"><input type="checkbox" id="cb_pf" checked onchange="toggleChartDataset('pf', 0)"> PF</label>
+            <label class="checkbox-item"><input type="checkbox" id="cb_load" checked onchange="toggleChartDataset('pf', 1)"> Load %</label>
+        
+            <label class="checkbox-item"><input type="checkbox" id="cb_t" checked onchange="toggleChartDataset('phys', 0)"> Temp</label>
+            <label class="checkbox-item"><input type="checkbox" id="cb_vib" checked onchange="toggleChartDataset('phys', 1)"> Vib</label>
+        </div>
+    </div>
 
             <div class="historian-container">
                 <div class="chart-stack">
@@ -1408,5 +1415,6 @@ function renderHistorian(filteredData) {
 </script>
 </body>
 </html>
+
 
 
