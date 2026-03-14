@@ -1023,7 +1023,7 @@ function renderHistorian(filteredData) {
 }
 
     // --- 2. INTEGRATED DATABASE-DRIVEN REPORT FILTER ---
-    async function filterReportDate() {
+   async function filterReportDate() {
         const dateInput = document.getElementById('reportDate').value;
         const tbody = document.getElementById("dailyTableBody");
         tbody.innerHTML = "<tr><td colspan='10' style='text-align:center;'>Fetching from Supabase...</td></tr>";
@@ -1041,7 +1041,8 @@ function renderHistorian(filteredData) {
                     reportData = dbData.map(d => ({
                         time: new Date(d.created_at),
                         v: parseFloat(d.voltage || 0),
-                        c1: parseFloat(d.current_l1 || 0),
+                        // FIX: Captures currentL1, current_l1, or c1 to guarantee it doesn't default to 0
+                        c1: parseFloat(d.currentL1 || d.current_l1 || d.c1 || 0), 
                         pf: parseFloat(d.pf || 0),
                         kw: parseFloat(d.kw || 0),
                         kva: parseFloat(d.kva || 0),
@@ -1089,7 +1090,6 @@ function renderHistorian(filteredData) {
         
         window.filteredExportData = reportData;
     }
-
     function initHistorianCharts() {
         const tooltipHandler = (context) => {
             const { chart, tooltip } = context;
@@ -1323,12 +1323,12 @@ async function updateHistoryChartData() {
         if (data.length === 0) return alert("Please select a date with data first.");
 
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4'); // Portrait orientation
+        const doc = new jsPDF('p', 'mm', 'a4'); 
         const dateStr = document.getElementById('reportDate').value || new Date().toLocaleDateString();
 
         // 1. HEADER & TITLE
         doc.setFontSize(20);
-        doc.setTextColor(139, 92, 246); // Accent Purple
+        doc.setTextColor(139, 92, 246); 
         doc.text("TxMS PRO - Daily Technical Report", 105, 20, { align: 'center' });
         
         doc.setFontSize(12);
@@ -1340,15 +1340,16 @@ async function updateHistoryChartData() {
         let maxVals = { v: 0, c1: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, pf: 0 };
         let abnormalities = [];
 
+        // FIX: Strict math comparison so the PDF doesn't break on bad strings
         data.forEach(d => {
-            if (d.v > maxVals.v) maxVals.v = d.v;
-            if (d.c1 > maxVals.c1) maxVals.c1 = d.c1;
-            if (d.kw > maxVals.kw) maxVals.kw = d.kw;
-            if (d.kva > maxVals.kva) maxVals.kva = d.kva;
-            if (d.load > maxVals.load) maxVals.load = d.load;
-            if (d.t > maxVals.t) maxVals.t = d.t;
-            if (d.vib > maxVals.vib) maxVals.vib = d.vib;
-            if (d.pf > maxVals.pf) maxVals.pf = d.pf;
+            maxVals.v = Math.max(maxVals.v, parseFloat(d.v) || 0);
+            maxVals.c1 = Math.max(maxVals.c1, parseFloat(d.c1) || 0);
+            maxVals.kw = Math.max(maxVals.kw, parseFloat(d.kw) || 0);
+            maxVals.kva = Math.max(maxVals.kva, parseFloat(d.kva) || 0);
+            maxVals.load = Math.max(maxVals.load, parseFloat(d.load) || 0);
+            maxVals.t = Math.max(maxVals.t, parseFloat(d.t) || 0);
+            maxVals.vib = Math.max(maxVals.vib, parseFloat(d.vib) || 0);
+            maxVals.pf = Math.max(maxVals.pf, parseFloat(d.pf) || 0);
 
             const issue = detectAbnormality(d);
             if (issue !== "Normal Operation" && issue !== "No Power") {
@@ -1398,7 +1399,7 @@ async function updateHistoryChartData() {
                 startY: nextY + 4,
                 head: [['Fault Type', 'Detection Time', 'System Remark']],
                 body: anomalyRows,
-                headStyles: { fillStyle: [239, 68, 68] } // Danger Red
+                headStyles: { fillStyle: [239, 68, 68] } 
             });
         }
 
@@ -1412,13 +1413,12 @@ async function updateHistoryChartData() {
         const chartInstances = [chartElec, chartPower, chartPF, chartPhys];
         const chartTitles = ["Electrical Trends (V/A)", "Power Trends (kW/kVA)", "Efficiency & Load (%)", "Physical Health (Temp/Vib)"];
         
-        // --- FIX FOR VISIBILITY: Force text to black temporarily ---
         chartInstances.forEach(c => {
             if (c && c.options && c.options.plugins && c.options.plugins.legend) {
                 c.options.plugins.legend.labels.color = '#000';
                 if(c.options.scales.x.ticks) c.options.scales.x.ticks.color = '#000';
                 if(c.options.scales.y.ticks) c.options.scales.y.ticks.color = '#000';
-                c.update('none'); // Update instantly without animation
+                c.update('none'); 
             }
         });
 
@@ -1431,7 +1431,6 @@ async function updateHistoryChartData() {
                 doc.setTextColor(100);
                 doc.text(chartTitles[i], 14, chartY - 2);
                 
-                // Add white background behind the transparent PNG to prevent glitches
                 doc.setFillColor(255, 255, 255);
                 doc.rect(14, chartY, 180, 50, 'F');
                 
@@ -1440,7 +1439,6 @@ async function updateHistoryChartData() {
             }
         }
 
-        // --- REVERT BACK TO WHITE FOR WEB VIEW ---
         chartInstances.forEach(c => {
             if (c && c.options && c.options.plugins && c.options.plugins.legend) {
                 c.options.plugins.legend.labels.color = '#fff';
@@ -1450,13 +1448,11 @@ async function updateHistoryChartData() {
             }
         });
 
-        // FOOTER
         doc.setFontSize(8);
         doc.text(`Generated by TxMS PRO Automated System - ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
 
         doc.save(`TxMS_Report_${DEVICE_ID}_${dateStr}.pdf`);
     }
-
     function downloadExcel() {
         const data = (window.filteredExportData || sessionLog).map(l => ({Date: l.time.toLocaleDateString(), Time: l.time.toLocaleTimeString(), Voltage: l.v, Current: l.c1, kW: l.kw, kVA: l.kva, Load: l.load, PF: l.pf, Temp: l.t, Vib: l.vib, Status: detectAbnormality(l)}));
         const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
@@ -1472,5 +1468,6 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
