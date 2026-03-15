@@ -442,7 +442,53 @@
 <script>
     const API_URL = "https://txms-backend.onrender.com/api"; 
     const DEVICE_ID = "Tx01";
-    const TRANS_KVA_RATING = 75.0; 
+    const TRANS_KVA_RATING = 75.0;
+
+    // --- BACKEND EMAIL ALERT CONFIGURATION ---
+    let lastEmailTime = 0; 
+    const EMAIL_COOLDOWN_MS = 5 * 60 * 1000; // 5-minute cooldown between emails
+
+    async function sendAlarmEmail(faultDetails, data) {
+        const now = Date.now();
+        
+        // Prevent email spam if the fault fluctuates rapidly
+        if (now - lastEmailTime < EMAIL_COOLDOWN_MS) {
+            console.log("Fault detected, but email is on a 5-minute cooldown.");
+            return; 
+        }
+        
+        // Prepare the data payload for the backend
+        const payload = {
+            device_id: DEVICE_ID,
+            fault_type: faultDetails,
+            time: new Date().toLocaleString(),
+            volt: data.v.toFixed(1) + " V",
+            amp: data.c1.toFixed(1) + " A",
+            temp: data.t.toFixed(1) + " °C",
+            load: data.load.toFixed(1) + " %",
+            vib: data.vib.toFixed(2) + " g"
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/alert`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                console.log("ALARM EMAIL DISPATCHED BY BACKEND!");
+                logEvent("System dispatched automated email alert", "INFO");
+                lastEmailTime = now; // Reset the cooldown timer
+            } else {
+                throw new Error("Backend rejected the email request");
+            }
+        } catch (error) {
+            console.error("FAILED TO TRIGGER EMAIL ROUTE", error);
+            logEvent("Failed to communicate with email server", "WARNING");
+        }
+    }
+    // -----------------------------------------
 
     // --- STATE VARIABLES ---
     let sessionLog = []; 
@@ -725,6 +771,10 @@
                 logEvent("System parameters returned to Normal Operation", "SUCCESS");
             } else if (status === "No Power") {
                 logEvent("AC Power Supply Lost (0.0V, 0.0A)", "ALERT");
+                
+                // --- NEW: TRIGGER EMAIL FOR POWER LOSS ---
+                sendAlarmEmail("COMPLETE POWER LOSS DETECTED", currentDataPoint);
+                
             } else {
                 let details = [];
                 if (v > 264) details.push(`Overvoltage at ${v.toFixed(1)}V`);
@@ -735,7 +785,11 @@
                 if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
                 if (pf < 0.85 && v > 10) details.push(`Low PF at ${pf.toFixed(2)}`);
 
-                logEvent(`FAULT DETECTED: ${details.join(" | ")}`, "ALERT");
+                const faultMessage = details.join(" | ");
+                logEvent(`FAULT DETECTED: ${faultMessage}`, "ALERT");
+                
+                // --- NEW: TRIGGER EMAIL FOR COMPONENT FAULT ---
+                sendAlarmEmail(faultMessage, currentDataPoint);
             }
             lastAbnormalityString = status;
         }
@@ -1468,6 +1522,7 @@ async function updateHistoryChartData() {
 </script>
 </body>
 </html>
+
 
 
 
