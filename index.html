@@ -505,7 +505,9 @@
     let failedAttempts = 0;
     const MAX_FAILURES = 3;
     let currentPollRate = 3000; 
-    let offlineStartTime = 0; 
+    let offlineStartTime = 0;
+    let voltAnomalyStart = 0;
+    let currentVoltState = "normal";
 
     // Chart Variables
     let chartElec, chartPower, chartPF, chartPhys;
@@ -689,17 +691,43 @@
         }
     }
 
-    function detectAbnormality(d) {
+   function detectAbnormality(d, isLive = false) {
         if (d.v === 0 && d.c1 === 0) return "No Power";
         
         let issues = [];
-        if (d.v > 264) issues.push("Overvoltage");
-        if (d.v < 216 && d.v > 0) issues.push("Undervoltage"); 
+
+        // Check instant voltage state
+        let instantVoltState = "normal";
+        if (d.v > 264) instantVoltState = "high";
+        else if (d.v < 216 && d.v > 0) instantVoltState = "low";
+
+        // If live, apply the 1-minute (60000ms) timer logic
+        if (isLive) {
+            // Reset timer if the state changes
+            if (instantVoltState !== currentVoltState) {
+                currentVoltState = instantVoltState;
+                voltAnomalyStart = Date.now();
+            }
+            
+            if (currentVoltState === "high") {
+                if (Date.now() - voltAnomalyStart < 60000) issues.push("Voltage Swell");
+                else issues.push("Overvoltage");
+            } else if (currentVoltState === "low") {
+                if (Date.now() - voltAnomalyStart < 60000) issues.push("Voltage Dip");
+                else issues.push("Undervoltage");
+            }
+        } else {
+            // If checking history/PDF, evaluate instantly without a timer
+            if (d.v > 264) issues.push("Overvoltage");
+            if (d.v < 216 && d.v > 0) issues.push("Undervoltage"); 
+        }
+
         if (d.c1 > 312) issues.push("Overcurrent");
         if (d.load > 100) issues.push("Tx Overloaded");
         if (d.t > 75) issues.push("Overheating");
         if (d.vib > 0.20) issues.push("High Vibration");
         if (d.pf < 0.85 && d.v > 10) issues.push("Low Power Factor");
+        
         return issues.length > 0 ? issues.join(", ") : "Normal Operation";
     }
 
@@ -754,7 +782,7 @@
         cChart.update();
 
         const currentDataPoint = { v, c1, pf, kw, kva, load, t, vib };
-        const status = detectAbnormality(currentDataPoint);
+        const status = detectAbnormality(currentDataPoint, true);
         
         const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
         cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
@@ -771,14 +799,18 @@
                 logEvent("System parameters returned to Normal Operation", "SUCCESS");
             } else if (status === "No Power") {
                 logEvent("AC Power Supply Lost (0.0V, 0.0A)", "ALERT");
-                
-                // --- NEW: TRIGGER EMAIL FOR POWER LOSS ---
                 sendAlarmEmail("COMPLETE POWER LOSS DETECTED", currentDataPoint);
-                
             } else {
                 let details = [];
-                if (v > 264) details.push(`Overvoltage at ${v.toFixed(1)}V`);
-                if (v < 216 && v > 0) details.push(`Undervoltage at ${v.toFixed(1)}V`);
+                // Check timer to log the correct string
+                if (v > 264) {
+                    if (Date.now() - voltAnomalyStart < 60000) details.push(`Voltage Swell at ${v.toFixed(1)}V`);
+                    else details.push(`Overvoltage at ${v.toFixed(1)}V`);
+                }
+                if (v < 216 && v > 0) {
+                    if (Date.now() - voltAnomalyStart < 60000) details.push(`Voltage Dip at ${v.toFixed(1)}V`);
+                    else details.push(`Undervoltage at ${v.toFixed(1)}V`);
+                }
                 if (c1 > 312) details.push(`Overcurrent at ${c1.toFixed(1)}A`);
                 if (load > 100) details.push(`Tx Overloaded at ${load.toFixed(1)}%`);
                 if (t > 75) details.push(`Temp Critical at ${t.toFixed(1)}°C`);
@@ -787,8 +819,6 @@
 
                 const faultMessage = details.join(" | ");
                 logEvent(`FAULT DETECTED: ${faultMessage}`, "ALERT");
-                
-                // --- NEW: TRIGGER EMAIL FOR COMPONENT FAULT ---
                 sendAlarmEmail(faultMessage, currentDataPoint);
             }
             lastAbnormalityString = status;
