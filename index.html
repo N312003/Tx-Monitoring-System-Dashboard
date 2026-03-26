@@ -965,7 +965,7 @@
         document.getElementById(`sim_${param}_val`).innerText = value + unit;
         
         if(isSimulationMode) {
-            // Build a full dummy object so updateDashboard can parse it correctly
+            // Build a complete mock data object so the Dashboard UI and Alarms update instantly
             let mockData = {
                 voltage: parseFloat(simValues.v),
                 currentL1: parseFloat(simValues.c1),
@@ -977,14 +977,13 @@
                 vib: parseFloat(simValues.vib),
                 alarmArmed: document.getElementById('alarmToggle').checked
             };
-            
-            // Force the dashboard to process the new simulated state immediately
             updateDashboard(mockData);
         }
 
         clearTimeout(simUploadTimer);
         simUploadTimer = setTimeout(sendSimulationData, 500); 
     }
+
     async function sendSimulationData() {
         if(!isSimulationMode) return;
         try {
@@ -994,6 +993,14 @@
                 body: JSON.stringify({
                     device_id: DEVICE_ID,
                     active: true,
+                    // Send the new keys your ESP32 expects
+                    tV: parseFloat(simValues.v),
+                    tC1: parseFloat(simValues.c1),
+                    tPF: parseFloat(simValues.pf),
+                    tTemp: parseFloat(simValues.t), 
+                    tVib: parseFloat(simValues.vib),
+                    
+                    // Keep the legacy keys just in case the backend relies on them
                     v: parseFloat(simValues.v),
                     c1: parseFloat(simValues.c1),
                     kw: parseFloat(simValues.kw),
