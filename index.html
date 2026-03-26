@@ -950,7 +950,7 @@
         }
     }
 
-    function updateSimulation(param, value) {
+   function updateSimulation(param, value) {
         simValues[param] = value;
         
         let unit = '';
@@ -965,13 +965,26 @@
         document.getElementById(`sim_${param}_val`).innerText = value + unit;
         
         if(isSimulationMode) {
-            updateDashboard({ alarmArmed: document.getElementById('alarmToggle').checked });
+            // Build a full dummy object so updateDashboard can parse it correctly
+            let mockData = {
+                voltage: parseFloat(simValues.v),
+                currentL1: parseFloat(simValues.c1),
+                kw: parseFloat(simValues.kw),
+                kva: parseFloat(simValues.kva),
+                load: parseFloat(simValues.load),
+                pf: parseFloat(simValues.pf),
+                temp: parseFloat(simValues.t),
+                vib: parseFloat(simValues.vib),
+                alarmArmed: document.getElementById('alarmToggle').checked
+            };
+            
+            // Force the dashboard to process the new simulated state immediately
+            updateDashboard(mockData);
         }
 
         clearTimeout(simUploadTimer);
         simUploadTimer = setTimeout(sendSimulationData, 500); 
     }
-
     async function sendSimulationData() {
         if(!isSimulationMode) return;
         try {
