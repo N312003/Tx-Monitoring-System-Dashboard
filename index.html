@@ -1441,55 +1441,59 @@ async function updateHistoryChartData() {
         doc.line(20, 32, 190, 32);
 
         // 2. CALCULATE MAXIMUM READINGS & ABNORMALITIES
-        let maxVals = { v: 0, c1: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, pf: 0 };
-        let abnormalities = [];
-        let lastLoggedIssue = "Normal Operation";
-
-        // FIX: Strict math comparison so the PDF doesn't break on bad strings
-        data.forEach(d => {
-            maxVals.v = Math.max(maxVals.v, parseFloat(d.v) || 0);
-            maxVals.c1 = Math.max(maxVals.c1, parseFloat(d.c1) || 0);
-            maxVals.kw = Math.max(maxVals.kw, parseFloat(d.kw) || 0);
-            maxVals.kva = Math.max(maxVals.kva, parseFloat(d.kva) || 0);
-            maxVals.load = Math.max(maxVals.load, parseFloat(d.load) || 0);
-            maxVals.t = Math.max(maxVals.t, parseFloat(d.t) || 0);
-            maxVals.vib = Math.max(maxVals.vib, parseFloat(d.vib) || 0);
-            maxVals.pf = Math.max(maxVals.pf, parseFloat(d.pf) || 0);
-
-            // Pass 'false' to detectAbnormality so it evaluates history instantly
-            const issue = detectAbnormality(d, false);
+       let maxVals = { v: 0, c1: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, pf: 0 };
+            let abnormalities = [];
+            let lastLoggedIssue = "Normal Operation";
+            const analysisData = pdfChartData.length > 0 ? pdfChartData : data;
             
-            // If the issue changes (e.g. Normal -> Overvoltage, or Overvoltage -> Overcurrent)
-            // Log it, as long as it's not "Normal Operation" or a purposeful "No Power" shutdown
-            if (issue !== lastLoggedIssue) {
-                if (issue !== "Normal Operation" && issue !== "No Power") {
-                    const timestamp = d.time.toLocaleTimeString();
-                    abnormalities.push({ type: issue, time: timestamp, val: d });
+            // --- NEW: Variable to track the lowest voltage ---
+            let minVolt = analysisData.length > 0 ? (parseFloat(analysisData[0].v) || 0) : 0;
+
+            analysisData.forEach(d => {
+                let currentV = parseFloat(d.v) || 0;
+                
+                if (currentV > maxVals.v) maxVals.v = currentV; 
+                
+                // --- NEW: Update minimum voltage ---
+                if (currentV < minVolt) minVolt = currentV;
+                
+                if (d.c1 > maxVals.c1) maxVals.c1 = d.c1;
+                if (d.kw > maxVals.kw) maxVals.kw = d.kw;
+                if (d.kva > maxVals.kva) maxVals.kva = d.kva;
+                if (d.load > maxVals.load) maxVals.load = d.load;
+                if (d.t > maxVals.t) maxVals.t = d.t;
+                if (d.vib > maxVals.vib) maxVals.vib = d.vib;
+                if (d.pf > maxVals.pf) maxVals.pf = d.pf;
+
+                const issue = detectAbnormality(d, false);
+                
+                if (issue !== lastLoggedIssue) {
+                    if (issue !== "Normal Operation" && issue !== "No Power") {
+                        const timestamp = d.time.toLocaleTimeString();
+                        abnormalities.push({ type: issue, time: timestamp, val: d });
+                    }
+                    lastLoggedIssue = issue;
                 }
-                lastLoggedIssue = issue;
-            }
-        });
+            });
 
         // 3. MAXIMUM READINGS TABLE
         doc.setFontSize(14);
         doc.setTextColor(0);
-        doc.text("Peak Performance Metrics (Max Readings)", 14, 42);
-        
-        doc.autoTable({
-            startY: 46,
-            head: [['Metric', 'Maximum Value', 'Unit']],
-            body: [
-                ['Line Voltage', maxVals.v.toFixed(1), 'V'],
-                ['Peak Amperage', maxVals.c1.toFixed(1), 'A'],
-                ['Active Power', maxVals.kw.toFixed(2), 'kW'],
-                ['Loading Level', maxVals.load.toFixed(1), '%'],
-                ['Core Temperature', maxVals.t.toFixed(1), '°C'],
-                ['Vibration Level', maxVals.vib.toFixed(2), 'g'],
-                ['Best Power Factor', maxVals.pf.toFixed(2), '']
-            ],
-            theme: 'striped',
-            headStyles: { fillStyle: [139, 92, 246] }
-        });
+        doc.setFontSize(14); doc.setTextColor(0); doc.text("System Performance Metrics (Extremes)", 14, 42);
+            doc.autoTable({
+                startY: 46,
+                head: [['Metric', 'Recorded Value', 'Unit']],
+                body: [
+                    ['Highest Line Voltage', maxVals.v.toFixed(1), 'V'],
+                    ['Lowest Line Voltage', minVolt.toFixed(1), 'V'], // <-- NEW ROW ADDED HERE
+                    ['Peak Amperage', maxVals.c1.toFixed(1), 'A'],
+                    ['Active Power', maxVals.kw.toFixed(2), 'kW'],
+                    ['Loading Level', maxVals.load.toFixed(1), '%'],
+                    ['Core Temperature', maxVals.t.toFixed(1), '°C'],
+                    ['Vibration Level', maxVals.vib.toFixed(2), 'g'],
+                    ['Best Power Factor', maxVals.pf.toFixed(2), '']
+                ], headStyles: { fillStyle: [139, 92, 246] }
+            });
 
         // 4. ABNORMALITY DETECTION LOG
         let nextY = doc.lastAutoTable.finalY + 10;
