@@ -1443,6 +1443,7 @@ async function updateHistoryChartData() {
         // 2. CALCULATE MAXIMUM READINGS & ABNORMALITIES
         let maxVals = { v: 0, c1: 0, kw: 0, kva: 0, load: 0, t: 0, vib: 0, pf: 0 };
         let abnormalities = [];
+        let lastLoggedIssue = "Normal Operation";
 
         // FIX: Strict math comparison so the PDF doesn't break on bad strings
         data.forEach(d => {
@@ -1455,12 +1456,17 @@ async function updateHistoryChartData() {
             maxVals.vib = Math.max(maxVals.vib, parseFloat(d.vib) || 0);
             maxVals.pf = Math.max(maxVals.pf, parseFloat(d.pf) || 0);
 
-            const issue = detectAbnormality(d);
-            if (issue !== "Normal Operation" && issue !== "No Power") {
-                const timestamp = d.time.toLocaleTimeString();
-                if (!abnormalities.some(a => a.type === issue)) {
+            // Pass 'false' to detectAbnormality so it evaluates history instantly
+            const issue = detectAbnormality(d, false);
+            
+            // If the issue changes (e.g. Normal -> Overvoltage, or Overvoltage -> Overcurrent)
+            // Log it, as long as it's not "Normal Operation" or a purposeful "No Power" shutdown
+            if (issue !== lastLoggedIssue) {
+                if (issue !== "Normal Operation" && issue !== "No Power") {
+                    const timestamp = d.time.toLocaleTimeString();
                     abnormalities.push({ type: issue, time: timestamp, val: d });
                 }
+                lastLoggedIssue = issue;
             }
         });
 
