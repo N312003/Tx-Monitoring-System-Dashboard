@@ -175,6 +175,10 @@
         @keyframes pred-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .pred-spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: var(--accent-purple); border-radius: 50%; width: 28px; height: 28px; animation: pred-spin 1s linear infinite; margin: 20px auto; }
         .nav-badge { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-sidebar); animation: pulse-red 1.5s infinite; display: none; }
+        .pred-range-btn { background: transparent; border: none; color: #555; padding: 6px 12px; cursor: pointer; font-size: 0.78rem; font-weight: bold; transition: 0.2s; border-right: 1px solid #2d3748; }
+        .pred-range-btn:last-child { border-right: none; }
+        .pred-range-btn:hover { color: #ccc; background: rgba(255,255,255,0.04); }
+        .pred-range-btn.active { background: #06b6d4; color: #000; }
 
         /* Mobile */
         @media (max-width: 1000px) { .historian-container { grid-template-columns: 1fr; } .summary-panel { position: static; margin-bottom: 20px; } }
@@ -454,14 +458,23 @@
 
             <!-- ===== PREDICTIVE MAINTENANCE CARD ===== -->
             <div class="card" style="border-color: #06b6d4; margin-bottom: 25px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
                     <div>
                         <h3 style="color:white; font-size:1rem;"><i class="fa-solid fa-brain" style="color:#06b6d4; margin-right:8px;"></i>Predictive Maintenance Engine</h3>
-                        <span style="color:#aaa; font-size:0.78rem;">Linear trend analysis on last 24h of backend data</span>
+                        <span style="color:#aaa; font-size:0.78rem;">Linear trend analysis on historical backend data</span>
                     </div>
-                    <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()" style="background:#06b6d4; min-width:130px;">
-                        <i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS
-                    </button>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <!-- Data range selector -->
+                        <div style="display:flex; background:#111827; border:1px solid #2d3748; border-radius:8px; overflow:hidden;">
+                            <button class="pred-range-btn active" data-hours="24"   onclick="setPredRange(this)">24H</button>
+                            <button class="pred-range-btn"        data-hours="168"  onclick="setPredRange(this)">7D</button>
+                            <button class="pred-range-btn"        data-hours="720"  onclick="setPredRange(this)">30D</button>
+                            <button class="pred-range-btn"        data-hours="8760" onclick="setPredRange(this)">ALL</button>
+                        </div>
+                        <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()" style="background:#06b6d4; min-width:130px;">
+                            <i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Summary banner -->
@@ -471,14 +484,14 @@
                 <div id="predResults">
                     <div style="text-align:center; color:#444; padding:28px 0; font-size:0.85rem;">
                         <i class="fa-solid fa-chart-line" style="font-size:2rem; margin-bottom:10px; color:#2d3748;"></i><br>
-                        Click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to fetch historical data and generate maintenance predictions.
+                        Select a data range, then click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to generate maintenance predictions.
                     </div>
                 </div>
 
                 <div style="margin-top:12px; color:#555; font-size:0.72rem; border-top:1px solid #1e2535; padding-top:10px;">
                     <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
-                    Predictions use last 24h data trends. Results are estimates — always apply engineering judgment.
-                    Forecast horizon: <strong style="color:#aaa;">30 days</strong>.
+                    Results are estimates — always apply engineering judgment. Forecast horizon: <strong style="color:#aaa;">30 days</strong>.
+                    More data = more accurate trend. Use <strong style="color:#aaa;">7D</strong> or <strong style="color:#aaa;">30D</strong> for longer-term patterns.
                 </div>
             </div>
             <!-- ===== END PREDICTIVE MAINTENANCE CARD ===== -->
@@ -1679,6 +1692,14 @@ async function updateHistoryChartData() {
         return `${days}d ${hrs}h`;
     }
 
+    let predSelectedHours = 24; // Tracks the currently selected data range
+
+    function setPredRange(btn) {
+        document.querySelectorAll('.pred-range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        predSelectedHours = parseInt(btn.dataset.hours);
+    }
+
     async function runMaintenancePrediction() {
         const btn = document.getElementById('predRunBtn');
         const resultsEl = document.getElementById('predResults');
@@ -1690,9 +1711,17 @@ async function updateHistoryChartData() {
         bannerEl.style.display = 'none';
 
         const HORIZON_MS = 30 * 24 * 3600 * 1000; // 30-day forecast horizon
+        const rangeLabel = predSelectedHours >= 8760 ? 'All Available' :
+                           predSelectedHours >= 720  ? '30 Days' :
+                           predSelectedHours >= 168  ? '7 Days' : '24 Hours';
 
         // Thresholds — mirrors detectAbnormality()
         const params = [
+            { key: 'v',    label: 'Voltage (Overvoltage ↑)',  unit: 'V',  threshold: 264,  direction: 'up',   color: '#7c3aed', icon: 'fa-bolt' },
+            { key: 'v',    label: 'Voltage (Undervoltage ↓)', unit: 'V',  threshold: 216,  direction: 'down', color: '#7c3aed', icon: 'fa-bolt', skipIfZero: true },
+            { type: 'event_count', label: 'Voltage Swells',  color: '#a78bfa', icon: 'fa-bolt-lightning', eventFilter: d => d.v > 264,              warnAt: 3, urgentAt: 10 },
+            { type: 'event_count', label: 'Voltage Dips',    color: '#60a5fa', icon: 'fa-bolt-lightning', eventFilter: d => d.v < 216 && d.v > 0,   warnAt: 3, urgentAt: 10 },
+            { key: 'c1',   label: 'Line Current (Overcurrent)', unit: 'A', threshold: 312,  direction: 'up',   color: '#06b6d4', icon: 'fa-plug' },
             { key: 't',    label: 'Temperature',  unit: '°C', threshold: 75,   direction: 'up',   color: '#f97316', icon: 'fa-temperature-half' },
             { key: 'vib',  label: 'Vibration',    unit: 'g',  threshold: 0.20, direction: 'up',   color: '#fbbf24', icon: 'fa-bell' },
             { key: 'load', label: 'Tx Loading',   unit: '%',  threshold: 100,  direction: 'up',   color: '#ec4899', icon: 'fa-gauge-high' },
@@ -1700,11 +1729,11 @@ async function updateHistoryChartData() {
         ];
 
         try {
-            const resp = await fetch(`${API_URL}/history/${DEVICE_ID}?hours=24`);
+            const resp = await fetch(`${API_URL}/history/${DEVICE_ID}?hours=${predSelectedHours}`);
             const raw  = await resp.json();
 
             if (!Array.isArray(raw) || raw.length < 5) {
-                resultsEl.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;"><i class="fa-solid fa-database" style="font-size:1.5rem;margin-bottom:8px;"></i><br>Not enough historical data yet (need at least 5 records).</div>';
+                resultsEl.innerHTML = `<div style="text-align:center;color:#aaa;padding:20px;"><i class="fa-solid fa-database" style="font-size:1.5rem;margin-bottom:8px;"></i><br>Not enough data for the <strong style="color:#06b6d4;">${rangeLabel}</strong> range (found ${raw ? raw.length : 0} records, need at least 5).<br><span style="font-size:0.8rem;color:#555;margin-top:6px;display:block;">Try selecting a wider range like <strong>7D</strong> or <strong>30D</strong>.</span></div>`;
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS';
                 return;
@@ -1713,11 +1742,13 @@ async function updateHistoryChartData() {
             // Map raw DB rows to normalised data points
             const dataset = raw.map(d => ({
                 ts:   new Date(d.created_at).getTime(),
+                v:    parseFloat(d.voltage  || d.v   || 0),
+                c1:   parseFloat(d.currentL1 || d.current_l1 || d.c1 || 0),
                 t:    parseFloat(d.temp    || 0),
                 vib:  parseFloat(d.vib     || 0),
                 load: parseFloat(d.load    || 0),
                 pf:   parseFloat(d.pf      || 0),
-            })).filter(d => d.ts > 0);
+            })).filter(d => d.ts > 0 && d.v > 0); // exclude zero-voltage (offline/power-loss) records
 
             dataset.sort((a, b) => a.ts - b.ts);
 
@@ -1728,7 +1759,48 @@ async function updateHistoryChartData() {
             let earliestMs = Infinity;
 
             params.forEach(p => {
+
+                // ---- EVENT COUNT params (Swells / Dips) ----
+                if (p.type === 'event_count') {
+                    const events = dataset.filter(p.eventFilter);
+                    const count  = events.length;
+
+                    // Frequency acceleration: compare first-half vs second-half of the period
+                    const mid = dataset.length > 1 ? dataset[Math.floor(dataset.length / 2)].ts : 0;
+                    const firstHalf  = events.filter(d => d.ts <= mid).length;
+                    const secondHalf = events.filter(d => d.ts  > mid).length;
+                    const accel = secondHalf - firstHalf;
+
+                    let trendStr;
+                    if      (count === 0)  trendStr = '<span style="color:#555;">— None detected</span>';
+                    else if (accel > 0)    trendStr = `<span style="color:#ef4444;">▲ Accelerating (+${accel} recent)</span>`;
+                    else if (accel < 0)    trendStr = `<span style="color:#10b981;">▼ Decreasing (${accel} recent)</span>`;
+                    else                   trendStr = `<span style="color:#fbbf24;">— Stable (${count} total)</span>`;
+
+                    const status     = count === 0 ? 'safe' : count < p.warnAt ? 'safe' : count < p.urgentAt ? 'watch' : 'urgent';
+                    const badgeClass = status === 'urgent' ? 'pred-urgent' : status === 'watch' ? 'pred-watch' : 'pred-safe';
+                    const badgeText  = status === 'urgent' ? '\uD83D\uDD34 URGENT' : status === 'watch' ? '\uD83D\uDFE1 WATCH' : '\uD83D\uDFE2 SAFE';
+                    const barPct     = count === 0 ? 0 : Math.min(100, Math.round((count / p.urgentAt) * 100));
+                    const barColor   = status === 'urgent' ? '#ef4444' : status === 'watch' ? '#fbbf24' : '#10b981';
+                    const etaText    = count === 0 ? 'No events recorded' : `${count} event${count !== 1 ? 's' : ''} in period`;
+
+                    if (status !== 'safe') {
+                        // treat any swell/dip events as an urgency signal for the sidebar badge
+                        earliestMs = Math.min(earliestMs, status === 'urgent' ? 0 : 7 * 24 * 3600000);
+                    }
+
+                    results.push({ p, currentVal: count, etaText, trendStr, badgeClass, badgeText, barPct, barColor, status, isEvent: true });
+                    return;
+                }
+
+                // ---- REGRESSION params (all others) ----
                 const yArr = dataset.map(d => d[p.key]);
+
+                // Skip undervoltage row if there's no below-nominal data (prevents false alerts on stable systems)
+                if (p.skipIfZero && yArr.every(v => v >= p.threshold)) {
+                    results.push({ p, currentVal: yArr[yArr.length - 1], etaText: 'No Downward Trend', trendStr: '<span style="color:#555;">— Flat</span>', badgeClass: 'pred-safe', badgeText: '\uD83D\uDFE2 SAFE', barPct: 0, barColor: '#10b981', status: 'safe' });
+                    return;
+                }
                 const { slope, intercept } = linearRegression(xArr, yArr);
                 const currentVal = yArr[yArr.length - 1];
 
@@ -1807,13 +1879,17 @@ async function updateHistoryChartData() {
                     <tbody>`;
 
             results.forEach(r => {
-                const valStr = r.p.key === 'pf'
+                const valStr = r.isEvent
+                    ? `${r.currentVal} events`
+                    : r.p.key === 'pf'
                     ? r.currentVal.toFixed(2)
                     : r.p.key === 'vib'
                         ? r.currentVal.toFixed(3) + ' ' + r.p.unit
                         : r.currentVal.toFixed(1) + (r.p.unit ? ' ' + r.p.unit : '');
 
-                const threshStr = r.p.key === 'pf'
+                const threshStr = r.isEvent
+                    ? `≥${r.p.urgentAt} = urgent`
+                    : r.p.key === 'pf'
                     ? r.p.threshold.toFixed(2)
                     : r.p.threshold + (r.p.unit ? ' ' + r.p.unit : '');
 
@@ -1853,7 +1929,7 @@ async function updateHistoryChartData() {
                 document.getElementById('maintBadge').style.display = 'none';
             }
 
-            logEvent('Predictive Maintenance Analysis complete', 'INFO');
+            logEvent(`Predictive Maintenance Analysis complete (source: ${rangeLabel}, ${raw.length} records)`, 'INFO');
 
         } catch (e) {
             console.error('Prediction error:', e);
