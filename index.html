@@ -160,6 +160,22 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* Predictive Maintenance */
+        .pred-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pred-table th { padding: 10px 14px; background: rgba(139,92,246,0.15); color: var(--accent-purple); font-size: 0.78rem; text-align: left; border-bottom: 1px solid #2d3748; }
+        .pred-table td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.88rem; color: #e2e8f0; vertical-align: middle; }
+        .pred-table tr:last-child td { border-bottom: none; }
+        .pred-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: bold; }
+        .pred-safe { background: rgba(16,185,129,0.18); color: #10b981; border: 1px solid #10b981; }
+        .pred-watch { background: rgba(251,191,36,0.18); color: #fbbf24; border: 1px solid #fbbf24; }
+        .pred-urgent { background: rgba(239,68,68,0.18); color: #ef4444; border: 1px solid #ef4444; }
+        .pred-now { background: rgba(239,68,68,0.3); color: #fca5a5; border: 1px solid #ef4444; animation: pulse-card-red 1.5s infinite; }
+        .pred-eta-bar { height: 5px; border-radius: 3px; margin-top: 5px; background: #2d3748; overflow: hidden; }
+        .pred-eta-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+        @keyframes pred-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .pred-spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: var(--accent-purple); border-radius: 50%; width: 28px; height: 28px; animation: pred-spin 1s linear infinite; margin: 20px auto; }
+        .nav-badge { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg-sidebar); animation: pulse-red 1.5s infinite; display: none; }
+
         /* Mobile */
         @media (max-width: 1000px) { .historian-container { grid-template-columns: 1fr; } .summary-panel { position: static; margin-bottom: 20px; } }
         @media (max-width: 768px) { .sidebar { width: 100%; height: 60px; bottom: 0; top: auto; flex-direction: row; justify-content: space-around; padding: 0; border-right: none; border-top: 1px solid #2d3748; background: #0f121a; } .nav-item { width: 100%; margin: 0; border-radius: 0; } .main-content { margin-left: 0; width: 100%; padding: 15px; padding-bottom: 80px; } .header { flex-direction: column; align-items: flex-start; gap: 15px; } .header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; } .dashboard-split { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .history-overlay, .daily-overlay, .maintenance-overlay { left: 0; width: 100%; padding: 15px; padding-bottom: 80px; z-index: 2000; } .data-table { display: block; overflow-x: auto; white-space: nowrap; } .manual-geo-controls { flex-direction: column; align-items: stretch; } .geo-input { width: 100%; } #map { height: 400px; } .control-panel { flex-direction: column; align-items: flex-start; } .checkbox-group { display: grid; grid-template-columns: 1fr 1fr; width: 100%; } }
@@ -180,7 +196,7 @@
             <div class="nav-item active" id="navDash" onclick="showView('dashboardView')"><i class="fa-solid fa-house"></i></div>
             <div class="nav-item" id="navHist" onclick="showView('historyView')"><i class="fa-solid fa-chart-area"></i></div>
             <div class="nav-item" id="navDaily" onclick="showView('dailyView')"><i class="fa-solid fa-calendar-days"></i></div>
-            <div class="nav-item" id="navMaint" onclick="showView('maintenanceView')"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <div class="nav-item" id="navMaint" onclick="showView('maintenanceView')" style="position:relative;"><i class="fa-solid fa-screwdriver-wrench"></i><span id="maintBadge" class="nav-badge"></span></div>
         </nav>
 
         <main class="main-content" id="dashboardView">
@@ -435,7 +451,38 @@
                     <div class="cal-group"><div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input type="range" min="0" max="5" step="0.01" value="0" class="cal-slider" oninput="updateSimulation('vib', this.value)"></div>
                 </div>
             </div>
-            
+
+            <!-- ===== PREDICTIVE MAINTENANCE CARD ===== -->
+            <div class="card" style="border-color: #06b6d4; margin-bottom: 25px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div>
+                        <h3 style="color:white; font-size:1rem;"><i class="fa-solid fa-brain" style="color:#06b6d4; margin-right:8px;"></i>Predictive Maintenance Engine</h3>
+                        <span style="color:#aaa; font-size:0.78rem;">Linear trend analysis on last 24h of backend data</span>
+                    </div>
+                    <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()" style="background:#06b6d4; min-width:130px;">
+                        <i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS
+                    </button>
+                </div>
+
+                <!-- Summary banner -->
+                <div id="predSummaryBanner" style="display:none; padding:12px 16px; border-radius:10px; margin-bottom:12px; font-size:0.88rem; font-weight:bold;"></div>
+
+                <!-- Results table -->
+                <div id="predResults">
+                    <div style="text-align:center; color:#444; padding:28px 0; font-size:0.85rem;">
+                        <i class="fa-solid fa-chart-line" style="font-size:2rem; margin-bottom:10px; color:#2d3748;"></i><br>
+                        Click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to fetch historical data and generate maintenance predictions.
+                    </div>
+                </div>
+
+                <div style="margin-top:12px; color:#555; font-size:0.72rem; border-top:1px solid #1e2535; padding-top:10px;">
+                    <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
+                    Predictions use last 24h data trends. Results are estimates — always apply engineering judgment.
+                    Forecast horizon: <strong style="color:#aaa;">30 days</strong>.
+                </div>
+            </div>
+            <!-- ===== END PREDICTIVE MAINTENANCE CARD ===== -->
+
         </div>
     </div>
 
@@ -1601,6 +1648,222 @@ async function updateHistoryChartData() {
         if(e === 'dashboardView' && map) setTimeout(()=>map.invalidateSize(), 200);
         if(e === 'historyView') updateHistoryChartData();
     }
+
+    // ============================================================
+    //  PREDICTIVE MAINTENANCE ENGINE
+    // ============================================================
+
+    // Pure-JS least-squares linear regression
+    function linearRegression(xArr, yArr) {
+        const n = xArr.length;
+        if (n < 2) return { slope: 0, intercept: yArr[0] || 0 };
+        const sumX  = xArr.reduce((a, b) => a + b, 0);
+        const sumY  = yArr.reduce((a, b) => a + b, 0);
+        const sumXY = xArr.reduce((s, x, i) => s + x * yArr[i], 0);
+        const sumX2 = xArr.reduce((s, x) => s + x * x, 0);
+        const denom = n * sumX2 - sumX * sumX;
+        if (denom === 0) return { slope: 0, intercept: sumY / n };
+        const slope = (n * sumXY - sumX * sumY) / denom;
+        const intercept = (sumY - slope * sumX) / n;
+        return { slope, intercept };
+    }
+
+    // Convert ms to human-readable "X days Y hrs"
+    function msToReadable(ms) {
+        if (ms <= 0) return 'IMMEDIATE';
+        const totalHrs = ms / 3600000;
+        const days = Math.floor(totalHrs / 24);
+        const hrs  = Math.floor(totalHrs % 24);
+        if (days === 0) return `${hrs}h`;
+        if (hrs  === 0) return `${days}d`;
+        return `${days}d ${hrs}h`;
+    }
+
+    async function runMaintenancePrediction() {
+        const btn = document.getElementById('predRunBtn');
+        const resultsEl = document.getElementById('predResults');
+        const bannerEl  = document.getElementById('predSummaryBanner');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="pred-spinner"></span>';
+        resultsEl.innerHTML = '<div class="pred-spinner"></div>';
+        bannerEl.style.display = 'none';
+
+        const HORIZON_MS = 30 * 24 * 3600 * 1000; // 30-day forecast horizon
+
+        // Thresholds — mirrors detectAbnormality()
+        const params = [
+            { key: 't',    label: 'Temperature',  unit: '°C', threshold: 75,   direction: 'up',   color: '#f97316', icon: 'fa-temperature-half' },
+            { key: 'vib',  label: 'Vibration',    unit: 'g',  threshold: 0.20, direction: 'up',   color: '#fbbf24', icon: 'fa-bell' },
+            { key: 'load', label: 'Tx Loading',   unit: '%',  threshold: 100,  direction: 'up',   color: '#ec4899', icon: 'fa-gauge-high' },
+            { key: 'pf',   label: 'Power Factor', unit: '',   threshold: 0.85, direction: 'down', color: '#d946ef', icon: 'fa-wave-square' },
+        ];
+
+        try {
+            const resp = await fetch(`${API_URL}/history/${DEVICE_ID}?hours=24`);
+            const raw  = await resp.json();
+
+            if (!Array.isArray(raw) || raw.length < 5) {
+                resultsEl.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;"><i class="fa-solid fa-database" style="font-size:1.5rem;margin-bottom:8px;"></i><br>Not enough historical data yet (need at least 5 records).</div>';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS';
+                return;
+            }
+
+            // Map raw DB rows to normalised data points
+            const dataset = raw.map(d => ({
+                ts:   new Date(d.created_at).getTime(),
+                t:    parseFloat(d.temp    || 0),
+                vib:  parseFloat(d.vib     || 0),
+                load: parseFloat(d.load    || 0),
+                pf:   parseFloat(d.pf      || 0),
+            })).filter(d => d.ts > 0);
+
+            dataset.sort((a, b) => a.ts - b.ts);
+
+            const xArr = dataset.map(d => d.ts);
+            const now  = Date.now();
+
+            let results = [];
+            let earliestMs = Infinity;
+
+            params.forEach(p => {
+                const yArr = dataset.map(d => d[p.key]);
+                const { slope, intercept } = linearRegression(xArr, yArr);
+                const currentVal = yArr[yArr.length - 1];
+
+                // Calculate projected value in 30 days for the progress bar
+                const projectedVal = slope * (now + HORIZON_MS) + intercept;
+
+                let etaMs = null;
+                let status = 'safe';
+                let etaText = 'No Critical Trend';
+                let barPct = 0;
+
+                if (p.direction === 'up') {
+                    // Trending toward threshold from below
+                    if (currentVal >= p.threshold) {
+                        etaMs = 0; status = 'now';
+                        etaText = 'THRESHOLD EXCEEDED';
+                        barPct = 100;
+                    } else if (slope > 0) {
+                        etaMs = (p.threshold - (slope * now + intercept)) / slope;
+                        if (etaMs > 0 && etaMs <= HORIZON_MS) {
+                            barPct = Math.min(100, Math.round((1 - etaMs / HORIZON_MS) * 100));
+                            status = etaMs < 7 * 24 * 3600000 ? 'urgent' : etaMs < 14 * 24 * 3600000 ? 'watch' : 'safe';
+                            etaText = msToReadable(etaMs);
+                            if (etaMs < earliestMs) earliestMs = etaMs;
+                        } else if (etaMs <= 0) {
+                            etaMs = 0; status = 'now'; etaText = 'THRESHOLD EXCEEDED'; barPct = 100;
+                        }
+                    }
+                } else {
+                    // direction === 'down'  (PF — falling toward threshold)
+                    if (currentVal <= p.threshold && currentVal > 0) {
+                        etaMs = 0; status = 'now';
+                        etaText = 'THRESHOLD EXCEEDED';
+                        barPct = 100;
+                    } else if (slope < 0 && currentVal > 0) {
+                        etaMs = (p.threshold - (slope * now + intercept)) / slope;
+                        if (etaMs > 0 && etaMs <= HORIZON_MS) {
+                            barPct = Math.min(100, Math.round((1 - etaMs / HORIZON_MS) * 100));
+                            status = etaMs < 7 * 24 * 3600000 ? 'urgent' : etaMs < 14 * 24 * 3600000 ? 'watch' : 'safe';
+                            etaText = msToReadable(etaMs);
+                            if (etaMs < earliestMs) earliestMs = etaMs;
+                        } else if (etaMs <= 0) {
+                            etaMs = 0; status = 'now'; etaText = 'THRESHOLD EXCEEDED'; barPct = 100;
+                        }
+                    }
+                }
+
+                const slopePerHour = slope * 3600000;
+                const trendStr = Math.abs(slopePerHour) < 0.0001
+                    ? '<span style="color:#555;">— Flat</span>'
+                    : slopePerHour > 0
+                        ? `<span style="color:#ef4444;">▲ +${slopePerHour.toFixed(4)}/hr</span>`
+                        : `<span style="color:#10b981;">▼ ${slopePerHour.toFixed(4)}/hr</span>`;
+
+                const badgeClass = status === 'now' ? 'pred-now' : status === 'urgent' ? 'pred-urgent' : status === 'watch' ? 'pred-watch' : 'pred-safe';
+                const badgeText  = status === 'now' ? '⚠ NOW' : status === 'urgent' ? '🔴 URGENT' : status === 'watch' ? '🟡 WATCH' : '🟢 SAFE';
+
+                const barColor = status === 'now' || status === 'urgent' ? '#ef4444' : status === 'watch' ? '#fbbf24' : '#10b981';
+
+                results.push({
+                    p, currentVal, etaText, trendStr, badgeClass, badgeText, barPct, barColor, status
+                });
+            });
+
+            // ---- Render table ----
+            let tableHtml = `
+                <table class="pred-table">
+                    <thead><tr>
+                        <th>PARAMETER</th>
+                        <th>CURRENT</th>
+                        <th>THRESHOLD</th>
+                        <th>TREND</th>
+                        <th>ETA TO THRESHOLD</th>
+                        <th>STATUS</th>
+                    </tr></thead>
+                    <tbody>`;
+
+            results.forEach(r => {
+                const valStr = r.p.key === 'pf'
+                    ? r.currentVal.toFixed(2)
+                    : r.p.key === 'vib'
+                        ? r.currentVal.toFixed(3) + ' ' + r.p.unit
+                        : r.currentVal.toFixed(1) + (r.p.unit ? ' ' + r.p.unit : '');
+
+                const threshStr = r.p.key === 'pf'
+                    ? r.p.threshold.toFixed(2)
+                    : r.p.threshold + (r.p.unit ? ' ' + r.p.unit : '');
+
+                tableHtml += `<tr>
+                    <td><i class="fa-solid ${r.p.icon}" style="color:${r.p.color}; margin-right:7px;"></i>${r.p.label}</td>
+                    <td style="font-family:monospace; font-weight:bold; color:${r.p.color};">${valStr}</td>
+                    <td style="color:#64748b; font-family:monospace;">${threshStr}</td>
+                    <td>${r.trendStr}</td>
+                    <td>
+                        <span style="font-weight:bold; font-family:monospace;">${r.etaText}</span>
+                        <div class="pred-eta-bar"><div class="pred-eta-fill" style="width:${r.barPct}%; background:${r.barColor};"></div></div>
+                    </td>
+                    <td><span class="pred-badge ${r.badgeClass}">${r.badgeText}</span></td>
+                </tr>`;
+            });
+
+            tableHtml += '</tbody></table>';
+            resultsEl.innerHTML = tableHtml;
+
+            // ---- Summary banner ----
+            const anyUrgent = results.some(r => r.status === 'urgent' || r.status === 'now');
+            const anyWatch  = results.some(r => r.status === 'watch');
+
+            if (anyUrgent) {
+                const urgentItems = results.filter(r => r.status === 'urgent' || r.status === 'now').map(r => r.p.label).join(', ');
+                bannerEl.style.cssText = 'display:block; background:rgba(239,68,68,0.15); border:1px solid #ef4444; color:#fca5a5;';
+                bannerEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right:8px;"></i>MAINTENANCE RECOMMENDED WITHIN 7 DAYS — <strong>${urgentItems}</strong> require immediate attention.`;
+                document.getElementById('maintBadge').style.display = 'block';
+            } else if (anyWatch) {
+                const watchItems = results.filter(r => r.status === 'watch').map(r => r.p.label).join(', ');
+                bannerEl.style.cssText = 'display:block; background:rgba(251,191,36,0.12); border:1px solid #fbbf24; color:#fde68a;';
+                bannerEl.innerHTML = `<i class="fa-solid fa-eye" style="margin-right:8px;"></i>MAINTENANCE ADVISABLE WITHIN 14 DAYS — <strong>${watchItems}</strong> trending toward threshold.`;
+                document.getElementById('maintBadge').style.display = 'block';
+            } else {
+                bannerEl.style.cssText = 'display:block; background:rgba(16,185,129,0.12); border:1px solid #10b981; color:#6ee7b7;';
+                bannerEl.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right:8px;"></i>All parameters within safe trend range. No maintenance predicted within the next 30 days.`;
+                document.getElementById('maintBadge').style.display = 'none';
+            }
+
+            logEvent('Predictive Maintenance Analysis complete', 'INFO');
+
+        } catch (e) {
+            console.error('Prediction error:', e);
+            resultsEl.innerHTML = '<div style="color:#ef4444; text-align:center; padding:20px;"><i class="fa-solid fa-circle-xmark"></i> Failed to fetch data from backend. Please check your connection.</div>';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS';
+        }
+    }
+    // ============================================================
 </script>
 </body>
 </html>
