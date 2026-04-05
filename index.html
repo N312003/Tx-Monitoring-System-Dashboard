@@ -1733,7 +1733,7 @@
             if (d.c1 > 312) issues.push("Overcurrent");
             if (d.load > 100) issues.push("Tx Overloaded");
             if (d.t > 75) issues.push("Overheating");
-            if (d.vib > 0.20) issues.push("High Vibration");
+            if (d.vib > 0.02) issues.push("High Vibration");
             if (d.pf < 0.85 && d.v > 10) issues.push("Low Power Factor");
 
             return issues.length > 0 ? issues.join(", ") : "Normal Operation";
@@ -1800,7 +1800,7 @@
             if (load > 100) document.getElementById('card_load').classList.add('blink-red-card');
             if (pf < 0.85 && v > 10) document.getElementById('card_pf').classList.add('blink-red-card');
             if (t > 75) document.getElementById('card_t').classList.add('blink-red-card');
-            if (vib > 0.20) document.getElementById('card_vib').classList.add('blink-red-card');
+            if (vib > 0.02) document.getElementById('card_vib').classList.add('blink-red-card');
 
             if (status !== lastAbnormalityString) {
                 if (status === "Normal Operation") {
@@ -1822,7 +1822,7 @@
                     if (c1 > 312) details.push(`Overcurrent at ${c1.toFixed(1)}A`);
                     if (load > 100) details.push(`Tx Overloaded at ${load.toFixed(1)}%`);
                     if (t > 75) details.push(`Temp Critical at ${t.toFixed(1)}°C`);
-                    if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
+                    if (vib > 0.02) details.push(`Vib High at ${vib.toFixed(2)}g`);
                     if (pf < 0.85 && v > 10) details.push(`Low PF at ${pf.toFixed(2)}`);
 
                     const faultMessage = details.join(" | ");
@@ -2342,7 +2342,7 @@
             if (data.load > 100) document.getElementById('row_load').classList.add('abnormal-row');
             if (data.pf < 0.85 && data.v > 10) document.getElementById('row_pf').classList.add('abnormal-row');
             if (data.t > 75) document.getElementById('row_t').classList.add('abnormal-row');
-            if (data.vib > 0.20) document.getElementById('row_vib').classList.add('abnormal-row');
+            if (data.vib > 0.02) document.getElementById('row_vib').classList.add('abnormal-row');
         }
 
         function toggleChartDataset(type, idx) {
@@ -2820,7 +2820,7 @@
                 { type: 'event_count', label: 'Voltage Dips', color: '#60a5fa', icon: 'fa-bolt-lightning', eventFilter: d => d.v < 216 && d.v > 0, warnAt: 3, urgentAt: 10 },
                 { key: 'c1', label: 'Line Current (Overcurrent)', unit: 'A', threshold: 312, direction: 'up', color: '#06b6d4', icon: 'fa-plug' },
                 { key: 't', label: 'Temperature', unit: '°C', threshold: 75, direction: 'up', color: '#f97316', icon: 'fa-temperature-half' },
-                { key: 'vib', label: 'Vibration', unit: 'g', threshold: 0.20, direction: 'up', color: '#fbbf24', icon: 'fa-bell' },
+                { key: 'vib', label: 'Vibration', unit: 'g', threshold: 0.02, direction: 'up', color: '#fbbf24', icon: 'fa-bell' },
                 { key: 'load', label: 'Tx Loading', unit: '%', threshold: 100, direction: 'up', color: '#ec4899', icon: 'fa-gauge-high' },
                 { key: 'pf', label: 'Power Factor', unit: '', threshold: 0.85, direction: 'down', color: '#d946ef', icon: 'fa-wave-square' },
             ];
