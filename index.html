@@ -187,8 +187,10 @@
             outline: none;
             transition: 0.3s;
         }
-        
-        .device-selector:hover { border-color: var(--accent-purple); }
+
+        .device-selector:hover {
+            border-color: var(--accent-purple);
+        }
 
         .mute-btn {
             background: rgba(255, 255, 255, 0.05);
@@ -205,7 +207,10 @@
             margin-left: 10px;
         }
 
-        .mute-btn:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.05); }
+        .mute-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
 
         .mute-btn.active {
             border-color: rgba(239, 68, 68, 0.5);
@@ -222,7 +227,7 @@
             font-size: 0.75rem;
             letter-spacing: 1px;
             transition: all 0.3s ease;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .status-online {
@@ -283,7 +288,7 @@
         .stat-icon {
             font-size: 1.6rem;
             margin-bottom: 12px;
-            filter: drop-shadow(0 0 8px rgba(255,255,255,0.1));
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
             transition: transform 0.3s;
         }
 
@@ -297,7 +302,7 @@
             margin: 5px 0;
             color: white;
             letter-spacing: 1px;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
         }
 
         .stat-label {
@@ -315,8 +320,8 @@
             font-weight: 800;
             color: white;
             width: 90%;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             letter-spacing: 0.5px;
         }
 
@@ -1048,14 +1053,19 @@
             <div class="header">
                 <div>
                     <h1>TxMS PRO</h1><span id="roleDisplay" style="color:var(--text-muted)">System
-                        Operator</span><select id="deviceSelect" class="device-selector">
+                        Operator</span><select id="deviceSelect" class="device-selector" onchange="changeDevice()">
                         <option value="Tx01" selected>Tx01 (Main Node)</option>
                     </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 20px;">
-                    <div id="alarmDashBadge" class="status-badge" style="display:none; border-color:#ef4444; color:#ef4444; background:rgba(239, 68, 68, 0.15); box-shadow: 0 0 10px rgba(239,68,68,0.4);">ALARM ARMED</div>
-                    <div id="simDashBadge" class="status-badge" style="display:none; border-color:#fbbf24; color:#fbbf24; background:rgba(251, 191, 36, 0.15); box-shadow: 0 0 10px rgba(251,191,36,0.3);">SIMULATION</div>
-                    <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="Mute Alarms"><i class="fa-solid fa-volume-high"></i></button>
+                    <div id="alarmDashBadge" class="status-badge"
+                        style="display:none; border-color:#ef4444; color:#ef4444; background:rgba(239, 68, 68, 0.15); box-shadow: 0 0 10px rgba(239,68,68,0.4);">
+                        ALARM ARMED</div>
+                    <div id="simDashBadge" class="status-badge"
+                        style="display:none; border-color:#fbbf24; color:#fbbf24; background:rgba(251, 191, 36, 0.15); box-shadow: 0 0 10px rgba(251,191,36,0.3);">
+                        SIMULATION</div>
+                    <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="Mute Alarms"><i
+                            class="fa-solid fa-volume-high"></i></button>
                     <div id="netStatus" class="status-badge status-offline">CONNECTING...</div>
                 </div>
             </div>
@@ -1377,25 +1387,39 @@
             </div>
         </div>
 
-        <div class="maintenance-overlay" id="maintenanceView" style="background: linear-gradient(to bottom right, #0a0a0f, #151921);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
+        <div class="maintenance-overlay" id="maintenanceView"
+            style="background: linear-gradient(to bottom right, #0a0a0f, #151921);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
                 <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="background: rgba(217, 70, 239, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(217, 70, 239, 0.3); box-shadow: 0 0 20px rgba(217, 70, 239, 0.2);">
+                    <div
+                        style="background: rgba(217, 70, 239, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(217, 70, 239, 0.3); box-shadow: 0 0 20px rgba(217, 70, 239, 0.2);">
                         <i class="fa-solid fa-screwdriver-wrench" style="font-size: 1.8rem; color: #d946ef;"></i>
                     </div>
                     <div>
-                        <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">SYSTEM MAINTENANCE</h2>
-                        <span style="color:var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px;">Advanced Admin Controls & Diagnostics</span>
+                        <h2
+                            style="margin: 0; font-size: 1.8rem; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                            SYSTEM MAINTENANCE</h2>
+                        <span style="color:var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px;">Advanced Admin
+                            Controls & Diagnostics</span>
                     </div>
                 </div>
-                <button class="btn-action" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; transition: all 0.3s; border-radius: 10px; font-weight: bold; letter-spacing: 1px;" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'" onclick="showView('dashboardView')">
+                <button class="btn-action"
+                    style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; transition: all 0.3s; border-radius: 10px; font-weight: bold; letter-spacing: 1px;"
+                    onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(-2px)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'"
+                    onclick="showView('dashboardView')">
                     <i class="fa-solid fa-xmark"></i> CLOSE
                 </button>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 25px;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 25px;">
                 <!-- Safety Interlock Card -->
-                <div class="card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(239, 68, 68, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); transition: transform 0.3s, border-color 0.3s; display: flex; flex-direction: column; justify-content: space-between;" onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-5px)'" onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(0)'">
+                <div class="card"
+                    style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(239, 68, 68, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); transition: transform 0.3s, border-color 0.3s; display: flex; flex-direction: column; justify-content: space-between;"
+                    onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-5px)'"
+                    onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(0)'">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
@@ -1404,21 +1428,27 @@
                                 </div>
                                 <h3 style="color: white; font-size: 1.2rem; margin: 0;">Safety Interlock</h3>
                             </div>
-                            <span style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; display: block;">Master override for remote alarm isolation.<br>Use with extreme caution.</span>
+                            <span style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; display: block;">Master
+                                override for remote alarm isolation.<br>Use with extreme caution.</span>
                         </div>
                         <label class="switch" style="transform: scale(1.1); margin-top: 10px;">
                             <input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)">
                             <span class="slider" style="box-shadow: inset 0 0 5px rgba(0,0,0,0.5);"></span>
                         </label>
                     </div>
-                    <div id="armStatusText" style="margin-top: 25px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 6px; font-weight: 800; letter-spacing: 2px; color: #ef4444; text-align: center; font-size: 0.9rem; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);">
+                    <div id="armStatusText"
+                        style="margin-top: 25px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 6px; font-weight: 800; letter-spacing: 2px; color: #ef4444; text-align: center; font-size: 0.9rem; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);">
                         SYSTEM DISARMED
                     </div>
                 </div>
 
                 <!-- Simulation Mode Card -->
-                <div class="card" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(251, 191, 36, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); transition: transform 0.3s, border-color 0.3s;" onmouseover="this.style.borderColor='rgba(251, 191, 36, 0.5)'; this.style.transform='translateY(-5px)'" onmouseout="this.style.borderColor='rgba(251, 191, 36, 0.2)'; this.style.transform='translateY(0)'">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                <div class="card"
+                    style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(251, 191, 36, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); transition: transform 0.3s, border-color 0.3s;"
+                    onmouseover="this.style.borderColor='rgba(251, 191, 36, 0.5)'; this.style.transform='translateY(-5px)'"
+                    onmouseout="this.style.borderColor='rgba(251, 191, 36, 0.2)'; this.style.transform='translateY(0)'">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
                         <div>
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                                 <div style="background: rgba(251, 191, 36, 0.1); padding: 10px; border-radius: 8px;">
@@ -1426,7 +1456,8 @@
                                 </div>
                                 <h3 style="color: white; font-size: 1.2rem; margin: 0;">Simulation Engine</h3>
                             </div>
-                            <span style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; display: block;">Override hardware telemetries dynamically.</span>
+                            <span style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; display: block;">Override
+                                hardware telemetries dynamically.</span>
                         </div>
                         <label class="switch" style="transform: scale(1.1); margin-top: 10px;">
                             <input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)">
@@ -1434,76 +1465,168 @@
                         </label>
                     </div>
 
-                    <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: all 0.4s ease; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div id="simulationControls"
+                        style="opacity: 0.3; pointer-events: none; transition: all 0.4s ease; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <style>
-                            .sim-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: #2d3748; border-radius: 3px; outline: none; margin-top: 8px; }
-                            .sim-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fbbf24; cursor: pointer; border: 2px solid #1a1f2b; box-shadow: 0 0 5px rgba(251,191,36,0.5); transition: 0.2s; }
-                            .sim-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
-                            .sim-card { background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
-                            .sim-card:hover { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.05); }
+                            .sim-range {
+                                -webkit-appearance: none;
+                                appearance: none;
+                                width: 100%;
+                                height: 6px;
+                                background: #2d3748;
+                                border-radius: 3px;
+                                outline: none;
+                                margin-top: 8px;
+                            }
+
+                            .sim-range::-webkit-slider-thumb {
+                                -webkit-appearance: none;
+                                appearance: none;
+                                width: 16px;
+                                height: 16px;
+                                border-radius: 50%;
+                                background: #fbbf24;
+                                cursor: pointer;
+                                border: 2px solid #1a1f2b;
+                                box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+                                transition: 0.2s;
+                            }
+
+                            .sim-range::-webkit-slider-thumb:hover {
+                                transform: scale(1.2);
+                            }
+
+                            .sim-card {
+                                background: rgba(0, 0, 0, 0.2);
+                                padding: 12px 15px;
+                                border-radius: 10px;
+                                border: 1px solid rgba(255, 255, 255, 0.05);
+                                transition: 0.3s;
+                            }
+
+                            .sim-card:hover {
+                                border-color: rgba(251, 191, 36, 0.3);
+                                background: rgba(251, 191, 36, 0.05);
+                            }
                         </style>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Volt (V)</span><span id="sim_v_val" style="color:#fbbf24;">220V</span></div>
-                            <input type="range" min="0" max="300" value="220" class="sim-range" oninput="updateSimulation('v', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Volt
+                                    (V)</span><span id="sim_v_val" style="color:#fbbf24;">220V</span></div>
+                            <input type="range" min="0" max="300" value="220" class="sim-range"
+                                oninput="updateSimulation('v', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Curr (A)</span><span id="sim_c1_val" style="color:#fbbf24;">5A</span></div>
-                            <input type="range" min="0" max="400" value="5" class="sim-range" oninput="updateSimulation('c1', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Curr
+                                    (A)</span><span id="sim_c1_val" style="color:#fbbf24;">5A</span></div>
+                            <input type="range" min="0" max="400" value="5" class="sim-range"
+                                oninput="updateSimulation('c1', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Pwr (kW)</span><span id="sim_kw_val" style="color:#fbbf24;">0.99kW</span></div>
-                            <input type="range" min="0" max="100" step="0.1" value="0.99" class="sim-range" oninput="updateSimulation('kw', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Pwr
+                                    (kW)</span><span id="sim_kw_val" style="color:#fbbf24;">0.99kW</span></div>
+                            <input type="range" min="0" max="100" step="0.1" value="0.99" class="sim-range"
+                                oninput="updateSimulation('kw', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>App Pwr (kVA)</span><span id="sim_kva_val" style="color:#fbbf24;">1.1kVA</span></div>
-                            <input type="range" min="0" max="100" step="0.1" value="1.1" class="sim-range" oninput="updateSimulation('kva', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>App
+                                    Pwr (kVA)</span><span id="sim_kva_val" style="color:#fbbf24;">1.1kVA</span></div>
+                            <input type="range" min="0" max="100" step="0.1" value="1.1" class="sim-range"
+                                oninput="updateSimulation('kva', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Load (%)</span><span id="sim_load_val" style="color:#fbbf24;">1.4%</span></div>
-                            <input type="range" min="0" max="150" step="0.1" value="1.4" class="sim-range" oninput="updateSimulation('load', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Load
+                                    (%)</span><span id="sim_load_val" style="color:#fbbf24;">1.4%</span></div>
+                            <input type="range" min="0" max="150" step="0.1" value="1.4" class="sim-range"
+                                oninput="updateSimulation('load', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>PF</span><span id="sim_pf_val" style="color:#fbbf24;">0.9</span></div>
-                            <input type="range" min="0" max="1" step="0.01" value="0.9" class="sim-range" oninput="updateSimulation('pf', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;">
+                                <span>PF</span><span id="sim_pf_val" style="color:#fbbf24;">0.9</span></div>
+                            <input type="range" min="0" max="1" step="0.01" value="0.9" class="sim-range"
+                                oninput="updateSimulation('pf', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Temp (°C)</span><span id="sim_t_val" style="color:#fbbf24;">30°C</span></div>
-                            <input type="range" min="0" max="150" value="30" class="sim-range" oninput="updateSimulation('t', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Temp
+                                    (°C)</span><span id="sim_t_val" style="color:#fbbf24;">30°C</span></div>
+                            <input type="range" min="0" max="150" value="30" class="sim-range"
+                                oninput="updateSimulation('t', this.value)">
                         </div>
                         <div class="sim-card">
-                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Vib (g)</span><span id="sim_vib_val" style="color:#fbbf24;">0g</span></div>
-                            <input type="range" min="0" max="5" step="0.01" value="0" class="sim-range" oninput="updateSimulation('vib', this.value)">
+                            <div class="cal-label"
+                                style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Vib
+                                    (g)</span><span id="sim_vib_val" style="color:#fbbf24;">0g</span></div>
+                            <input type="range" min="0" max="5" step="0.01" value="0" class="sim-range"
+                                oninput="updateSimulation('vib', this.value)">
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- ===== PREDICTIVE MAINTENANCE CARD ===== -->
-            <div class="card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.15); border-radius: 16px; overflow: hidden; margin-bottom: 25px; padding: 0;">
-                <div style="background: rgba(6, 182, 212, 0.05); border-bottom: 1px solid rgba(6, 182, 212, 0.15); padding: 20px 25px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+            <div class="card"
+                style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.15); border-radius: 16px; overflow: hidden; margin-bottom: 25px; padding: 0;">
+                <div
+                    style="background: rgba(6, 182, 212, 0.05); border-bottom: 1px solid rgba(6, 182, 212, 0.15); padding: 20px 25px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="background: rgba(6, 182, 212, 0.1); padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);">
+                        <div
+                            style="background: rgba(6, 182, 212, 0.1); padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);">
                             <i class="fa-solid fa-brain" style="color:#06b6d4; font-size: 1.2rem;"></i>
                         </div>
                         <div>
-                            <h3 style="color:white; font-size:1.1rem; margin: 0; letter-spacing: 0.5px;">Predictive Maintenance Engine</h3>
-                            <span style="color:#94a3b8; font-size:0.8rem;">Linear trend analysis on historical backend data</span>
+                            <h3 style="color:white; font-size:1.1rem; margin: 0; letter-spacing: 0.5px;">Predictive
+                                Maintenance Engine</h3>
+                            <span style="color:#94a3b8; font-size:0.8rem;">Linear trend analysis on historical backend
+                                data</span>
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
                         <!-- Data range selector -->
-                        <div style="display:flex; background:#0f121a; border:1px solid #334155; border-radius:10px; padding: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                        <div
+                            style="display:flex; background:#0f121a; border:1px solid #334155; border-radius:10px; padding: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
                             <style>
-                                .pred-range-btn-new { background: transparent; border: none; color: #94a3b8; padding: 6px 14px; cursor: pointer; font-size: 0.8rem; font-weight: 700; border-radius: 6px; transition: 0.3s; }
-                                .pred-range-btn-new:hover { color: white; background: rgba(255,255,255,0.05); }
-                                .pred-range-btn-new.active { background: #06b6d4; color: #000; box-shadow: 0 0 10px rgba(6, 182, 212, 0.4); }
+                                .pred-range-btn-new {
+                                    background: transparent;
+                                    border: none;
+                                    color: #94a3b8;
+                                    padding: 6px 14px;
+                                    cursor: pointer;
+                                    font-size: 0.8rem;
+                                    font-weight: 700;
+                                    border-radius: 6px;
+                                    transition: 0.3s;
+                                }
+
+                                .pred-range-btn-new:hover {
+                                    color: white;
+                                    background: rgba(255, 255, 255, 0.05);
+                                }
+
+                                .pred-range-btn-new.active {
+                                    background: #06b6d4;
+                                    color: #000;
+                                    box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+                                }
                             </style>
-                            <button class="pred-range-btn pred-range-btn-new active" data-hours="24" onclick="setPredRange(this)">24H</button>
-                            <button class="pred-range-btn pred-range-btn-new" data-hours="168" onclick="setPredRange(this)">7D</button>
-                            <button class="pred-range-btn pred-range-btn-new" data-hours="720" onclick="setPredRange(this)">30D</button>
-                            <button class="pred-range-btn pred-range-btn-new" data-hours="8760" onclick="setPredRange(this)">ALL</button>
+                            <button class="pred-range-btn pred-range-btn-new active" data-hours="24"
+                                onclick="setPredRange(this)">24H</button>
+                            <button class="pred-range-btn pred-range-btn-new" data-hours="168"
+                                onclick="setPredRange(this)">7D</button>
+                            <button class="pred-range-btn pred-range-btn-new" data-hours="720"
+                                onclick="setPredRange(this)">30D</button>
+                            <button class="pred-range-btn pred-range-btn-new" data-hours="8760"
+                                onclick="setPredRange(this)">ALL</button>
                         </div>
-                        <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()" style="background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); min-width:140px; padding: 10px 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3); border: none; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()"
+                            style="background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); min-width:140px; padding: 10px 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3); border: none; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px; transition: transform 0.2s;"
+                            onmouseover="this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.transform='translateY(0)'">
                             <i class="fa-solid fa-play" style="margin-right:8px;"></i>RUN ANALYSIS
                         </button>
                     </div>
@@ -1511,22 +1634,32 @@
 
                 <div style="padding: 25px;">
                     <!-- Summary banner -->
-                    <div id="predSummaryBanner" style="display:none; padding:15px 20px; border-radius:10px; margin-bottom:20px; font-size:0.9rem; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div id="predSummaryBanner"
+                        style="display:none; padding:15px 20px; border-radius:10px; margin-bottom:20px; font-size:0.9rem; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     </div>
 
                     <!-- Results table -->
-                    <div id="predResults" style="background: rgba(0,0,0,0.15); border-radius: 12px; border: 1px solid rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center;">
-                        <div style="text-align:center; color:#64748b; padding:40px 20px; font-size:0.9rem; max-width: 400px; margin: 0 auto;">
-                            <div style="width: 70px; height: 70px; background: rgba(6, 182, 212, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 1px dashed rgba(6, 182, 212, 0.3);">
-                                <i class="fa-solid fa-chart-line" style="font-size:2rem; color:#06b6d4; opacity: 0.7;"></i>
+                    <div id="predResults"
+                        style="background: rgba(0,0,0,0.15); border-radius: 12px; border: 1px solid rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <div
+                            style="text-align:center; color:#64748b; padding:40px 20px; font-size:0.9rem; max-width: 400px; margin: 0 auto;">
+                            <div
+                                style="width: 70px; height: 70px; background: rgba(6, 182, 212, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 1px dashed rgba(6, 182, 212, 0.3);">
+                                <i class="fa-solid fa-chart-line"
+                                    style="font-size:2rem; color:#06b6d4; opacity: 0.7;"></i>
                             </div>
-                            Select a timeline and click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to forecast component health vectors.
+                            Select a timeline and click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to forecast
+                            component health vectors.
                         </div>
                     </div>
 
-                    <div style="margin-top:20px; color:#64748b; font-size:0.75rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; display: flex; gap: 10px; align-items: flex-start;">
+                    <div
+                        style="margin-top:20px; color:#64748b; font-size:0.75rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; display: flex; gap: 10px; align-items: flex-start;">
                         <i class="fa-solid fa-circle-info" style="color: #06b6d4; margin-top: 2px;"></i>
-                        <span style="line-height: 1.4;">Results are analytical estimates utilizing linear extrapolation. Forecast horizon: <strong style="color:#94a3b8;">30 days</strong>.<br>Use <strong style="color:#94a3b8;">7D</strong> or <strong style="color:#94a3b8;">30D</strong> for sustained long-term anomaly detection.</span>
+                        <span style="line-height: 1.4;">Results are analytical estimates utilizing linear extrapolation.
+                            Forecast horizon: <strong style="color:#94a3b8;">30 days</strong>.<br>Use <strong
+                                style="color:#94a3b8;">7D</strong> or <strong style="color:#94a3b8;">30D</strong> for
+                            sustained long-term anomaly detection.</span>
                     </div>
                 </div>
             </div>
@@ -1537,7 +1670,7 @@
 
     <script>
         const API_URL = "https://txms-backend.onrender.com/api";
-        const DEVICE_ID = "Tx01";
+        let DEVICE_ID = "Tx01";
         const TRANS_KVA_RATING = 75.0;
 
         // --- BACKEND EMAIL ALERT CONFIGURATION ---
@@ -1577,7 +1710,8 @@
         // --- STATE VARIABLES ---
         let sessionLog = [];
         let map = null;
-        let deviceMarker = null;
+        let fleetMarkers = {};
+        let fleetUpdateInterval = null;
         let isMuted = false;
         let pollInterval = null;
         let lastAbnormalityString = "Normal Operation";
@@ -1598,11 +1732,60 @@
 
         window.onload = function () {
             initMap();
+            loadDevices();
             startPolling();
             initAudio();
             initHistorianCharts();
             logEvent("System Initialized", "INFO");
         };
+
+        async function loadDevices() {
+            try {
+                const res = await fetch(`${API_URL}/devices`);
+                if (res.ok) {
+                    const devices = await res.json();
+                    const select = document.getElementById('deviceSelect');
+                    if (devices.length > 0) {
+                        select.innerHTML = '';
+                        devices.forEach(d => {
+                            const option = document.createElement('option');
+                            option.value = d.device_id;
+                            option.textContent = d.device_id;
+                            if (d.device_id === DEVICE_ID) option.selected = true;
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load devices", err);
+            }
+        }
+
+        function changeDevice() {
+            const select = document.getElementById('deviceSelect');
+            DEVICE_ID = select.value;
+            
+            const inputDeviceId = document.getElementById('inputDeviceId');
+            if(inputDeviceId) inputDeviceId.value = DEVICE_ID;
+            
+            sessionLog = [];
+            currentChartData = [];
+            document.getElementById("eventLogBody").innerHTML = "";
+            document.getElementById("dailyTableBody").innerHTML = "";
+            
+            [vChart, pfChart, tChart, vibChart, kwChart, loadChart].forEach(c => {
+                c.data.datasets[0].data = Array(20).fill(0);
+                c.update();
+            });
+            cChart.data.datasets[0].data = Array(20).fill(0);
+            cChart.update();
+            
+            if (typeof renderHistorian === 'function') renderHistorian([]);
+
+            logEvent(`Switched monitoring to device: ${DEVICE_ID}`, "INFO");
+            zeroOutDashboard("CONNECTING...");
+            startPolling();
+        }
 
         let audioCtx;
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -1649,40 +1832,6 @@
 
             const cards = ['card_v', 'card_c', 'card_kw', 'card_kva', 'card_load', 'card_pf', 'card_t', 'card_vib'];
             cards.forEach(id => document.getElementById(id).classList.remove('blink-red-card'));
-
-            let markerClass = displayStatus === "CONNECTING..." ? 'marker-connecting' : 'marker-offline';
-            let statusBg = displayStatus === "CONNECTING..." ? '#fbbf24' : '#64748b';
-            let textColor = displayStatus === "CONNECTING..." ? '#111' : 'white';
-
-            if (deviceMarker) {
-                const iconHtml = `<div class='${markerClass}'></div>`;
-                const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
-                deviceMarker.setIcon(newIcon);
-
-                const popupContent = `
-                <div style="min-width: 220px;">
-                    <div style="background: ${statusBg}; color: ${textColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
-                        ${displayStatus}
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
-                        <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">0.0 V</span>
-                        <span>Current:</span> <span style="color: #fff; font-weight: bold;">0.0 A</span>
-                        <span>Active:</span> <span style="color: #fff; font-weight: bold;">0.00 kW</span>
-                        <span>Apparent:</span> <span style="color: #fff; font-weight: bold;">0.00 kVA</span>
-                        <span>Load:</span> <span style="color: #fff; font-weight: bold;">0.0 %</span>
-                        <span>PF:</span> <span style="color: #fff; font-weight: bold;">0.00</span>
-                        <span>Temp:</span> <span style="color: #fff; font-weight: bold;">0.0 °C</span>
-                        <span>Vib:</span> <span style="color: #fff; font-weight: bold;">0.00 g</span>
-                    </div>
-                </div>
-            `;
-
-                if (!deviceMarker.getPopup()) {
-                    deviceMarker.bindPopup(popupContent);
-                } else {
-                    deviceMarker.setPopupContent(popupContent);
-                }
-            }
 
             lastAbnormalityString = displayStatus;
 
@@ -1930,46 +2079,6 @@
                 statusBg = "#ef4444"; // Red
             }
 
-            if (map && deviceMarker) {
-                // Always update the marker icon and popup to reflect alarm/no-power state,
-                // regardless of whether a config location is available.
-                const newIconClass = status.startsWith("No Power") ? 'marker-nopower' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
-                const iconHtml = `<div class='${newIconClass}'></div>`;
-                const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
-                deviceMarker.setIcon(newIcon);
-
-                const popupContent = `
-                <div style="min-width: 220px;">
-                    <div style="background: ${statusBg}; color: ${popupTextColor}; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
-                        ${status.toUpperCase()}
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
-                        <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">${v.toFixed(1)} V</span>
-                        <span>Current:</span> <span style="color: #fff; font-weight: bold;">${c1.toFixed(1)} A</span>
-                        <span>Active:</span> <span style="color: #fff; font-weight: bold;">${kw.toFixed(2)} kW</span>
-                        <span>Apparent:</span> <span style="color: #fff; font-weight: bold;">${kva.toFixed(2)} kVA</span>
-                        <span>Load:</span> <span style="color: #fff; font-weight: bold;">${load.toFixed(1)} %</span>
-                        <span>PF:</span> <span style="color: #fff; font-weight: bold;">${pf.toFixed(2)}</span>
-                        <span>Temp:</span> <span style="color: #fff; font-weight: bold;">${t.toFixed(1)} °C</span>
-                        <span>Vib:</span> <span style="color: #fff; font-weight: bold;">${vib.toFixed(2)} g</span>
-                    </div>
-                </div>
-            `;
-
-                if (!deviceMarker.getPopup()) {
-                    deviceMarker.bindPopup(popupContent);
-                } else {
-                    deviceMarker.setPopupContent(popupContent);
-                }
-
-                if (status !== "Normal Operation" && !deviceMarker.isPopupOpen()) deviceMarker.openPopup();
-
-                // Only reposition the marker if a valid location is available from the backend config.
-                if (d.config && d.config.location && d.config.location.lat !== 0) {
-                    deviceMarker.setLatLng([d.config.location.lat, d.config.location.lng]);
-                }
-            }
-
             if (!isSimulationMode && d.config && d.config.location && d.config.location.lat !== 0) {
                 document.getElementById('inputLat').value = d.config.location.lat;
                 document.getElementById('inputLng').value = d.config.location.lng;
@@ -1978,7 +2087,7 @@
             if (d.alarmArmed !== undefined) {
                 const toggle = document.getElementById('alarmToggle');
                 const statusText = document.getElementById('armStatusText');
-                
+
                 const dashBadge = document.getElementById('alarmDashBadge');
                 if (dashBadge) dashBadge.style.display = d.alarmArmed ? 'block' : 'none';
 
@@ -2023,7 +2132,7 @@
                 volt: "N/A", amp: "N/A", temp: "N/A", load: "N/A", vib: "N/A"
             };
             try { await fetch(`${API_URL}/alert`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
-            catch(e) { console.error("Action email failed", e); }
+            catch (e) { console.error("Action email failed", e); }
         }
 
         async function toggleAlarm(checkbox) {
@@ -2039,8 +2148,8 @@
                     body: JSON.stringify({ device_id: DEVICE_ID, alarm_armed: newState })
                 });
                 if (!response.ok) { alert("Failed!"); checkbox.checked = !newState; }
-                else { 
-                    logEvent(newState ? "User Armed System" : "User Disarmed System", "ALERT"); 
+                else {
+                    logEvent(newState ? "User Armed System" : "User Disarmed System", "ALERT");
                     sendActionEmail(newState ? "SYSTEM ARMED remotely by operator." : "SYSTEM DISARMED remotely by operator.");
                 }
             } catch (error) { alert("Network Error"); checkbox.checked = !newState; }
@@ -2138,11 +2247,79 @@
         function initMap() {
             if (map) return;
             map = L.map('map').setView([14.5995, 120.9842], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-            const icon = L.divIcon({ className: 'custom-div-icon', html: `<div class='marker-normal'></div>` });
-            deviceMarker = L.marker([14.5995, 120.9842], { icon: icon }).addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+            
+            // Start the fleet update loop
+            updateFleetMarkers();
+            fleetUpdateInterval = setInterval(updateFleetMarkers, 5000);
+        }
 
-            deviceMarker.bindPopup("<div style='text-align:center; padding:5px; color:#aaa;'>Connecting to Node...</div>");
+        async function updateFleetMarkers() {
+            try {
+                const response = await fetch(`${API_URL}/fleet`);
+                const fleet = await response.json();
+
+                fleet.forEach(d => {
+                    const status = detectAbnormality(d);
+                    let markerClass = 'marker-normal';
+                    let statusBg = "#10b981";
+
+                    if (d.seconds_offline > 15) {
+                        markerClass = 'marker-offline';
+                        statusBg = "#64748b";
+                    } else if (status.startsWith("No Power")) {
+                        markerClass = 'marker-nopower';
+                        statusBg = "#f97316";
+                    } else if (status !== "Normal Operation") {
+                        markerClass = 'marker-alarm';
+                        statusBg = "#ef4444";
+                    }
+
+                    if (d.lat === 0 || d.lng === 0) return;
+
+                    const iconHtml = `<div class='${markerClass}'></div>`;
+                    const icon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
+
+                    const popupContent = `
+                        <div style="min-width: 220px;">
+                            <div style="background: ${statusBg}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                                NODE: ${d.id} | ${d.seconds_offline > 15 ? 'OFFLINE' : status.toUpperCase()}
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
+                                <span>Voltage:</span> <span style="color: #fff; font-weight: bold;">${d.v.toFixed(1)} V</span>
+                                <span>Current:</span> <span style="color: #fff; font-weight: bold;">${d.c1.toFixed(1)} A</span>
+                                <span>Load:</span> <span style="color: #fff; font-weight: bold;">${d.load.toFixed(1)} %</span>
+                                <span>Temp:</span> <span style="color: #fff; font-weight: bold;">${d.t.toFixed(1)} °C</span>
+                                <span>Vibration:</span> <span style="color: #fff; font-weight: bold;">${d.vib.toFixed(2)} g</span>
+                                <span>PF:</span> <span style="color: #fff; font-weight: bold;">${d.pf.toFixed(2)}</span>
+                            </div>
+                            <button onclick="switchToDevice('${d.id}')" style="width:100%; margin-top:10px; background:var(--accent-purple); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer; font-weight:bold;">TRACK THIS NODE</button>
+                        </div>
+                    `;
+
+                    if (fleetMarkers[d.id]) {
+                        fleetMarkers[d.id].setLatLng([d.lat, d.lng]);
+                        fleetMarkers[d.id].setIcon(icon);
+                        fleetMarkers[d.id].setPopupContent(popupContent);
+                    } else {
+                        fleetMarkers[d.id] = L.marker([d.lat, d.lng], { icon: icon }).addTo(map);
+                        fleetMarkers[d.id].bindPopup(popupContent);
+                        
+                        // If this is the active device and map is just loaded, pan to it
+                        if (d.id === DEVICE_ID) {
+                            map.panTo([d.lat, d.lng]);
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Fleet map update failed", err);
+            }
+        }
+
+        function switchToDevice(id) {
+            const select = document.getElementById('deviceSelect');
+            select.value = id;
+            changeDevice();
         }
         function toggleGeoControls() {
             const p = document.getElementById('geoControlsPanel');
