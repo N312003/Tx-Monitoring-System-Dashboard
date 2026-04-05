@@ -1314,132 +1314,157 @@
             </div>
         </div>
 
-        <div class="maintenance-overlay" id="maintenanceView">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                <div>
-                    <h2>SYSTEM MAINTENANCE</h2><span style="color:var(--text-muted)">Admin Controls</span>
+        <div class="maintenance-overlay" id="maintenanceView" style="background: linear-gradient(to bottom right, #0a0a0f, #151921);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="background: rgba(217, 70, 239, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(217, 70, 239, 0.3); box-shadow: 0 0 20px rgba(217, 70, 239, 0.2);">
+                        <i class="fa-solid fa-screwdriver-wrench" style="font-size: 1.8rem; color: #d946ef;"></i>
+                    </div>
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: 1px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">SYSTEM MAINTENANCE</h2>
+                        <span style="color:var(--text-muted); font-size: 0.9rem; letter-spacing: 0.5px;">Advanced Admin Controls & Diagnostics</span>
+                    </div>
                 </div>
-                <button class="btn-action" style="background:#333" onclick="showView('dashboardView')">CLOSE</button>
+                <button class="btn-action" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; transition: all 0.3s; border-radius: 10px; font-weight: bold; letter-spacing: 1px;" onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'" onclick="showView('dashboardView')">
+                    <i class="fa-solid fa-xmark"></i> CLOSE
+                </button>
             </div>
 
-            <div class="card" style="margin-bottom: 25px; border-color: #d946ef;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h3 style="color: white; font-size: 1rem;">Safety Interlock</h3><span
-                            style="color: #aaa; font-size: 0.8rem;">Master Alarm Control</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 25px;">
+                <!-- Safety Interlock Card -->
+                <div class="card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(239, 68, 68, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); transition: transform 0.3s, border-color 0.3s; display: flex; flex-direction: column; justify-content: space-between;" onmouseover="this.style.borderColor='rgba(239, 68, 68, 0.5)'; this.style.transform='translateY(-5px)'" onmouseout="this.style.borderColor='rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(0)'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <div style="background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px;">
+                                    <i class="fa-solid fa-shield-halved" style="color: #ef4444; font-size: 1.2rem;"></i>
+                                </div>
+                                <h3 style="color: white; font-size: 1.2rem; margin: 0;">Safety Interlock</h3>
+                            </div>
+                            <span style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; display: block;">Master override for remote alarm isolation.<br>Use with extreme caution.</span>
+                        </div>
+                        <label class="switch" style="transform: scale(1.1); margin-top: 10px;">
+                            <input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)">
+                            <span class="slider" style="box-shadow: inset 0 0 5px rgba(0,0,0,0.5);"></span>
+                        </label>
                     </div>
-                    <label class="switch"><input type="checkbox" id="alarmToggle" onchange="toggleAlarm(this)"><span
-                            class="slider"></span></label>
+                    <div id="armStatusText" style="margin-top: 25px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; border-radius: 6px; font-weight: 800; letter-spacing: 2px; color: #ef4444; text-align: center; font-size: 0.9rem; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);">
+                        SYSTEM DISARMED
+                    </div>
                 </div>
-                <div id="armStatusText" style="margin-top: 10px; font-weight: bold; color: #ef4444; text-align: right;">
-                    DISARMED</div>
-            </div>
 
-            <div class="card" style="margin-bottom: 25px; border-color: #fbbf24;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h3 style="color: white; font-size: 1rem;">Simulation Mode</h3><span
-                            style="color: #aaa; font-size: 0.8rem;">Override All Variables</span>
-                    </div>
-                    <label class="switch"><input type="checkbox" id="testModeToggle"
-                            onchange="toggleTestMode(this)"><span class="slider"></span></label>
-                </div>
-
-                <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: 0.3s;">
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Voltage</span><span id="sim_v_val">220V</span></div><input
-                            type="range" min="0" max="300" value="220" class="cal-slider"
-                            oninput="updateSimulation('v', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Current L1</span><span id="sim_c1_val">5A</span></div><input
-                            type="range" min="0" max="400" value="5" class="cal-slider"
-                            oninput="updateSimulation('c1', this.value)">
+                <!-- Simulation Mode Card -->
+                <div class="card" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(251, 191, 36, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); transition: transform 0.3s, border-color 0.3s;" onmouseover="this.style.borderColor='rgba(251, 191, 36, 0.5)'; this.style.transform='translateY(-5px)'" onmouseout="this.style.borderColor='rgba(251, 191, 36, 0.2)'; this.style.transform='translateY(0)'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <div style="background: rgba(251, 191, 36, 0.1); padding: 10px; border-radius: 8px;">
+                                    <i class="fa-solid fa-flask" style="color: #fbbf24; font-size: 1.2rem;"></i>
+                                </div>
+                                <h3 style="color: white; font-size: 1.2rem; margin: 0;">Simulation Engine</h3>
+                            </div>
+                            <span style="color: #94a3b8; font-size: 0.85rem; line-height: 1.5; display: block;">Override hardware telemetries dynamically.</span>
+                        </div>
+                        <label class="switch" style="transform: scale(1.1); margin-top: 10px;">
+                            <input type="checkbox" id="testModeToggle" onchange="toggleTestMode(this)">
+                            <span class="slider" style="box-shadow: inset 0 0 5px rgba(0,0,0,0.5);"></span>
+                        </label>
                     </div>
 
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Active Power (kW)</span><span id="sim_kw_val">0.99kW</span>
-                        </div><input type="range" min="0" max="100" step="0.1" value="0.99" class="cal-slider"
-                            oninput="updateSimulation('kw', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Apparent Power (kVA)</span><span id="sim_kva_val">1.1kVA</span>
-                        </div><input type="range" min="0" max="100" step="0.1" value="1.1" class="cal-slider"
-                            oninput="updateSimulation('kva', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Loading (%)</span><span id="sim_load_val">1.4%</span></div>
-                        <input type="range" min="0" max="150" step="0.1" value="1.4" class="cal-slider"
-                            oninput="updateSimulation('load', this.value)">
-                    </div>
-
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Power Factor</span><span id="sim_pf_val">0.9</span></div><input
-                            type="range" min="0" max="1" step="0.01" value="0.9" class="cal-slider"
-                            oninput="updateSimulation('pf', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Temp</span><span id="sim_t_val">30°C</span></div><input
-                            type="range" min="0" max="150" value="30" class="cal-slider"
-                            oninput="updateSimulation('t', this.value)">
-                    </div>
-                    <div class="cal-group">
-                        <div class="cal-label"><span>Sim Vibration</span><span id="sim_vib_val">0g</span></div><input
-                            type="range" min="0" max="5" step="0.01" value="0" class="cal-slider"
-                            oninput="updateSimulation('vib', this.value)">
+                    <div id="simulationControls" style="opacity: 0.3; pointer-events: none; transition: all 0.4s ease; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <style>
+                            .sim-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: #2d3748; border-radius: 3px; outline: none; margin-top: 8px; }
+                            .sim-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fbbf24; cursor: pointer; border: 2px solid #1a1f2b; box-shadow: 0 0 5px rgba(251,191,36,0.5); transition: 0.2s; }
+                            .sim-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+                            .sim-card { background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+                            .sim-card:hover { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.05); }
+                        </style>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Volt (V)</span><span id="sim_v_val" style="color:#fbbf24;">220V</span></div>
+                            <input type="range" min="0" max="300" value="220" class="sim-range" oninput="updateSimulation('v', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Curr (A)</span><span id="sim_c1_val" style="color:#fbbf24;">5A</span></div>
+                            <input type="range" min="0" max="400" value="5" class="sim-range" oninput="updateSimulation('c1', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Pwr (kW)</span><span id="sim_kw_val" style="color:#fbbf24;">0.99kW</span></div>
+                            <input type="range" min="0" max="100" step="0.1" value="0.99" class="sim-range" oninput="updateSimulation('kw', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>App Pwr (kVA)</span><span id="sim_kva_val" style="color:#fbbf24;">1.1kVA</span></div>
+                            <input type="range" min="0" max="100" step="0.1" value="1.1" class="sim-range" oninput="updateSimulation('kva', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Load (%)</span><span id="sim_load_val" style="color:#fbbf24;">1.4%</span></div>
+                            <input type="range" min="0" max="150" step="0.1" value="1.4" class="sim-range" oninput="updateSimulation('load', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>PF</span><span id="sim_pf_val" style="color:#fbbf24;">0.9</span></div>
+                            <input type="range" min="0" max="1" step="0.01" value="0.9" class="sim-range" oninput="updateSimulation('pf', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Temp (°C)</span><span id="sim_t_val" style="color:#fbbf24;">30°C</span></div>
+                            <input type="range" min="0" max="150" value="30" class="sim-range" oninput="updateSimulation('t', this.value)">
+                        </div>
+                        <div class="sim-card">
+                            <div class="cal-label" style="color:#cbd5e1; font-weight:600; font-size:0.8rem; margin-bottom: 5px;"><span>Vib (g)</span><span id="sim_vib_val" style="color:#fbbf24;">0g</span></div>
+                            <input type="range" min="0" max="5" step="0.01" value="0" class="sim-range" oninput="updateSimulation('vib', this.value)">
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- ===== PREDICTIVE MAINTENANCE CARD ===== -->
-            <div class="card" style="border-color: #06b6d4; margin-bottom: 25px;">
-                <div
-                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
-                    <div>
-                        <h3 style="color:white; font-size:1rem;"><i class="fa-solid fa-brain"
-                                style="color:#06b6d4; margin-right:8px;"></i>Predictive Maintenance Engine</h3>
-                        <span style="color:#aaa; font-size:0.78rem;">Linear trend analysis on historical backend
-                            data</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                        <!-- Data range selector -->
-                        <div
-                            style="display:flex; background:#111827; border:1px solid #2d3748; border-radius:8px; overflow:hidden;">
-                            <button class="pred-range-btn active" data-hours="24"
-                                onclick="setPredRange(this)">24H</button>
-                            <button class="pred-range-btn" data-hours="168" onclick="setPredRange(this)">7D</button>
-                            <button class="pred-range-btn" data-hours="720" onclick="setPredRange(this)">30D</button>
-                            <button class="pred-range-btn" data-hours="8760" onclick="setPredRange(this)">ALL</button>
+            <div class="card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(20, 25, 35, 0.8) 100%); border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: 0 10px 30px -10px rgba(6, 182, 212, 0.15); border-radius: 16px; overflow: hidden; margin-bottom: 25px; padding: 0;">
+                <div style="background: rgba(6, 182, 212, 0.05); border-bottom: 1px solid rgba(6, 182, 212, 0.15); padding: 20px 25px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="background: rgba(6, 182, 212, 0.1); padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);">
+                            <i class="fa-solid fa-brain" style="color:#06b6d4; font-size: 1.2rem;"></i>
                         </div>
-                        <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()"
-                            style="background:#06b6d4; min-width:130px;">
-                            <i class="fa-solid fa-play" style="margin-right:6px;"></i>RUN ANALYSIS
+                        <div>
+                            <h3 style="color:white; font-size:1.1rem; margin: 0; letter-spacing: 0.5px;">Predictive Maintenance Engine</h3>
+                            <span style="color:#94a3b8; font-size:0.8rem;">Linear trend analysis on historical backend data</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+                        <!-- Data range selector -->
+                        <div style="display:flex; background:#0f121a; border:1px solid #334155; border-radius:10px; padding: 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                            <style>
+                                .pred-range-btn-new { background: transparent; border: none; color: #94a3b8; padding: 6px 14px; cursor: pointer; font-size: 0.8rem; font-weight: 700; border-radius: 6px; transition: 0.3s; }
+                                .pred-range-btn-new:hover { color: white; background: rgba(255,255,255,0.05); }
+                                .pred-range-btn-new.active { background: #06b6d4; color: #000; box-shadow: 0 0 10px rgba(6, 182, 212, 0.4); }
+                            </style>
+                            <button class="pred-range-btn pred-range-btn-new active" data-hours="24" onclick="setPredRange(this)">24H</button>
+                            <button class="pred-range-btn pred-range-btn-new" data-hours="168" onclick="setPredRange(this)">7D</button>
+                            <button class="pred-range-btn pred-range-btn-new" data-hours="720" onclick="setPredRange(this)">30D</button>
+                            <button class="pred-range-btn pred-range-btn-new" data-hours="8760" onclick="setPredRange(this)">ALL</button>
+                        </div>
+                        <button class="btn-action" id="predRunBtn" onclick="runMaintenancePrediction()" style="background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); min-width:140px; padding: 10px 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3); border: none; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <i class="fa-solid fa-play" style="margin-right:8px;"></i>RUN ANALYSIS
                         </button>
                     </div>
                 </div>
 
-                <!-- Summary banner -->
-                <div id="predSummaryBanner"
-                    style="display:none; padding:12px 16px; border-radius:10px; margin-bottom:12px; font-size:0.88rem; font-weight:bold;">
-                </div>
-
-                <!-- Results table -->
-                <div id="predResults">
-                    <div style="text-align:center; color:#444; padding:28px 0; font-size:0.85rem;">
-                        <i class="fa-solid fa-chart-line"
-                            style="font-size:2rem; margin-bottom:10px; color:#2d3748;"></i><br>
-                        Select a data range, then click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to generate
-                        maintenance predictions.
+                <div style="padding: 25px;">
+                    <!-- Summary banner -->
+                    <div id="predSummaryBanner" style="display:none; padding:15px 20px; border-radius:10px; margin-bottom:20px; font-size:0.9rem; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                     </div>
-                </div>
 
-                <div
-                    style="margin-top:12px; color:#555; font-size:0.72rem; border-top:1px solid #1e2535; padding-top:10px;">
-                    <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>
-                    Results are estimates — always apply engineering judgment. Forecast horizon: <strong
-                        style="color:#aaa;">30 days</strong>.
-                    More data = more accurate trend. Use <strong style="color:#aaa;">7D</strong> or <strong
-                        style="color:#aaa;">30D</strong> for longer-term patterns.
+                    <!-- Results table -->
+                    <div id="predResults" style="background: rgba(0,0,0,0.15); border-radius: 12px; border: 1px solid rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <div style="text-align:center; color:#64748b; padding:40px 20px; font-size:0.9rem; max-width: 400px; margin: 0 auto;">
+                            <div style="width: 70px; height: 70px; background: rgba(6, 182, 212, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 1px dashed rgba(6, 182, 212, 0.3);">
+                                <i class="fa-solid fa-chart-line" style="font-size:2rem; color:#06b6d4; opacity: 0.7;"></i>
+                            </div>
+                            Select a timeline and click <strong style="color:#06b6d4;">RUN ANALYSIS</strong> to forecast component health vectors.
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px; color:#64748b; font-size:0.75rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px; display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="fa-solid fa-circle-info" style="color: #06b6d4; margin-top: 2px;"></i>
+                        <span style="line-height: 1.4;">Results are analytical estimates utilizing linear extrapolation. Forecast horizon: <strong style="color:#94a3b8;">30 days</strong>.<br>Use <strong style="color:#94a3b8;">7D</strong> or <strong style="color:#94a3b8;">30D</strong> for sustained long-term anomaly detection.</span>
+                    </div>
                 </div>
             </div>
             <!-- ===== END PREDICTIVE MAINTENANCE CARD ===== -->
@@ -1704,7 +1729,7 @@
                 // AC power lost — but physical sensors (temp, vib) run independently.
                 // Still evaluate and report those conditions alongside the power loss.
                 let issues = ["No Power"];
-                if (d.t > 75)   issues.push("Overheating");
+                if (d.t > 75) issues.push("Overheating");
                 if (d.vib > 0.20) issues.push("High Vibration");
                 return issues.join(", ");
             }
@@ -1815,7 +1840,7 @@
                 } else if (status.startsWith("No Power")) {
                     // Build a full detail message — power loss plus any active physical alarms.
                     let details = ["AC Power Supply Lost (0.0V, 0.0A)"];
-                    if (t > 75)    details.push(`Temp Critical at ${t.toFixed(1)}°C`);
+                    if (t > 75) details.push(`Temp Critical at ${t.toFixed(1)}°C`);
                     if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
                     const faultMessage = details.join(" | ");
                     logEvent(`FAULT DETECTED: ${faultMessage}`, "ALERT");
