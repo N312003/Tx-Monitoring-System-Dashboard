@@ -1900,7 +1900,7 @@
                     logEvent("System parameters returned to Normal Operation", "SUCCESS");
                 } else if (status.startsWith("No Power")) {
                     // Build a full detail message — power loss plus any active physical alarms.
-                    let details = ["AC Power Supply Lost (0.0V, 0.0A)"];
+                    let details = ["NO POWER"];
                     if (t > 75) details.push(`Temp Critical at ${t.toFixed(1)}°C`);
                     if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
                     const faultMessage = details.join(" | ");
