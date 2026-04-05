@@ -1700,7 +1700,14 @@
         }
 
         function detectAbnormality(d, isLive = false) {
-            if (d.v === 0 && d.c1 === 0) return "No Power";
+            if (d.v === 0 && d.c1 === 0) {
+                // AC power lost — but physical sensors (temp, vib) run independently.
+                // Still evaluate and report those conditions alongside the power loss.
+                let issues = ["No Power"];
+                if (d.t > 75)   issues.push("Overheating");
+                if (d.vib > 0.20) issues.push("High Vibration");
+                return issues.join(", ");
+            }
 
             let issues = [];
 
@@ -1805,9 +1812,14 @@
             if (status !== lastAbnormalityString) {
                 if (status === "Normal Operation") {
                     logEvent("System parameters returned to Normal Operation", "SUCCESS");
-                } else if (status === "No Power") {
-                    logEvent("AC Power Supply Lost (0.0V, 0.0A)", "ALERT");
-                    sendAlarmEmail("COMPLETE POWER LOSS DETECTED", currentDataPoint);
+                } else if (status.startsWith("No Power")) {
+                    // Build a full detail message — power loss plus any active physical alarms.
+                    let details = ["AC Power Supply Lost (0.0V, 0.0A)"];
+                    if (t > 75)    details.push(`Temp Critical at ${t.toFixed(1)}°C`);
+                    if (vib > 0.20) details.push(`Vib High at ${vib.toFixed(2)}g`);
+                    const faultMessage = details.join(" | ");
+                    logEvent(`FAULT DETECTED: ${faultMessage}`, "ALERT");
+                    sendAlarmEmail(faultMessage, currentDataPoint);
                 } else {
                     let details = [];
                     // Check timer to log the correct string
@@ -1835,7 +1847,7 @@
             let statusBg = "#10b981"; // Green
             let popupTextColor = "white";
 
-            if (status === "No Power") {
+            if (status.startsWith("No Power")) {
                 statusBg = "#f97316"; // Orange
                 popupTextColor = "white";
             } else if (status !== "Normal Operation") {
@@ -1845,7 +1857,7 @@
             if (map && deviceMarker) {
                 // Always update the marker icon and popup to reflect alarm/no-power state,
                 // regardless of whether a config location is available.
-                const newIconClass = status === "No Power" ? 'marker-nopower' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
+                const newIconClass = status.startsWith("No Power") ? 'marker-nopower' : (status !== "Normal Operation" ? 'marker-alarm' : 'marker-normal');
                 const iconHtml = `<div class='${newIconClass}'></div>`;
                 const newIcon = L.divIcon({ className: 'custom-div-icon', html: iconHtml });
                 deviceMarker.setIcon(newIcon);
