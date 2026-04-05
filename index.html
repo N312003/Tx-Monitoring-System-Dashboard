@@ -31,127 +31,6 @@
             --temp-color: #f97316;
         }
 
-        [data-theme='light'] {
-            --bg-body: #f0f4f8;
-            --bg-sidebar: #ffffff;
-            --bg-card: #ffffff;
-            --accent-purple: #274A5D; /* Arapawa */
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --cyan: #06b6d4; 
-            --warning: #d97706;
-        }
-
-        [data-theme='light'] .card,
-        [data-theme='light'] .stat-card,
-        [data-theme='light'] .small-chart-card,
-        [data-theme='light'] .manual-geo-controls,
-        [data-theme='light'] .device-selector,
-        [data-theme='light'] .sim-card {
-            background-color: var(--bg-card) !important;
-            border-color: #cbd5e1 !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.05) !important;
-            background-image: none !important;
-        }
-
-        [data-theme='light'] .sidebar {
-            background-color: var(--bg-sidebar) !important;
-            border-right: 1px solid #cbd5e1 !important;
-        }
-
-        [data-theme='light'] .header {
-            border-color: #cbd5e1 !important;
-            background: #ffffff !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
-        }
-
-        [data-theme='light'] h1, [data-theme='light'] h2, [data-theme='light'] h3, [data-theme='light'] h4,
-        [data-theme='light'] .stat-value,
-        [data-theme='light'] .data-table td,
-        [data-theme='light'] .data-table th,
-        [data-theme='light'] .device-selector,
-        [data-theme='light'] .geo-input,
-        [data-theme='light'] .date-input,
-        [data-theme='light'] #sum_time, [data-theme='light'] #sim_v_val {
-            color: var(--text-main) !important;
-        }
-
-        [data-theme='light'] td { color: var(--text-main) !important; }
-
-        [data-theme='light'] .stat-label, 
-        [data-theme='light'] .chart-header span,
-        [data-theme='light'] .tooltip-label,
-        [data-theme='light'] #roleDisplay {
-            color: var(--text-muted) !important;
-        }
-
-        [data-theme='light'] .geo-input,
-        [data-theme='light'] .date-input {
-            background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
-        }
-
-        [data-theme='light'] .time-filters,
-        [data-theme='light'] .pred-range-btn-new,
-        [data-theme='light'] .sim-card {
-            background: #e2e8f0 !important;
-            border-color: #cbd5e1 !important;
-        }
-        
-        [data-theme='light'] .time-btn,
-        [data-theme='light'] .pred-range-btn-new {
-            color: var(--text-main) !important;
-        }
-
-        [data-theme='light'] .time-btn.active,
-        [data-theme='light'] .pred-range-btn-new.active,
-        [data-theme='light'] .btn-action {
-            background: var(--accent-purple) !important;
-            color: white !important;
-        }
-
-        [data-theme='light'] .nav-item.active {
-            background-color: var(--accent-purple) !important;
-            color: white !important;
-            box-shadow: 0 0 10px rgba(39, 74, 93, 0.3) !important;
-        }
-
-        /* Specific tab background overrides */
-        [data-theme='light'] .maintenance-overlay,
-        [data-theme='light'] .daily-overlay,
-        [data-theme='light'] .history-overlay {
-            background: var(--bg-body) !important;
-        }
-
-        [data-theme='light'] #maintenanceView > div, 
-        [data-theme='light'] #maintenanceView .card {
-            background: var(--bg-card) !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
-            border-color: #cbd5e1 !important;
-            background-image: none !important;
-        }
-
-        [data-theme='light'] .leaflet-popup-content-wrapper {
-            background: var(--bg-card) !important;
-            color: var(--text-main) !important;
-            border: 1px solid var(--accent-purple) !important;
-        }
-        [data-theme='light'] .leaflet-popup-tip {
-            background: var(--accent-purple) !important;
-        }
-        [data-theme='light'] .leaflet-tile-pane {
-            filter: invert(1) hue-rotate(180deg) brightness(95%) contrast(90%);
-        }
-        
-        [data-theme='light'] #unified-tooltip {
-            background: rgba(255, 255, 255, 0.95) !important;
-            color: var(--text-main) !important;
-            border-color: var(--accent-purple) !important;
-        }
-
-        [data-theme='light'] #eventLogBody tr td { color: var(--text-main) !important; }
-        [data-theme='light'] #dailyTableBody tr td { color: var(--text-main) !important; }
-
         * {
             margin: 0;
             padding: 0;
@@ -1112,7 +991,6 @@
                     </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 20px;">
-                    <button class="mute-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Mode"><i class="fa-solid fa-sun"></i></button>
                     <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="Mute Alarms"><i class="fa-solid fa-volume-high"></i></button>
                     <div id="netStatus" class="status-badge status-offline">CONNECTING...</div>
                 </div>
@@ -3204,39 +3082,6 @@
             }
         }
         // ============================================================
-
-        let isLightMode = false;
-        function toggleTheme() {
-            isLightMode = !isLightMode;
-            if (isLightMode) {
-                document.documentElement.setAttribute('data-theme', 'light');
-                document.getElementById('themeToggleBtn').innerHTML = '<i class="fa-solid fa-moon"></i>';
-                 if(window.Chart && Chart.instances) {
-                     Object.keys(Chart.instances).forEach(key => {
-                         let chart = Chart.instances[key];
-                         if(chart.options.scales && chart.options.scales.x && chart.options.scales.x.grid) chart.options.scales.x.grid.color = '#e2e8f0';
-                         if(chart.options.scales && chart.options.scales.y && chart.options.scales.y.grid) chart.options.scales.y.grid.color = '#e2e8f0';
-                         if(chart.options.scales && chart.options.scales.x && chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = '#64748b';
-                         if(chart.options.scales && chart.options.scales.y && chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = '#64748b';
-                         chart.update('none');
-                     });
-                 }
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                document.getElementById('themeToggleBtn').innerHTML = '<i class="fa-solid fa-sun"></i>';
-                 if(window.Chart && Chart.instances) {
-                     Object.keys(Chart.instances).forEach(key => {
-                         let chart = Chart.instances[key];
-                         if(chart.options.scales && chart.options.scales.x && chart.options.scales.x.grid) chart.options.scales.x.grid.color = '#333';
-                         if(chart.options.scales && chart.options.scales.y && chart.options.scales.y.grid) chart.options.scales.y.grid.color = '#444';
-                         if(chart.options.scales && chart.options.scales.x && chart.options.scales.x.ticks) chart.options.scales.x.ticks.color = '#888';
-                         if(chart.options.scales && chart.options.scales.y && chart.options.scales.y.ticks) chart.options.scales.y.ticks.color = '#bbb';
-                         chart.update('none');
-                     });
-                 }
-            }
-            if (map) map.invalidateSize();
-        }
     </script>
 </body>
 
