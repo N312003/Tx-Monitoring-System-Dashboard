@@ -2112,6 +2112,9 @@
             if (sessionLog.length > 5000) sessionLog.shift();
 
             if (chartTimeWindow === 0) updateHistoryChartData();
+
+            // Keep fleet marker in sync with cards whenever dashboard refreshes in sim mode
+            if (isSimulationMode) refreshSimFleetMarker();
         }
 
         function logEvent(msg, type) {
@@ -2355,6 +2358,20 @@
                 const fleet = await response.json();
 
                 fleet.forEach(d => {
+                    // In simulation mode, always use live simValues for the active device
+                    // so the background poll never reverts the popup to stale backend data.
+                    if (d.id === DEVICE_ID && isSimulationMode) {
+                        d = {
+                            ...d,
+                            v:    parseFloat(simValues.v),
+                            c1:   parseFloat(simValues.c1),
+                            load: parseFloat(simValues.load),
+                            t:    parseFloat(simValues.t),
+                            vib:  parseFloat(simValues.vib),
+                            pf:   parseFloat(simValues.pf),
+                            seconds_offline: 0
+                        };
+                    }
                     const status = getFleetStatus(d); // per-device timer, never resets dashboard globals
                     let markerClass = 'marker-normal';
                     let statusBg = "#10b981";
