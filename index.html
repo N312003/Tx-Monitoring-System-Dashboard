@@ -2209,6 +2209,7 @@
                     alarmArmed: document.getElementById('alarmToggle').checked
                 };
                 updateDashboard(mockData);
+                refreshSimFleetMarker(); // keep fleet popup in sync with cards instantly
             }
 
             clearTimeout(simUploadTimer);
@@ -2253,6 +2254,56 @@
             // Start the fleet update loop
             updateFleetMarkers();
             fleetUpdateInterval = setInterval(updateFleetMarkers, 5000);
+        }
+
+        // Instantly refreshes the active device's fleet marker from simValues.
+        // Bypasses the 5-second backend poll so cards and popup stay in sync.
+        function refreshSimFleetMarker() {
+            if (!map || !fleetMarkers[DEVICE_ID] || !isSimulationMode) return;
+
+            const d = {
+                id:             DEVICE_ID,
+                v:              parseFloat(simValues.v),
+                c1:             parseFloat(simValues.c1),
+                load:           parseFloat(simValues.load),
+                t:              parseFloat(simValues.t),
+                vib:            parseFloat(simValues.vib),
+                pf:             parseFloat(simValues.pf),
+                seconds_offline: 0
+            };
+
+            const status = getFleetStatus(d);
+            let markerClass = 'marker-normal';
+            let statusBg    = '#10b981';
+
+            if (d.seconds_offline > 15) {
+                markerClass = 'marker-offline'; statusBg = '#64748b';
+            } else if (status.startsWith('No Power')) {
+                markerClass = 'marker-nopower'; statusBg = '#f97316';
+            } else if (status !== 'Normal Operation') {
+                markerClass = 'marker-alarm';   statusBg = '#ef4444';
+            }
+
+            const icon = L.divIcon({ className: 'custom-div-icon', html: `<div class='${markerClass}'></div>` });
+
+            const popupContent = `
+                <div style="min-width: 220px;">
+                    <div style="background: ${statusBg}; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px;">
+                        NODE: ${d.id} | ${status.toUpperCase()} <span style="font-size:0.75em; opacity:0.8;">[SIM]</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #ccc;">
+                        <span>Voltage:</span>   <span style="color:#fff; font-weight:bold;">${d.v.toFixed(1)} V</span>
+                        <span>Current:</span>   <span style="color:#fff; font-weight:bold;">${d.c1.toFixed(1)} A</span>
+                        <span>Load:</span>      <span style="color:#fff; font-weight:bold;">${d.load.toFixed(1)} %</span>
+                        <span>Temp:</span>      <span style="color:#fff; font-weight:bold;">${d.t.toFixed(1)} °C</span>
+                        <span>Vibration:</span> <span style="color:#fff; font-weight:bold;">${d.vib.toFixed(2)} g</span>
+                        <span>PF:</span>        <span style="color:#fff; font-weight:bold;">${d.pf.toFixed(2)}</span>
+                    </div>
+                    <button onclick="switchToDevice('${d.id}')" style="width:100%; margin-top:10px; background:var(--accent-purple); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer; font-weight:bold;">TRACK THIS NODE</button>
+                </div>`;
+
+            fleetMarkers[DEVICE_ID].setIcon(icon);
+            fleetMarkers[DEVICE_ID].setPopupContent(popupContent);
         }
 
         // Fleet-specific voltage transient detector — uses per-device timers so it
