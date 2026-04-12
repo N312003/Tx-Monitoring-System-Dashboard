@@ -1726,6 +1726,7 @@
         let offlineStartTime = 0;
         let voltAnomalyStart = 0;
         let currentVoltState = "normal";
+        const fleetTimers = {}; // Per-device voltage state for fleet map (independent of dashboard timer)
 
         // Chart Variables
         let chartElec, chartPower, chartPF, chartPhys;
@@ -2254,13 +2255,56 @@
             fleetUpdateInterval = setInterval(updateFleetMarkers, 5000);
         }
 
+        // Fleet-specific voltage transient detector — uses per-device timers so it
+        // never interferes with the main dashboard's shared voltAnomalyStart/currentVoltState.
+        function getFleetStatus(d) {
+            const id = d.id;
+            if (!fleetTimers[id]) fleetTimers[id] = { state: 'normal', start: 0 };
+
+            // Power-loss check (v and c1 both near 0)
+            if (d.v < 1 && d.c1 === 0) {
+                let issues = ["No Power"];
+                if (d.t > 75)   issues.push("Overheating");
+                if (d.vib > 0.02) issues.push("High Vibration");
+                fleetTimers[id].state = 'normal'; // reset so next real reading starts fresh
+                return issues.join(", ");
+            }
+
+            // Classify instant voltage state
+            let instantState = "normal";
+            if (d.v > 264)              instantState = "high";
+            else if (d.v < 216 && d.v > 0) instantState = "low";
+
+            // Advance (or reset) the per-device timer
+            const now = Date.now();
+            if (instantState !== fleetTimers[id].state) {
+                fleetTimers[id].state = instantState;
+                fleetTimers[id].start = now;
+            }
+
+            let issues = [];
+            if (fleetTimers[id].state === "high") {
+                issues.push((now - fleetTimers[id].start < 60000) ? "Voltage Swell" : "Overvoltage");
+            } else if (fleetTimers[id].state === "low") {
+                issues.push((now - fleetTimers[id].start < 60000) ? "Voltage Dip" : "Undervoltage");
+            }
+
+            if (d.c1  > 312)             issues.push("Overcurrent");
+            if (d.load > 100)            issues.push("Tx Overloaded");
+            if (d.t   > 75)              issues.push("Overheating");
+            if (d.vib > 0.02)            issues.push("High Vibration");
+            if (d.pf  < 0.85 && d.v > 10) issues.push("Low Power Factor");
+
+            return issues.length > 0 ? issues.join(", ") : "Normal Operation";
+        }
+
         async function updateFleetMarkers() {
             try {
                 const response = await fetch(`${API_URL}/fleet`);
                 const fleet = await response.json();
 
                 fleet.forEach(d => {
-                    const status = detectAbnormality(d, true);
+                    const status = getFleetStatus(d); // per-device timer, never resets dashboard globals
                     let markerClass = 'marker-normal';
                     let statusBg = "#10b981";
 
