@@ -2260,7 +2260,7 @@
                 const fleet = await response.json();
 
                 fleet.forEach(d => {
-                    const status = detectAbnormality(d);
+                    const status = detectAbnormality(d, true);
                     let markerClass = 'marker-normal';
                     let statusBg = "#10b981";
 
